@@ -46,11 +46,11 @@ export function ProfileScreen() {
 
   return (
     <MvpShell>
-      <div className="space-y-5">
-        <SectionTitle title="Profile" copy="Healing preferences, privacy controls, morning guidance and premium access." />
+      <div className="space-y-3.5">
+        <SectionTitle title="Profile" copy="Preferences, privacy controls and mock guidance." />
 
-        <GlassCard className="space-y-4 p-5">
-          <div className="grid h-24 w-24 place-items-center rounded-full border border-[var(--gold-border)] bg-purple-500/14 text-4xl text-[var(--gold-light)]">☾</div>
+        <GlassCard className="space-y-3 p-3.5">
+          <div className="grid h-16 w-16 place-items-center rounded-full border border-[var(--gold-border)] bg-purple-500/14 text-2xl text-[var(--gold-light)]">☾</div>
           <Input label="Name" value={name} onChange={setName} />
           <Input label="Email" value={email} onChange={setEmail} />
           <Input label="Phone" value={phone} onChange={setPhone} />
@@ -65,56 +65,57 @@ export function ProfileScreen() {
           </GoldButton>
         </GlassCard>
 
-        <GlassCard className="p-5">
-          <h2 className="font-serif text-2xl text-[var(--gold-light)]">Healing preferences</h2>
-          <Preference label="Preferred session duration" value={`${state.profile.preferredSessionDuration} min`} />
-          <Preference label="Preferred guide voice" value={state.profile.preferredVoice} />
-          <Preference label="Music style" value={state.profile.preferredMusicStyle} />
-          <Preference label="Guidance level" value={state.profile.preferredGuidanceLevel} />
-          <Preference label="Affirmations" value={state.profile.affirmationsEnabled ? "Enabled" : "Disabled"} />
-          <Preference label="Nature sounds" value={state.profile.natureSoundsEnabled ? "Enabled" : "Disabled"} />
-        </GlassCard>
-
-        <GlassCard className="p-5">
-          <h2 className="font-serif text-2xl text-[var(--gold-light)]">What the app has learned about me</h2>
-          <p className="mt-3 text-sm leading-6 text-stone-300">
-            Long-term pattern memory is {state.profile.aiMemoryEnabled ? "enabled" : "disabled"}. You can correct or delete patterns from Insights as the app learns more.
-          </p>
-          <button
-            type="button"
-            onClick={() => upsertProfile({ aiMemoryEnabled: !state.profile.aiMemoryEnabled })}
-            className="mt-4 rounded-full border border-[var(--gold-border-soft)] px-4 py-2 text-sm text-[var(--gold-light)]"
-          >
-            {state.profile.aiMemoryEnabled ? "Disable memory" : "Enable memory"}
-          </button>
-        </GlassCard>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Link href="/guidance" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">WhatsApp preferences</Link>
-          <Link href="/premium" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">Subscription and premium</Link>
-          <Link href="/about" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">About Us</Link>
-        </div>
-
-        <GlassCard className="space-y-3 p-5">
+        <GlassCard className="space-y-2 p-3.5">
           {status ? <p className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">{status}</p> : null}
           {error ? <p className="rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-sm text-red-100">{error}</p> : null}
           <button
             type="button"
             onClick={handleSignOut}
             disabled={signingOut}
-            className="min-h-12 w-full rounded-full border border-white/10 px-4 py-3 text-stone-300 disabled:opacity-50"
+            className="min-h-11 w-full rounded-full border border-white/10 px-4 py-2.5 text-stone-300 disabled:opacity-50"
           >
             {signingOut ? "Signing out..." : "Sign out"}
           </button>
-          <button type="button" onClick={handleDeleteData} className="min-h-12 w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100">Delete data</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={handleDeleteData} className="min-h-11 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-2.5 text-sm text-red-100">Delete data</button>
+            <button
+              type="button"
+              onClick={() => window.alert("Account deletion will be available when secure account services are connected. Use Delete data to clear this device now.")}
+              className="min-h-11 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-2.5 text-sm text-red-100"
+            >
+              Delete account
+            </button>
+          </div>
+        </GlassCard>
+
+        <details className="rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[var(--background-card)] p-3.5">
+          <summary className="cursor-pointer font-serif text-xl text-[var(--gold-light)]">Healing preferences</summary>
+          <Preference label="Preferred session duration" value={`${state.profile.preferredSessionDuration} min`} />
+          <Preference label="Preferred guide voice" value={state.profile.preferredVoice} />
+          <Preference label="Music style" value={state.profile.preferredMusicStyle} />
+          <Preference label="Guidance level" value={state.profile.preferredGuidanceLevel} />
+          <Preference label="Affirmations" value={state.profile.affirmationsEnabled ? "Enabled" : "Disabled"} />
+          <Preference label="Nature sounds" value={state.profile.natureSoundsEnabled ? "Enabled" : "Disabled"} />
+        </details>
+
+        <GlassCard className="p-3.5">
+          <h2 className="font-serif text-xl text-[var(--gold-light)]">What the app has learned</h2>
+          <p className="mt-2 text-sm leading-5 text-stone-300">
+            Long-term pattern memory is {state.profile.aiMemoryEnabled ? "enabled" : "disabled"}. You can correct or delete patterns from Insights as the app learns more.
+          </p>
           <button
             type="button"
-            onClick={() => window.alert("Account deletion will be available when secure account services are connected. Use Delete data to clear this device now.")}
-            className="min-h-12 w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100"
+            onClick={() => upsertProfile({ aiMemoryEnabled: !state.profile.aiMemoryEnabled })}
+            className="mt-3 min-h-10 rounded-full border border-[var(--gold-border-soft)] px-4 py-2 text-sm text-[var(--gold-light)]"
           >
-            Delete account
+            {state.profile.aiMemoryEnabled ? "Disable memory" : "Enable memory"}
           </button>
         </GlassCard>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href="/guidance" className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-stone-100">WhatsApp preferences</Link>
+          <Link href="/about" className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-stone-100">About Us</Link>
+        </div>
       </div>
     </MvpShell>
   );
@@ -124,7 +125,7 @@ function Input({ label, value, onChange }: { label: string; value: string; onCha
   return (
     <label className="block">
       <span className="text-sm text-stone-400">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100 outline-none" />
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/30 p-2.5 text-stone-100 outline-none" />
     </label>
   );
 }

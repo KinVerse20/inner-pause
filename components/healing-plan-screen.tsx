@@ -53,7 +53,7 @@ export function HealingPlanScreen() {
 
   return (
     <MvpShell hideNav>
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-3xl space-y-3.5">
         <header className="flex items-center justify-between">
           <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Back">←</button>
           <div className="text-center">
@@ -63,25 +63,25 @@ export function HealingPlanScreen() {
           <span className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]">✧</span>
         </header>
 
-        <div className="relative grid min-h-60 place-items-center overflow-hidden rounded-[2rem] border border-[var(--gold-border-soft)] bg-white/[0.04]">
-          <div className="absolute inset-x-0 top-20 h-28 mvp-energy-wave" />
-          <div className="mvp-meditator scale-90" />
+        <div className="relative grid min-h-24 place-items-center overflow-hidden rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/[0.04]">
+          <div className="absolute inset-x-0 top-8 h-14 mvp-energy-wave" />
+          <div className="mvp-meditator scale-50" />
         </div>
 
         <SectionTitle title={plan.title} copy={plan.intendedOutcome} />
 
-        <GlassCard className="p-5">
+        <GlassCard className="p-3.5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--gold-muted)]">Total Duration</p>
-            <p className="font-serif text-3xl text-[var(--gold-light)]">{plan.totalDurationMinutes} min</p>
+            <p className="font-serif text-2xl text-[var(--gold-light)]">{plan.totalDurationMinutes} min</p>
           </div>
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {durationOptions.map((duration) => (
               <button
                 key={`${duration}`}
                 type="button"
                 onClick={() => regenerate(duration)}
-                className={`rounded-full border px-4 py-2 text-sm ${plan.selectedDuration === duration ? "border-[var(--gold-border)] bg-amber-300/10 text-[var(--gold-light)]" : "border-white/10 bg-white/[0.04] text-stone-300"}`}
+                className={`min-h-10 rounded-full border px-3 py-1.5 text-sm ${plan.selectedDuration === duration ? "border-[var(--gold-border)] bg-amber-300/10 text-[var(--gold-light)]" : "border-white/10 bg-white/[0.04] text-stone-300"}`}
               >
                 {duration === "full" ? "Full recommended" : `${duration} min`}
               </button>
@@ -89,23 +89,25 @@ export function HealingPlanScreen() {
           </div>
         </GlassCard>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {plan.blocks.map((block, index) => {
             const chakra = chakraMap[block.chakraId];
             return (
-              <div key={block.id} className="relative pl-8">
-                <div className="absolute bottom-[-1rem] left-[0.85rem] top-10 w-px bg-[var(--gold-border-soft)]" />
-                <span className="absolute left-0 top-4 grid h-7 w-7 place-items-center rounded-full border border-[var(--gold-border)] bg-[#030711] text-xs text-[var(--gold-light)]">{index + 1}</span>
-                <GlassCard className="p-4" style={{ boxShadow: `0 0 38px ${chakra.glow}` }}>
-                  <div className="flex gap-4">
-                    <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border" style={{ borderColor: chakra.accent, color: chakra.accent }}>
-                      <ChakraGlyph chakraId={chakra.id} className="h-10 w-10" />
+              <div key={block.id} className="relative pl-7">
+                <div className="absolute bottom-[-0.5rem] left-[0.72rem] top-8 w-px bg-[var(--gold-border-soft)]" />
+                <span className="absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full border border-[var(--gold-border)] bg-[#030711] text-xs text-[var(--gold-light)]">{index + 1}</span>
+                <GlassCard className="p-3" style={{ boxShadow: `0 0 28px ${chakra.glow}` }}>
+                  <div className="flex gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border" style={{ borderColor: chakra.accent, color: chakra.accent }}>
+                      <ChakraGlyph chakraId={chakra.id} className="h-7 w-7" />
                     </span>
-                    <div>
-                      <h2 className="font-serif text-2xl text-stone-100">{block.title}</h2>
-                      <p className="mt-1 text-sm text-[var(--gold-muted)]">{chakra.name} Healing • {block.frequencyLabel}</p>
-                      <p className="mt-2 text-sm leading-6 text-stone-300">{block.intention}</p>
-                      <p className="mt-2 text-xs text-stone-500">{block.durationMinutes} min</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h2 className="line-clamp-1 font-serif text-xl text-stone-100">{block.title}</h2>
+                        <p className="shrink-0 text-xs text-stone-500">{block.durationMinutes}m</p>
+                      </div>
+                      <p className="mt-1 text-xs text-[var(--gold-muted)]">{chakra.name} • {block.frequencyLabel}</p>
+                      <p className="mt-1 line-clamp-1 text-sm leading-5 text-stone-300">{block.intention}</p>
                     </div>
                   </div>
                 </GlassCard>
@@ -114,15 +116,14 @@ export function HealingPlanScreen() {
           })}
         </div>
 
-        <GlassCard className="p-5">
-          <p className="font-serif text-2xl text-[var(--gold-light)]">Customisation</p>
-          <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-stone-300 sm:grid-cols-3">
+        <details className="rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[var(--background-card)] p-3.5">
+          <summary className="cursor-pointer font-serif text-xl text-[var(--gold-light)]">Customisation</summary>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-stone-300 sm:grid-cols-3">
             {["Duration", "Voice level", "Music style", "Affirmations", "Nature sounds", "Guidance frequency"].map((item) => (
               <span key={item} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-center">{item}</span>
             ))}
           </div>
-          <p className="mt-4 text-xs text-stone-500">You can customise anytime.</p>
-        </GlassCard>
+        </details>
 
         <GoldButton className="w-full" onClick={() => router.push(`/healing/player?plan=${plan.id}`)}>
           Start Healing

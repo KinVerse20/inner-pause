@@ -31,6 +31,7 @@ export function JournalEntryScreen() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPrompts, setShowPrompts] = useState(false);
   const timerRef = useRef<number | null>(null);
 
   const canSubmit = text.trim().length > 0;
@@ -88,7 +89,7 @@ export function JournalEntryScreen() {
 
   return (
     <MvpShell hideNav>
-      <div className="mx-auto max-w-3xl space-y-5">
+      <div className="mx-auto max-w-3xl space-y-3.5">
         <header className="flex items-center justify-between gap-4">
           <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Back">
             ←
@@ -99,46 +100,39 @@ export function JournalEntryScreen() {
           </button>
         </header>
 
-        <SectionTitle title="How was your day?" copy="Write as much or as little as you need. Even one sentence is enough." />
+        <SectionTitle title="How was your day?" copy="One honest sentence is enough." />
 
-        <GlassCard className="relative overflow-hidden p-4">
-          <div className="pointer-events-none absolute inset-x-8 bottom-6 h-20 mvp-energy-wave opacity-50" />
+        <GlassCard className="relative overflow-hidden p-3.5">
+          <div className="pointer-events-none absolute inset-x-8 bottom-4 h-12 mvp-energy-wave opacity-35" />
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="Write about your day..."
-            className="relative min-h-72 w-full resize-none rounded-[1.4rem] border border-[var(--gold-border-soft)] bg-black/24 p-4 text-base leading-7 text-stone-100 outline-none placeholder:text-stone-500 focus:ring-2 focus:ring-[var(--gold-light)]"
+            className="relative min-h-36 w-full resize-y rounded-[1rem] border border-[var(--gold-border-soft)] bg-black/24 p-3.5 text-base leading-6 text-stone-100 outline-none placeholder:text-stone-500 focus:ring-2 focus:ring-[var(--gold-light)]"
           />
-          <p className="relative mt-3 text-xs text-stone-500">{privacyLine}</p>
+          {privacyLine ? <p className="relative mt-2 text-xs text-stone-500">{privacyLine}</p> : null}
         </GlassCard>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {prompts.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              onClick={() => setText((current) => `${current}${current ? "\n" : ""}${prompt} `)}
-              className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-stone-300"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
+        <button type="button" onClick={() => setShowPrompts((value) => !value)} className="min-h-10 rounded-full border border-white/10 bg-white/[0.04] px-4 text-left text-sm text-[var(--gold-light)]">
+          {showPrompts ? "Hide prompts" : "Need a prompt?"}
+        </button>
 
-        <GlassCard className="p-5 text-center">
-          <button
-            type="button"
-            onClick={recording ? stopRecording : startRecording}
-            className="mx-auto grid h-24 w-24 place-items-center rounded-full border border-[var(--gold-border)] bg-purple-500/14 text-4xl text-[var(--gold-light)] shadow-[0_0_48px_rgba(178,89,231,0.32)]"
-            aria-pressed={recording}
-          >
-            {recording ? "■" : "🎙"}
-          </button>
-          <p className="mt-3 font-medium text-stone-100">{recording ? `Recording ${recordingLabel}` : "Tap to Speak"}</p>
-          <p className="mt-1 text-xs text-stone-500">Stop appends transcription to your existing text.</p>
-        </GlassCard>
+        {showPrompts ? (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {prompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => setText((current) => `${current}${current ? "\n" : ""}${prompt} `)}
+                className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-stone-300"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
-        <GlassCard className="p-5">
+        <GlassCard className="p-3.5">
           <p className="text-sm font-semibold text-[var(--gold-light)]">Emotional intensity before session</p>
           <input
             type="range"
@@ -146,35 +140,35 @@ export function JournalEntryScreen() {
             max={10}
             value={intensity}
             onChange={(event) => setIntensity(Number(event.target.value))}
-            className="mt-4 w-full"
+            className="mt-2 w-full"
             aria-label="Emotional intensity before session"
           />
-          <p className="mt-2 text-sm text-stone-400">{intensity}/10</p>
+          <p className="mt-1 text-sm text-stone-400">{intensity}/10</p>
         </GlassCard>
 
-        <div className="grid gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {saveModes.map((mode) => (
             <button
               key={mode.value}
               type="button"
               onClick={() => setSaveMode(mode.value)}
-              className={`rounded-[1.2rem] border p-4 text-left ${saveMode === mode.value ? "border-[var(--gold-border)] bg-amber-300/10" : "border-white/10 bg-white/[0.04]"}`}
+              className={`min-h-16 rounded-2xl border p-3 text-left ${saveMode === mode.value ? "border-[var(--gold-border)] bg-amber-300/10" : "border-white/10 bg-white/[0.04]"}`}
             >
-              <span className="block font-medium text-stone-100">{mode.label}</span>
-              <span className="mt-1 block text-sm text-stone-400">{mode.copy}</span>
+              <span className="block text-sm font-medium text-stone-100">{mode.label}</span>
+              <span className="mt-1 block line-clamp-1 text-xs text-stone-400">{mode.copy}</span>
             </button>
           ))}
         </div>
 
         {resetOnly ? (
-          <p className="rounded-2xl border border-[var(--gold-border-soft)] bg-amber-300/10 p-4 text-sm text-stone-300">
-            Your entry will be used to prepare this session but will not be stored as a permanent journal entry.
+          <p className="rounded-2xl border border-[var(--gold-border-soft)] bg-amber-300/10 p-3 text-sm text-stone-300">
+            Reset-only entries are not stored in permanent history.
           </p>
         ) : null}
 
         {error ? <p className="rounded-2xl border border-red-300/20 bg-red-500/10 p-4 text-sm text-red-100">{error}</p> : null}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <GoldButton disabled={!canSubmit || loading} onClick={() => submit(true)}>
             {loading ? "Creating Insight..." : "Create Emotional Insight"}
           </GoldButton>
@@ -182,11 +176,29 @@ export function JournalEntryScreen() {
             type="button"
             disabled={!canSubmit || loading}
             onClick={() => submit(false)}
-            className="min-h-12 rounded-full border border-[var(--gold-border-soft)] px-5 py-3 font-semibold text-[var(--gold-light)] disabled:opacity-45"
+            className="min-h-11 rounded-full border border-[var(--gold-border-soft)] px-4 py-2.5 font-semibold text-[var(--gold-light)] disabled:opacity-45"
           >
             Save Without Analysis
           </button>
         </div>
+
+        <details className="rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[var(--background-card)] p-3.5">
+          <summary className="cursor-pointer text-sm font-semibold text-[var(--gold-light)]">Speak instead</summary>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-[var(--gold-border)] bg-purple-500/14 text-2xl text-[var(--gold-light)] shadow-[0_0_32px_rgba(178,89,231,0.28)]"
+              aria-pressed={recording}
+            >
+              {recording ? "■" : "🎙"}
+            </button>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="font-medium text-stone-100">{recording ? `Recording ${recordingLabel}` : "Tap to Speak"}</p>
+              <p className="mt-0.5 text-xs text-stone-500">Stop appends a browser mock note.</p>
+            </div>
+          </div>
+        </details>
       </div>
     </MvpShell>
   );

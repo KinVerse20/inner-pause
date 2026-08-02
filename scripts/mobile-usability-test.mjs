@@ -45,6 +45,8 @@ const checkLastActionReachable = async (page, label) => {
       .filter((item) => {
         const rect = item.getBoundingClientRect();
         const style = window.getComputedStyle(item);
+        const closedDetails = item.closest("details:not([open])");
+        if (closedDetails && item.tagName.toLowerCase() !== "summary") return false;
         return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
       });
     const last = actions.at(-1);
@@ -64,6 +66,12 @@ const checkPage = async (page, label) => {
   await page.waitForLoadState("networkidle");
   await checkNoHorizontalOverflow(page, label);
   await checkLastActionReachable(page, label);
+};
+
+const assertNoPremiumCta = async (page, label) => {
+  const visibleText = await page.locator("body").innerText();
+  assert(!/(start mock upgrade|upgrade|checkout|pricing|manage subscription|\$9|premium healing)/i.test(visibleText), `${label}: visible premium/subscription CTA found`);
+  assert(!/\/premium|\/subscription/i.test(page.url()), `${label}: navigated to a premium/subscription route`);
 };
 
 for (const viewport of viewports) {
@@ -93,6 +101,7 @@ for (const viewport of viewports) {
 
     await page.waitForURL(`${baseUrl}/`);
     await checkPage(page, `home ${viewport.width}x${viewport.height}`);
+    await assertNoPremiumCta(page, `home ${viewport.width}x${viewport.height}`);
 
     await page.goto(`${baseUrl}/journal`, { waitUntil: "networkidle" });
     await checkPage(page, `journal ${viewport.width}x${viewport.height}`);
@@ -114,17 +123,22 @@ for (const viewport of viewports) {
     await page.getByRole("button", { name: "Exit safely" }).last().click();
     await page.waitForURL(/\/feedback\?plan=/);
     await checkPage(page, `feedback ${viewport.width}x${viewport.height}`);
+    await page.getByRole("button", { name: "Save Session" }).click();
+    await page.waitForURL(`${baseUrl}/`);
+    await assertNoPremiumCta(page, `save session ${viewport.width}x${viewport.height}`);
 
     await page.goto(`${baseUrl}/history`, { waitUntil: "networkidle" });
     await checkPage(page, `history ${viewport.width}x${viewport.height}`);
+    await assertNoPremiumCta(page, `history ${viewport.width}x${viewport.height}`);
     await page.goto(`${baseUrl}/insights`, { waitUntil: "networkidle" });
     await checkPage(page, `insights ${viewport.width}x${viewport.height}`);
+    await assertNoPremiumCta(page, `insights ${viewport.width}x${viewport.height}`);
     await page.goto(`${baseUrl}/guidance`, { waitUntil: "networkidle" });
     await checkPage(page, `guidance ${viewport.width}x${viewport.height}`);
-    await page.goto(`${baseUrl}/premium`, { waitUntil: "networkidle" });
-    await checkPage(page, `premium ${viewport.width}x${viewport.height}`);
+    await assertNoPremiumCta(page, `guidance ${viewport.width}x${viewport.height}`);
     await page.goto(`${baseUrl}/profile`, { waitUntil: "networkidle" });
     await checkPage(page, `profile ${viewport.width}x${viewport.height}`);
+    await assertNoPremiumCta(page, `profile ${viewport.width}x${viewport.height}`);
     await page.getByRole("button", { name: "Sign out" }).click();
     await page.waitForURL(`${baseUrl}/auth`);
 

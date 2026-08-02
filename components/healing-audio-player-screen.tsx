@@ -104,45 +104,45 @@ export function HealingAudioPlayerScreen() {
   return (
     <MvpShell hideNav>
       <div
-        className="relative min-h-dvh overflow-x-hidden px-0 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-stone-50"
+        className="relative min-h-dvh overflow-x-hidden px-0 pb-[calc(1rem+env(safe-area-inset-bottom))] text-stone-50"
         style={{ background: `radial-gradient(circle at 50% 40%, ${chakra.color}44, transparent 32%), linear-gradient(180deg,#030711,#050711 56%,#02040b)` }}
       >
-        <div className="mx-auto flex min-h-dvh max-w-3xl flex-col px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+        <div className="mx-auto flex min-h-dvh max-w-3xl flex-col px-3.5 pt-[calc(0.75rem+env(safe-area-inset-top))]">
           <header className="flex items-center justify-between">
-            <button type="button" onClick={() => router.push(`/healing?entry=${entry?.id}`)} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.06]" aria-label="Exit safely">⌄</button>
+            <button type="button" onClick={() => router.push(`/healing?entry=${entry?.id}`)} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.06]" aria-label="Exit safely">⌄</button>
             <div className="text-center">
               <p className="text-xs uppercase tracking-[0.24em]" style={{ color: chakra.accent }}>{block.frequencyLabel}</p>
-              <h1 className="font-serif text-3xl text-white">{chakra.name}</h1>
-              <p className="text-sm text-stone-300">{block.title}</p>
+              <h1 className="font-serif text-2xl text-white">{chakra.name}</h1>
+              <p className="text-xs text-stone-300">{block.title}</p>
             </div>
             <button
               type="button"
               onClick={() => window.alert("Audio settings are using the current session defaults in this demo build.")}
-              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.06]"
+              className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.06]"
               aria-label="Audio settings"
             >
               ≛
             </button>
           </header>
 
-          <div className="grid flex-1 place-items-center py-8">
-            <div className="relative grid aspect-square w-[min(82vw,27rem)] place-items-center">
+          <div className="grid flex-1 place-items-center py-4">
+            <div className="relative grid aspect-square w-[min(70vw,21rem)] place-items-center">
               <div className="absolute inset-0 rounded-full border border-[var(--gold-border-soft)] mvp-orb" />
               <div className="absolute inset-8 rounded-full border border-white/10" />
-              <ChakraGlyph chakraId={chakra.id} className="relative z-10 h-36 w-36" />
-              <div className="absolute bottom-8 rounded-full border border-white/10 bg-black/28 px-4 py-2 text-sm backdrop-blur-xl">
+              <ChakraGlyph chakraId={chakra.id} className="relative z-10 h-28 w-28" />
+              <div className="absolute bottom-6 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-xs backdrop-blur-xl">
                 {guidanceOn && !musicOnly ? "Breathe slowly" : "Music only"}
               </div>
             </div>
           </div>
 
-          <GlassCard className="p-5">
+          <GlassCard className="p-3.5">
             <p className="text-sm text-stone-400">Emotional intention</p>
-            <p className="mt-1 font-serif text-2xl text-stone-100">{block.intention}</p>
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+            <p className="mt-1 line-clamp-1 font-serif text-xl text-stone-100">{block.intention}</p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-[var(--gold-primary)]" style={{ width: `${totalSeconds ? (totalElapsed / totalSeconds) * 100 : 0}%` }} />
             </div>
-            <div className="mt-3 flex justify-between text-sm text-stone-400">
+            <div className="mt-2 flex justify-between text-sm text-stone-400">
               <span>{formatTime(totalElapsed)}</span>
               <span>{formatTime(remaining)}</span>
             </div>
@@ -153,7 +153,7 @@ export function HealingAudioPlayerScreen() {
               </p>
             ) : null}
 
-            <div className="mt-5 grid grid-cols-5 items-center gap-2">
+            <div className="mt-3 grid grid-cols-5 items-center gap-2">
               <button
                 type="button"
                 disabled={blockIndex === 0}
@@ -164,7 +164,7 @@ export function HealingAudioPlayerScreen() {
                 ‹
               </button>
               <button type="button" onClick={() => setGuidanceOn((value) => !value)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] text-xs">{guidanceOn ? "Guide" : "Silent"}</button>
-              <button type="button" onClick={toggle} className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-[var(--gold-border)] bg-white/[0.08] text-sm font-semibold text-[var(--gold-light)]">
+              <button type="button" onClick={toggle} className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-[var(--gold-border)] bg-white/[0.08] text-sm font-semibold text-[var(--gold-light)]">
                 {playing ? "Pause" : "Play"}
               </button>
               <button type="button" onClick={() => setMusicOnly((value) => !value)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] text-xs">{musicOnly ? "Music" : "Mixed"}</button>
@@ -178,7 +178,7 @@ export function HealingAudioPlayerScreen() {
                 ›
               </button>
             </div>
-            <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="mt-4 min-h-11 w-full rounded-full border border-white/10 text-sm text-stone-300">
+            <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="mt-3 min-h-11 w-full rounded-full border border-white/10 text-sm text-stone-300">
               Exit safely
             </button>
           </GlassCard>

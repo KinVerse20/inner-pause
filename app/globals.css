@@ -16,8 +16,8 @@
   --purple-primary: #7f38b7;
   --purple-glow: #b259e7;
   --blue-primary: #43b9ee;
-  --bottom-nav-height: 5.25rem;
-  --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 1.25rem);
+  --bottom-nav-height: 4.25rem;
+  --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.75rem);
 }
 
 @theme inline {
@@ -81,8 +81,8 @@ body {
 
 .mvp-meditator {
   position: relative;
-  width: min(58vw, 16rem);
-  height: min(58vw, 16rem);
+  width: min(44vw, 11.5rem);
+  height: min(44vw, 11.5rem);
   border-radius: 9999px;
   background:
     radial-gradient(circle at 50% 38%, rgba(255, 217, 135, 0.22), transparent 18%),
