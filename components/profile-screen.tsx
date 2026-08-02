@@ -5,7 +5,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
-import { deleteAllLocalMvpData, signOutMockProfile, upsertProfile } from "@/lib/mvp-storage";
+import { clearMvpAuthenticatedUser, deleteAllLocalMvpData, upsertProfile } from "@/lib/mvp-storage";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { hasSupabaseBrowserConfig } from "@/lib/supabase/config";
 import { useMvpState } from "@/lib/use-mvp-state";
 
 export function ProfileScreen() {
@@ -22,14 +24,45 @@ export function ProfileScreen() {
     setSigningOut(true);
     setError("");
     setStatus("");
+    void (async () => {
+      try {
+        if (hasSupabaseBrowserConfig) {
+          const supabase = createSupabaseBrowserClient();
+          const { error: signOutError } = await supabase.auth.signOut();
+          if (signOutError) throw signOutError;
+        }
+        clearMvpAuthenticatedUser();
+        window.sessionStorage.clear();
+        setStatus("Signed out successfully.");
+        router.replace("/auth");
+      } catch {
+        setError("Sign out failed. Please try again.");
+        setSigningOut(false);
+      }
+    })();
+  };
+
+  const handleSaveProfile = async () => {
+    setStatus("");
+    setError("");
     try {
-      signOutMockProfile();
-      window.sessionStorage.clear();
-      setStatus("Signed out successfully.");
-      router.replace("/auth");
-    } catch {
-      setError("Sign out failed. Please try again.");
-      setSigningOut(false);
+      if (hasSupabaseBrowserConfig) {
+        const supabase = createSupabaseBrowserClient();
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { full_name: name, name },
+        });
+        if (updateError) throw updateError;
+        const response = await fetch("/api/profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fullName: name, email, phone }),
+        });
+        if (!response.ok) throw new Error("Could not save profile row.");
+      }
+      upsertProfile({ fullName: name, email, phone });
+      setStatus("Profile saved.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save profile.");
     }
   };
 
@@ -54,13 +87,7 @@ export function ProfileScreen() {
           <Input label="Name" value={name} onChange={setName} />
           <Input label="Email" value={email} onChange={setEmail} />
           <Input label="Phone" value={phone} onChange={setPhone} />
-          <GoldButton
-            onClick={() => {
-              upsertProfile({ fullName: name, email, phone });
-              setStatus("Profile saved on this device.");
-              setError("");
-            }}
-          >
+          <GoldButton onClick={handleSaveProfile}>
             Save Profile
           </GoldButton>
         </GlassCard>

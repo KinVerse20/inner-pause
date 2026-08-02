@@ -11,6 +11,9 @@ try {
 
 const baseUrl = process.env.TEST_BASE_URL ?? "http://localhost:3000";
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ?? undefined;
+const e2eEmail = process.env.E2E_AUTH_EMAIL;
+const e2ePassword = process.env.E2E_AUTH_PASSWORD;
+const useRealAuth = Boolean(e2eEmail && e2ePassword);
 
 const viewports = [
   { width: 320, height: 568 },
@@ -68,6 +71,39 @@ const checkPage = async (page, label) => {
   await checkLastActionReachable(page, label);
 };
 
+const seedLocalAuthenticatedState = async (page) => {
+  await page.evaluate(() => {
+    const userId = "e2e-local-user";
+    const now = new Date().toISOString();
+    localStorage.setItem("innerpause-current-user-id", userId);
+    localStorage.setItem(
+      `chakra-healing-mvp:${userId}`,
+      JSON.stringify({
+        profile: {
+          fullName: "Sahil",
+          email: "sahil@example.com",
+          phone: "",
+          onboardingCompleted: true,
+          preferredSessionDuration: 20,
+          preferredVoice: "Soft guide",
+          preferredMusicStyle: "Cosmic ambient",
+          preferredGuidanceLevel: "Balanced",
+          affirmationsEnabled: true,
+          natureSoundsEnabled: false,
+          aiMemoryEnabled: true,
+          morningGuidanceEnabled: false,
+          guidanceTime: "08:00",
+        },
+        entries: [],
+        activePlanId: null,
+        premiumOfferSeen: false,
+        morningGuidanceMessages: [],
+        seededAt: now,
+      }),
+    );
+  });
+};
+
 const assertNoPremiumCta = async (page, label) => {
   const visibleText = await page.locator("body").innerText();
   assert(!/(start mock upgrade|upgrade|checkout|pricing|manage subscription|\$9|premium healing)/i.test(visibleText), `${label}: visible premium/subscription CTA found`);
@@ -93,13 +129,20 @@ for (const viewport of viewports) {
     await page.goto(`${baseUrl}/onboarding`, { waitUntil: "networkidle" });
     await checkPage(page, `onboarding ${viewport.width}x${viewport.height}`);
 
-    await page.goto(`${baseUrl}/auth`, { waitUntil: "networkidle" });
-    await checkPage(page, `auth ${viewport.width}x${viewport.height}`);
-    await page.getByLabel("Name").fill("Sahil");
-    await page.getByLabel("Email").fill("sahil@example.com");
-    await page.getByRole("button", { name: "Create Account" }).click();
-
-    await page.waitForURL(`${baseUrl}/`);
+    if (useRealAuth) {
+      await page.goto(`${baseUrl}/auth`, { waitUntil: "networkidle" });
+      await checkPage(page, `auth ${viewport.width}x${viewport.height}`);
+      await page.getByRole("button", { name: "I already have an account" }).click();
+      await page.getByLabel("Email").fill(e2eEmail);
+      await page.getByLabel("Password").fill(e2ePassword);
+      await page.getByRole("button", { name: "Log In" }).click();
+      await page.waitForURL(`${baseUrl}/`, { timeout: 60000 });
+    } else {
+      await page.goto(`${baseUrl}/auth`, { waitUntil: "networkidle" });
+      await checkPage(page, `auth ${viewport.width}x${viewport.height}`);
+      await seedLocalAuthenticatedState(page);
+      await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+    }
     await checkPage(page, `home ${viewport.width}x${viewport.height}`);
     await assertNoPremiumCta(page, `home ${viewport.width}x${viewport.height}`);
 
@@ -171,7 +214,8 @@ async function assertVisible(page, text, label) {
 
 async function assertStoredPlanDuration(page, minutes, label) {
   const duration = await page.evaluate(() => {
-    const raw = localStorage.getItem("chakra-healing-mvp");
+    const userId = localStorage.getItem("innerpause-current-user-id");
+    const raw = localStorage.getItem(userId ? `chakra-healing-mvp:${userId}` : "chakra-healing-mvp");
     if (!raw) return null;
     const state = JSON.parse(raw);
     const plan = state.entries?.find((entry) => entry.plan)?.plan;
@@ -182,7 +226,8 @@ async function assertStoredPlanDuration(page, minutes, label) {
 
 async function assertStoredPlanSetting(page, key, expected, label) {
   const value = await page.evaluate((settingKey) => {
-    const raw = localStorage.getItem("chakra-healing-mvp");
+    const userId = localStorage.getItem("innerpause-current-user-id");
+    const raw = localStorage.getItem(userId ? `chakra-healing-mvp:${userId}` : "chakra-healing-mvp");
     if (!raw) return null;
     const state = JSON.parse(raw);
     const plan = state.entries?.find((entry) => entry.plan)?.plan;

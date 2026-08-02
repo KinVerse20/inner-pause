@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 import { ChakraGlyph } from "@/components/chakra-symbol";
 import { BrandLogo, GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
@@ -26,10 +25,6 @@ export function MvpHomeScreen() {
   const recentPlan = state.entries.find((entry) => entry.plan)?.plan;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
-
-  useEffect(() => {
-    if (!state.profile.onboardingCompleted) router.replace("/onboarding");
-  }, [router, state.profile.onboardingCompleted]);
 
   return (
     <MvpShell>

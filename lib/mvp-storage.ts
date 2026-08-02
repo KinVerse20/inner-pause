@@ -4,6 +4,7 @@ import { createHealingPlan } from "@/lib/healing-engine";
 import { EmotionalAnalysis, HealingPlan, HealingPlanCustomisation, HealingProfile, JournalEntry, MvpState, SaveMode, SessionFeedback } from "@/lib/mvp-types";
 
 const MVP_KEY = "chakra-healing-mvp";
+const MVP_USER_KEY = "innerpause-current-user-id";
 const MVP_EVENT = "chakra-healing-mvp-change";
 
 const defaultProfile: HealingProfile = {
@@ -33,19 +34,50 @@ export const defaultMvpState: MvpState = {
 const isBrowser = () => typeof window !== "undefined";
 let cachedRaw: string | null = null;
 let cachedState: MvpState = defaultMvpState;
+let cachedKey: string | null = null;
+
+function getMvpStorageKey() {
+  if (!isBrowser()) return MVP_KEY;
+  const userId = window.localStorage.getItem(MVP_USER_KEY);
+  return userId ? `${MVP_KEY}:${userId}` : MVP_KEY;
+}
+
+export function setMvpAuthenticatedUser(userId: string) {
+  if (!isBrowser()) return;
+  const previousKey = getMvpStorageKey();
+  window.localStorage.setItem(MVP_USER_KEY, userId);
+  const nextKey = getMvpStorageKey();
+  if (previousKey === MVP_KEY && nextKey !== MVP_KEY && !window.localStorage.getItem(nextKey)) {
+    const previousState = window.localStorage.getItem(MVP_KEY);
+    if (previousState) window.localStorage.setItem(nextKey, previousState);
+  }
+  cachedRaw = null;
+  cachedKey = null;
+  window.dispatchEvent(new Event(MVP_EVENT));
+}
+
+export function clearMvpAuthenticatedUser() {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(MVP_USER_KEY);
+  cachedRaw = null;
+  cachedKey = null;
+  window.dispatchEvent(new Event(MVP_EVENT));
+}
 
 export function readMvpState(): MvpState {
   if (!isBrowser()) return defaultMvpState;
   try {
-    const raw = window.localStorage.getItem(MVP_KEY);
+    const key = getMvpStorageKey();
+    const raw = window.localStorage.getItem(key);
     if (!raw) {
       cachedRaw = null;
       cachedState = defaultMvpState;
       return cachedState;
     }
-    if (raw === cachedRaw) return cachedState;
+    if (raw === cachedRaw && key === cachedKey) return cachedState;
     const parsed = JSON.parse(raw) as Partial<MvpState>;
     cachedRaw = raw;
+    cachedKey = key;
     cachedState = {
       ...defaultMvpState,
       ...parsed,
@@ -62,9 +94,11 @@ export function readMvpState(): MvpState {
 export function writeMvpState(state: MvpState) {
   if (!isBrowser()) return;
   const raw = JSON.stringify(state);
-  if (raw === cachedRaw) return;
-  window.localStorage.setItem(MVP_KEY, raw);
+  const key = getMvpStorageKey();
+  if (raw === cachedRaw && key === cachedKey) return;
+  window.localStorage.setItem(key, raw);
   cachedRaw = raw;
+  cachedKey = key;
   cachedState = state;
   window.dispatchEvent(new Event(MVP_EVENT));
 }
@@ -73,7 +107,7 @@ export function subscribeMvpState(callback: () => void) {
   if (!isBrowser()) return () => {};
   const handler = () => callback();
   const storageHandler = (event: StorageEvent) => {
-    if (event.key === MVP_KEY) callback();
+    if (event.key?.startsWith(MVP_KEY) || event.key === MVP_USER_KEY) callback();
   };
   window.addEventListener(MVP_EVENT, handler);
   window.addEventListener("storage", storageHandler);
@@ -86,21 +120,6 @@ export function subscribeMvpState(callback: () => void) {
 export function upsertProfile(profile: Partial<HealingProfile>) {
   const state = readMvpState();
   writeMvpState({ ...state, profile: { ...state.profile, ...profile } });
-}
-
-export function signOutMockProfile() {
-  const state = readMvpState();
-  writeMvpState({
-    ...state,
-    profile: {
-      ...state.profile,
-      fullName: "",
-      email: "",
-      phone: "",
-      onboardingCompleted: false,
-    },
-    activePlanId: null,
-  });
 }
 
 export function deleteAllLocalMvpData() {
