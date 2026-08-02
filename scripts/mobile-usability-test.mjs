@@ -71,6 +71,44 @@ const checkPage = async (page, label) => {
   await checkLastActionReachable(page, label);
 };
 
+const assertFixedBottomNav = async (page, activeLabel, label) => {
+  const result = await page.evaluate((expectedLabel) => {
+    const nav = document.querySelector("nav");
+    if (!nav) return { ok: false, reason: "missing nav" };
+    const rect = nav.getBoundingClientRect();
+    const style = window.getComputedStyle(nav);
+    const active = nav.querySelector('a[aria-current="page"]');
+    return {
+      ok:
+        style.position === "fixed" &&
+        Math.abs(window.innerHeight - rect.bottom) <= 2 &&
+        rect.left >= -1 &&
+        rect.right <= window.innerWidth + 1 &&
+        (!expectedLabel || active?.textContent?.toLowerCase().includes(expectedLabel.toLowerCase())),
+      position: style.position,
+      bottomGap: window.innerHeight - rect.bottom,
+      left: rect.left,
+      right: rect.right,
+      width: rect.width,
+      activeText: active?.textContent?.trim() ?? null,
+    };
+  }, activeLabel);
+  assert(result.ok, `${label}: fixed bottom nav invalid (${JSON.stringify(result)})`);
+};
+
+const assertJournalHeaderAction = async (page, label) => {
+  const action = page.getByRole("button", { name: "View journal history" });
+  await action.waitFor({ timeout: 10000 });
+  assert(await action.isVisible(), `${label}: View History action is not visible`);
+  const text = (await action.innerText()).trim();
+  assert(/view history/i.test(text), `${label}: header action text does not describe the action: "${text}"`);
+  await action.click();
+  await page.waitForURL(/\/history$/, { timeout: 15000 });
+  await assertFixedBottomNav(page, null, `${label} history nav visible`);
+  await page.getByRole("link", { name: /journal/i }).click();
+  await page.waitForURL(/\/journal$/, { timeout: 15000 });
+};
+
 const seedLocalAuthenticatedState = async (page) => {
   await page.evaluate(() => {
     const userId = "e2e-local-user";
@@ -145,9 +183,15 @@ for (const viewport of viewports) {
     }
     await checkPage(page, `home ${viewport.width}x${viewport.height}`);
     await assertNoPremiumCta(page, `home ${viewport.width}x${viewport.height}`);
+    await assertFixedBottomNav(page, "Home", `home nav ${viewport.width}x${viewport.height}`);
 
-    await page.goto(`${baseUrl}/journal`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start Journaling" }).click();
+    await page.waitForURL(/\/journal$/, { timeout: 15000 });
     await checkPage(page, `journal ${viewport.width}x${viewport.height}`);
+    await assertFixedBottomNav(page, "Journal", `journal nav ${viewport.width}x${viewport.height}`);
+    await assertJournalHeaderAction(page, `journal header action ${viewport.width}x${viewport.height}`);
+    await checkPage(page, `journal after header action ${viewport.width}x${viewport.height}`);
+    await assertFixedBottomNav(page, "Journal", `journal nav after scroll ${viewport.width}x${viewport.height}`);
     await page.getByPlaceholder("Write about your day...").fill("I felt ignored during an office meeting today. I wanted to speak up but stayed quiet. Now I feel angry with myself and anxious about tomorrow.");
     await page.getByRole("button", { name: "Create Emotional Insight" }).click();
     await page.waitForURL(/\/analysis\?entry=/, { timeout: 60000 });

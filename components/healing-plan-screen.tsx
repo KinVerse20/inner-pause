@@ -64,7 +64,7 @@ export function HealingPlanScreen() {
 
   if (!plan) {
     return (
-      <MvpShell hideNav>
+      <MvpShell>
         <GlassCard className="mx-auto max-w-xl p-6">
           <h1 className="font-serif text-3xl text-[var(--gold-light)]">Plan not created yet</h1>
           <p className="mt-3 text-sm leading-6 text-stone-300">Confirm the insight to create your personalised healing plan.</p>
@@ -86,7 +86,7 @@ export function HealingPlanScreen() {
   };
 
   return (
-    <MvpShell hideNav>
+    <MvpShell>
       <div className="mx-auto max-w-3xl space-y-3.5">
         <header className="flex items-center justify-between">
           <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Back">←</button>

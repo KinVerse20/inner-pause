@@ -88,15 +88,21 @@ export function JournalEntryScreen() {
   }, [recordingSeconds]);
 
   return (
-    <MvpShell hideNav>
+    <MvpShell>
       <div className="mx-auto max-w-3xl space-y-3.5">
-        <header className="flex items-center justify-between gap-4">
-          <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Back">
+        <header className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+          <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04] focus:outline-none focus:ring-2 focus:ring-[var(--gold-light)]" aria-label="Back">
             ←
           </button>
-          <p className="text-sm text-[var(--gold-muted)]">Today&apos;s Journal</p>
-          <button type="button" onClick={() => router.push("/history")} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Saved entries">
-            ◷
+          <p className="min-w-0 text-center text-sm text-[var(--gold-muted)]">Today&apos;s Journal</p>
+          <button
+            type="button"
+            onClick={() => router.push("/history")}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-[var(--gold-light)] transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[var(--gold-light)] sm:text-sm"
+            aria-label="View journal history"
+          >
+            <span aria-hidden="true">◷</span>
+            <span>View History</span>
           </button>
         </header>
 

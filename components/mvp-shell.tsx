@@ -60,6 +60,7 @@ function MvpBottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-light)] ${
                 active ? "text-[var(--gold-light)]" : "text-stone-400 hover:text-stone-200"
               }`}
