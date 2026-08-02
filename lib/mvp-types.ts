@@ -15,22 +15,29 @@ export interface AnalysisIncident {
 
 export interface EmotionalAnalysis {
   summary: string;
+  originalEntrySummary?: string;
+  understandingSummary?: string;
   keyIncidents: AnalysisIncident[];
   emotions: Array<{
     name: string;
     intensity: number;
     level: EmotionLevel;
+    explanation?: string;
     evidence?: string;
   }>;
   triggers: string[];
   chakraAssociations: Array<{
     chakra: ChakraId;
+    emotionalTheme?: string;
     reason: string;
+    sessionSupport?: string;
     confidence: number;
   }>;
+  healingApproachSummary?: string;
   suggestedOutcome: string;
   recommendedDuration: number;
   safetyFlag: boolean;
+  analysisSource?: "openai" | "fallback";
 }
 
 export interface JournalEntry {
@@ -51,11 +58,27 @@ export interface JournalEntry {
 export interface HealingPlanBlock {
   id: string;
   chakraId: ChakraId;
+  type: "intro" | "chakra" | "guidance" | "affirmation" | "closing";
   title: string;
   intention: string;
   durationMinutes: number;
   audioPath: string;
   frequencyLabel: string;
+  guidanceText?: string;
+}
+
+export type VoiceGuidanceLevel = "none" | "minimal" | "balanced" | "guided";
+export type MusicStyle = "ambient" | "singing-bowls" | "nature-soundscape" | "deep-frequency" | "soft-meditation";
+export type NatureSound = "none" | "rain" | "forest" | "ocean" | "soft-wind";
+export type GuidanceFrequency = "opening-only" | "occasional" | "regular";
+
+export interface HealingPlanCustomisation {
+  duration: number | "full";
+  voiceGuidanceLevel: VoiceGuidanceLevel;
+  musicStyle: MusicStyle;
+  affirmationsEnabled: boolean;
+  natureSound: NatureSound;
+  guidanceFrequency: GuidanceFrequency;
 }
 
 export interface HealingPlan {
@@ -65,6 +88,7 @@ export interface HealingPlan {
   intendedOutcome: string;
   totalDurationMinutes: number;
   selectedDuration: number | "full";
+  customisation?: HealingPlanCustomisation;
   blocks: HealingPlanBlock[];
   createdAt: string;
   status: "draft" | "started" | "completed";

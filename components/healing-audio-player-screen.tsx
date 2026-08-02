@@ -30,6 +30,8 @@ export function HealingAudioPlayerScreen() {
 
   const block = plan?.blocks[blockIndex];
   const chakra = block ? chakraMap[block.chakraId] : null;
+  const voiceGuidanceOff = plan?.customisation?.voiceGuidanceLevel === "none";
+  const showGuidance = guidanceOn && !musicOnly && !voiceGuidanceOff;
   const totalElapsed = useMemo(() => {
     if (!plan) return 0;
     return plan.blocks.slice(0, blockIndex).reduce((sum, item) => sum + item.durationMinutes * 60, 0) + elapsedInBlock;
@@ -131,7 +133,7 @@ export function HealingAudioPlayerScreen() {
               <div className="absolute inset-8 rounded-full border border-white/10" />
               <ChakraGlyph chakraId={chakra.id} className="relative z-10 h-28 w-28" />
               <div className="absolute bottom-6 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-xs backdrop-blur-xl">
-                {guidanceOn && !musicOnly ? "Breathe slowly" : "Music only"}
+                {showGuidance ? block.guidanceText ?? "Breathe slowly" : "Music only"}
               </div>
             </div>
           </div>
@@ -139,6 +141,11 @@ export function HealingAudioPlayerScreen() {
           <GlassCard className="p-3.5">
             <p className="text-sm text-stone-400">Emotional intention</p>
             <p className="mt-1 line-clamp-1 font-serif text-xl text-stone-100">{block.intention}</p>
+            {plan.customisation ? (
+              <p className="mt-1 text-xs text-stone-500">
+                {plan.customisation.musicStyle.replaceAll("-", " ")} • {voiceGuidanceOff ? "no voice guidance" : `${plan.customisation.voiceGuidanceLevel} guidance`}
+              </p>
+            ) : null}
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-[var(--gold-primary)]" style={{ width: `${totalSeconds ? (totalElapsed / totalSeconds) * 100 : 0}%` }} />
             </div>
@@ -163,7 +170,7 @@ export function HealingAudioPlayerScreen() {
               >
                 ‹
               </button>
-              <button type="button" onClick={() => setGuidanceOn((value) => !value)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] text-xs">{guidanceOn ? "Guide" : "Silent"}</button>
+              <button type="button" disabled={voiceGuidanceOff} onClick={() => setGuidanceOn((value) => !value)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] text-xs disabled:opacity-35">{voiceGuidanceOff ? "No voice" : guidanceOn ? "Guide" : "Silent"}</button>
               <button type="button" onClick={toggle} className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-[var(--gold-border)] bg-white/[0.08] text-sm font-semibold text-[var(--gold-light)]">
                 {playing ? "Pause" : "Play"}
               </button>

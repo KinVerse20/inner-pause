@@ -3,14 +3,42 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import type { ReactNode } from "react";
 
 import { ChakraGlyph } from "@/components/chakra-symbol";
 import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
 import { chakraMap } from "@/data/chakras";
+import { defaultPlanCustomisation } from "@/lib/healing-engine";
 import { savePlan } from "@/lib/mvp-storage";
+import { HealingPlanCustomisation, GuidanceFrequency, MusicStyle, NatureSound, VoiceGuidanceLevel } from "@/lib/mvp-types";
 import { useMvpState } from "@/lib/use-mvp-state";
 
 const durationOptions: Array<number | "full"> = [5, 10, 20, 30, "full"];
+const voiceOptions: Array<{ value: VoiceGuidanceLevel; label: string }> = [
+  { value: "none", label: "None" },
+  { value: "minimal", label: "Minimal" },
+  { value: "balanced", label: "Balanced" },
+  { value: "guided", label: "Guided" },
+];
+const musicStyleOptions: Array<{ value: MusicStyle; label: string }> = [
+  { value: "ambient", label: "Ambient" },
+  { value: "singing-bowls", label: "Singing bowls" },
+  { value: "nature-soundscape", label: "Nature soundscape" },
+  { value: "deep-frequency", label: "Deep frequency" },
+  { value: "soft-meditation", label: "Soft meditation" },
+];
+const natureOptions: Array<{ value: NatureSound; label: string; disabled?: boolean }> = [
+  { value: "none", label: "None" },
+  { value: "rain", label: "Rain", disabled: true },
+  { value: "forest", label: "Forest", disabled: true },
+  { value: "ocean", label: "Ocean", disabled: true },
+  { value: "soft-wind", label: "Soft wind", disabled: true },
+];
+const frequencyOptions: Array<{ value: GuidanceFrequency; label: string }> = [
+  { value: "opening-only", label: "Opening only" },
+  { value: "occasional", label: "Occasional" },
+  { value: "regular", label: "Regular" },
+];
 
 export function HealingPlanScreen() {
   const router = useRouter();
@@ -47,8 +75,14 @@ export function HealingPlanScreen() {
   }
 
   const regenerate = (duration: number | "full") => {
-    savePlan(entry.id, duration);
-    router.refresh();
+    savePlan(entry.id, duration, { ...(plan.customisation ?? defaultPlanCustomisation), duration });
+  };
+
+  const settings: HealingPlanCustomisation = { ...defaultPlanCustomisation, ...(plan.customisation ?? {}), duration: plan.selectedDuration };
+
+  const updateSettings = (updates: Partial<HealingPlanCustomisation>) => {
+    const next = { ...settings, ...updates };
+    savePlan(entry.id, next.duration, next);
   };
 
   return (
@@ -116,12 +150,71 @@ export function HealingPlanScreen() {
           })}
         </div>
 
+        <GlassCard className="p-3.5">
+          <p className="font-serif text-xl text-[var(--gold-light)]">Your session</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-stone-300 sm:grid-cols-5">
+            <SummaryChip label={`${plan.totalDurationMinutes} minutes`} />
+            <SummaryChip label={settings.voiceGuidanceLevel === "none" ? "no voice guidance" : `${labelFor(settings.voiceGuidanceLevel, voiceOptions)} guidance`} />
+            <SummaryChip label={labelFor(settings.musicStyle, musicStyleOptions)} />
+            <SummaryChip label={`Affirmations ${settings.affirmationsEnabled ? "on" : "off"}`} />
+            <SummaryChip label={settings.natureSound === "none" ? "No nature sounds" : labelFor(settings.natureSound, natureOptions)} />
+          </div>
+          <p className="mt-3 text-xs leading-5 text-stone-500">
+            Music style is saved in the session summary. Extra nature layers are coming soon and are disabled until local assets exist.
+          </p>
+        </GlassCard>
+
         <details className="rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[var(--background-card)] p-3.5">
           <summary className="cursor-pointer font-serif text-xl text-[var(--gold-light)]">Customisation</summary>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-stone-300 sm:grid-cols-3">
-            {["Duration", "Voice level", "Music style", "Affirmations", "Nature sounds", "Guidance frequency"].map((item) => (
-              <span key={item} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-center">{item}</span>
-            ))}
+          <div className="mt-4 space-y-4">
+            <ControlGroup label="Duration">
+              {durationOptions.map((duration) => (
+                <ChipButton
+                  key={`${duration}`}
+                  selected={settings.duration === duration}
+                  onClick={() => updateSettings({ duration })}
+                >
+                  {duration === "full" ? "Full recommended" : `${duration} min`}
+                </ChipButton>
+              ))}
+            </ControlGroup>
+
+            <ControlGroup label="Voice guidance level">
+              {voiceOptions.map((option) => (
+                <ChipButton key={option.value} selected={settings.voiceGuidanceLevel === option.value} onClick={() => updateSettings({ voiceGuidanceLevel: option.value })}>
+                  {option.label}
+                </ChipButton>
+              ))}
+            </ControlGroup>
+
+            <ControlGroup label="Music style">
+              {musicStyleOptions.map((option) => (
+                <ChipButton key={option.value} selected={settings.musicStyle === option.value} onClick={() => updateSettings({ musicStyle: option.value })}>
+                  {option.label}
+                </ChipButton>
+              ))}
+            </ControlGroup>
+
+            <ControlGroup label="Affirmations">
+              <ChipButton selected={settings.affirmationsEnabled} onClick={() => updateSettings({ affirmationsEnabled: true })}>On</ChipButton>
+              <ChipButton selected={!settings.affirmationsEnabled} onClick={() => updateSettings({ affirmationsEnabled: false })}>Off</ChipButton>
+            </ControlGroup>
+
+            <ControlGroup label="Nature sounds">
+              {natureOptions.map((option) => (
+                <ChipButton key={option.value} selected={settings.natureSound === option.value} disabled={option.disabled} onClick={() => updateSettings({ natureSound: option.value })}>
+                  {option.label}{option.disabled ? " · Coming soon" : ""}
+                </ChipButton>
+              ))}
+            </ControlGroup>
+
+            <ControlGroup label="Guidance frequency">
+              {frequencyOptions.map((option) => (
+                <ChipButton key={option.value} selected={settings.guidanceFrequency === option.value} onClick={() => updateSettings({ guidanceFrequency: option.value })}>
+                  {option.label}
+                </ChipButton>
+              ))}
+            </ControlGroup>
           </div>
         </details>
 
@@ -130,5 +223,37 @@ export function HealingPlanScreen() {
         </GoldButton>
       </div>
     </MvpShell>
+  );
+}
+
+function labelFor<T extends string>(value: T, options: Array<{ value: T; label: string }>) {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function SummaryChip({ label }: { label: string }) {
+  return <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-center">{label}</span>;
+}
+
+function ControlGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs uppercase tracking-[0.2em] text-[var(--gold-muted)]">{label}</p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function ChipButton({ selected, disabled = false, onClick, children }: { selected: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`min-h-10 rounded-full border px-3 py-1.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-45 ${
+        selected ? "border-[var(--gold-border)] bg-amber-300/10 text-[var(--gold-light)]" : "border-white/10 bg-white/[0.04] text-stone-300 hover:border-[var(--gold-border-soft)]"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { createHealingPlan } from "@/lib/healing-engine";
-import { EmotionalAnalysis, HealingPlan, HealingProfile, JournalEntry, MvpState, SaveMode, SessionFeedback } from "@/lib/mvp-types";
+import { EmotionalAnalysis, HealingPlan, HealingPlanCustomisation, HealingProfile, JournalEntry, MvpState, SaveMode, SessionFeedback } from "@/lib/mvp-types";
 
 const MVP_KEY = "chakra-healing-mvp";
 const MVP_EVENT = "chakra-healing-mvp-change";
@@ -153,11 +153,12 @@ export function saveAnalysis(entryId: string, analysis: EmotionalAnalysis) {
   updateJournalEntry(entryId, { analysis });
 }
 
-export function savePlan(entryId: string, selectedDuration: number | "full" = "full") {
+export function savePlan(entryId: string, selectedDuration?: number | "full", customisation?: Partial<HealingPlanCustomisation>) {
   const state = readMvpState();
   const entry = state.entries.find((item) => item.id === entryId);
   if (!entry?.analysis) return null;
-  const plan = createHealingPlan(entry, entry.analysis, selectedDuration);
+  const duration = selectedDuration ?? entry.plan?.selectedDuration ?? "full";
+  const plan = createHealingPlan(entry, entry.analysis, duration, customisation);
   const entries = state.entries.map((item) => (item.id === entryId ? { ...item, plan, updatedAt: new Date().toISOString() } : item));
   writeMvpState({ ...state, entries, activePlanId: plan.id });
   return plan;
