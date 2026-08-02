@@ -1,0 +1,84 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { upsertProfile } from "@/lib/mvp-storage";
+import { useMvpState } from "@/lib/use-mvp-state";
+
+export function ProfileScreen() {
+  const state = useMvpState();
+  const [name, setName] = useState(state.profile.fullName);
+  const [email, setEmail] = useState(state.profile.email);
+  const [phone, setPhone] = useState(state.profile.phone);
+
+  return (
+    <MvpShell>
+      <div className="space-y-5">
+        <SectionTitle title="Profile" copy="Healing preferences, privacy controls, morning guidance and premium access." />
+
+        <GlassCard className="space-y-4 p-5">
+          <div className="grid h-24 w-24 place-items-center rounded-full border border-[var(--gold-border)] bg-purple-500/14 text-4xl text-[var(--gold-light)]">☾</div>
+          <Input label="Name" value={name} onChange={setName} />
+          <Input label="Email" value={email} onChange={setEmail} />
+          <Input label="Phone" value={phone} onChange={setPhone} />
+          <GoldButton onClick={() => upsertProfile({ fullName: name, email, phone })}>Save Profile</GoldButton>
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <h2 className="font-serif text-2xl text-[var(--gold-light)]">Healing preferences</h2>
+          <Preference label="Preferred session duration" value={`${state.profile.preferredSessionDuration} min`} />
+          <Preference label="Preferred guide voice" value={state.profile.preferredVoice} />
+          <Preference label="Music style" value={state.profile.preferredMusicStyle} />
+          <Preference label="Guidance level" value={state.profile.preferredGuidanceLevel} />
+          <Preference label="Affirmations" value={state.profile.affirmationsEnabled ? "Enabled" : "Disabled"} />
+          <Preference label="Nature sounds" value={state.profile.natureSoundsEnabled ? "Enabled" : "Disabled"} />
+        </GlassCard>
+
+        <GlassCard className="p-5">
+          <h2 className="font-serif text-2xl text-[var(--gold-light)]">What the app has learned about me</h2>
+          <p className="mt-3 text-sm leading-6 text-stone-300">
+            Long-term pattern memory is {state.profile.aiMemoryEnabled ? "enabled" : "disabled"}. You can correct or delete patterns from Insights as the app learns more.
+          </p>
+          <button
+            type="button"
+            onClick={() => upsertProfile({ aiMemoryEnabled: !state.profile.aiMemoryEnabled })}
+            className="mt-4 rounded-full border border-[var(--gold-border-soft)] px-4 py-2 text-sm text-[var(--gold-light)]"
+          >
+            {state.profile.aiMemoryEnabled ? "Disable memory" : "Enable memory"}
+          </button>
+        </GlassCard>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href="/guidance" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">WhatsApp preferences</Link>
+          <Link href="/premium" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">Subscription and premium</Link>
+        </div>
+
+        <GlassCard className="space-y-3 p-5">
+          <button type="button" className="w-full rounded-full border border-white/10 px-4 py-3 text-stone-300">Sign out</button>
+          <button type="button" className="w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100">Delete data</button>
+          <button type="button" className="w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100">Delete account</button>
+        </GlassCard>
+      </div>
+    </MvpShell>
+  );
+}
+
+function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block">
+      <span className="text-sm text-stone-400">{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100 outline-none" />
+    </label>
+  );
+}
+
+function Preference({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mt-4 flex items-center justify-between gap-4 border-t border-white/10 pt-4 text-sm">
+      <span className="text-stone-400">{label}</span>
+      <span className="text-stone-100">{value}</span>
+    </div>
+  );
+}
