@@ -27,7 +27,7 @@ export function HealingPlanScreen() {
       <MvpShell>
         <GlassCard className="mx-auto max-w-xl p-6">
           <h1 className="font-serif text-3xl text-[var(--gold-light)]">No healing plan yet</h1>
-          <p className="mt-3 text-sm leading-6 text-stone-300">Create a journal entry and analysis to generate your first personalised plan.</p>
+          <p className="mt-3 text-sm leading-6 text-stone-300">Create a journal entry and emotional insight to generate your first personalised plan.</p>
           <Link href="/journal" className="mt-5 inline-flex rounded-full border border-[var(--gold-border)] px-5 py-3 text-[var(--gold-light)]">Start Journal</Link>
         </GlassCard>
       </MvpShell>
@@ -39,7 +39,7 @@ export function HealingPlanScreen() {
       <MvpShell hideNav>
         <GlassCard className="mx-auto max-w-xl p-6">
           <h1 className="font-serif text-3xl text-[var(--gold-light)]">Plan not created yet</h1>
-          <p className="mt-3 text-sm leading-6 text-stone-300">Confirm the analysis to create your personalised healing plan.</p>
+          <p className="mt-3 text-sm leading-6 text-stone-300">Confirm the insight to create your personalised healing plan.</p>
           <GoldButton className="mt-5" onClick={() => { savePlan(entry.id); router.refresh(); }}>Create Healing Plan</GoldButton>
         </GlassCard>
       </MvpShell>

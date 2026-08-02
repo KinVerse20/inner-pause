@@ -104,7 +104,7 @@ export function QuickPlayerScreen() {
 
   return (
     <div
-      className={`chakra-player-shell relative min-h-screen overflow-hidden bg-gradient-to-b ${chakra.gradient} text-slate-50`}
+      className={`chakra-player-shell relative min-h-dvh overflow-x-hidden bg-gradient-to-b ${chakra.gradient} text-slate-50`}
       onPointerDown={() => setControlsVisible(true)}
       style={
         {
@@ -115,7 +115,7 @@ export function QuickPlayerScreen() {
       }
     >
       <div className="psychedelic-backdrop pointer-events-none absolute inset-0" />
-      <main className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
+      <main className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="relative z-20 grid grid-cols-[2.75rem_1fr_2.75rem] items-start gap-2 sm:grid-cols-[3rem_1fr_3rem] sm:gap-3">
           <button
             type="button"
@@ -132,7 +132,7 @@ export function QuickPlayerScreen() {
           <div className="text-center">
             <h1 className="font-serif text-3xl leading-tight text-white sm:text-6xl">{chakra.name}</h1>
             <p className="mt-1 text-sm sm:mt-2 sm:text-base" style={{ color: chakra.accent }}>
-              {mood?.label ?? "Chakra Healing Music"}
+              {mood?.label ?? "The InnerPause Music"}
             </p>
             <p className="mt-1 text-base sm:mt-2 sm:text-lg" style={{ color: chakra.accent }}>
               {chakra.frequencyLabel}
@@ -178,7 +178,7 @@ export function QuickPlayerScreen() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-medium text-white sm:text-lg">
-                  {mood ? `${mood.label} Chakra Healing` : `${chakra.name} Healing`}
+                  {mood ? `${mood.label} InnerPause session` : `${chakra.name} InnerPause session`}
                 </p>
                 <p className="mt-1 text-sm text-slate-300">
                   {activePlayback.keepPlaying ? "Playing continuously" : `Session length: ${activePlayback.duration} minutes`}

@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Chakra Healing",
-    short_name: "Chakra",
-    description: "Personal Chakra music, meditation and relaxation journeys",
+    name: "The InnerPause",
+    short_name: "The InnerPause",
+    description: "Guided reflective journaling, emotional insight and personalised healing sessions.",
     start_url: "/",
     display: "standalone",
     background_color: "#0f172a",

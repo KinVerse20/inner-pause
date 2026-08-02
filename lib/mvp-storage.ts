@@ -88,6 +88,25 @@ export function upsertProfile(profile: Partial<HealingProfile>) {
   writeMvpState({ ...state, profile: { ...state.profile, ...profile } });
 }
 
+export function signOutMockProfile() {
+  const state = readMvpState();
+  writeMvpState({
+    ...state,
+    profile: {
+      ...state.profile,
+      fullName: "",
+      email: "",
+      phone: "",
+      onboardingCompleted: false,
+    },
+    activePlanId: null,
+  });
+}
+
+export function deleteAllLocalMvpData() {
+  writeMvpState(defaultMvpState);
+}
+
 const id = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()

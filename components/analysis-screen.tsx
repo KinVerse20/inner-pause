@@ -25,7 +25,7 @@ export function AnalysisScreen() {
     return (
       <MvpShell hideNav>
         <GlassCard className="mx-auto max-w-xl p-6">
-          <p className="text-stone-300">No analysis found. Create a journal entry first.</p>
+          <p className="text-stone-300">No emotional insight found. Create a journal entry first.</p>
           <GoldButton className="mt-5" onClick={() => router.replace("/journal")}>Open Journal</GoldButton>
         </GlassCard>
       </MvpShell>
@@ -63,7 +63,7 @@ export function AnalysisScreen() {
       <div className="mx-auto max-w-3xl space-y-5">
         <header className="flex items-center justify-between">
           <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Back">←</button>
-          <p className="text-sm text-[var(--gold-muted)]">Emotional Analysis</p>
+          <p className="text-sm text-[var(--gold-muted)]">Emotional Insight</p>
           <span className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]">◎</span>
         </header>
 
@@ -72,19 +72,19 @@ export function AnalysisScreen() {
           <div className="mvp-meditator scale-75" />
         </div>
 
-        <SectionTitle title={"Here’s what we found\nin your entry"} copy="Review and edit this before creating your healing plan. This is supportive interpretation, not diagnosis." />
+        <SectionTitle title={"Here’s what we noticed\nin your reflection"} copy="Review and edit this before creating your healing plan. This is supportive interpretation, not diagnosis." />
 
         {safety ? (
           <GlassCard className="border-red-300/30 bg-red-500/10 p-5">
             <h2 className="font-serif text-2xl text-red-100">Pause for safety</h2>
             <p className="mt-3 text-sm leading-6 text-red-50/90">
-              Your entry may suggest immediate distress or danger. This app is not therapy. Please contact local emergency support, a crisis line, or a trusted person now. A normal frequency session should not be your only support.
+              Your entry may suggest immediate distress or danger. The InnerPause is not therapy. Please contact local emergency support, a crisis line, or a trusted person now. A normal frequency session should not be your only support.
             </p>
           </GlassCard>
         ) : null}
 
         <GlassCard className="p-5">
-          <h2 className="font-serif text-2xl text-[var(--gold-light)]">Detected emotions</h2>
+          <h2 className="font-serif text-2xl text-[var(--gold-light)]">Emotions in your reflection</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {emotionColumns.map((emotion) => (
               <div key={emotion.name} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -146,7 +146,7 @@ export function AnalysisScreen() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <button type="button" onClick={() => router.push("/journal")} className="min-h-12 rounded-full border border-[var(--gold-border-soft)] px-5 py-3 text-[var(--gold-light)]">
-            Edit Analysis
+            Review and edit
           </button>
           <GoldButton disabled={safety} onClick={continueToPlan}>Continue to Healing Plan</GoldButton>
         </div>

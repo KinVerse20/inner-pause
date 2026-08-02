@@ -1,6 +1,6 @@
-# Chakra Healing MVP
+# The InnerPause MVP
 
-Mobile-first Chakra Healing app: an emotional journal that turns a daily reflection into a reviewed emotional analysis, a personalised chakra-based healing plan, sequential local audio playback, and post-session feedback.
+Mobile-first reflective wellness app: a private journal that turns a daily reflection into a reviewed emotional insight, a personalised healing plan, sequential local audio playback, and post-session feedback.
 
 Brand line: **Heal Within. Live Aligned.**
 
@@ -10,8 +10,8 @@ Brand line: **Heal Within. Live Aligned.**
 - Home dashboard
 - Journal entry with text, save modes, intensity before session, and mock voice capture
 - Server-side `/api/analyze` route with Zod validation
-- Deterministic non-AI fallback when `OPENAI_API_KEY` is missing
-- Emotional analysis review/edit flow
+- Deterministic fallback insight when `OPENAI_API_KEY` is missing
+- Emotional insight review/edit flow
 - Safety interruption for crisis-like wording
 - Personalised healing-plan timeline
 - Sequential audio player using reusable local MP3 files
@@ -41,11 +41,12 @@ http://localhost:3000
 
 Copy `.env.example` to `.env.local` and fill only the services you want to enable.
 
-Required for OpenAI analysis:
+Required for the optional external insight service:
 
 ```text
 OPENAI_API_KEY
 OPENAI_MODEL
+NEXT_PUBLIC_APP_URL
 ```
 
 Required for Supabase production persistence/auth:

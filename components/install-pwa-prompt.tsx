@@ -62,7 +62,7 @@ export function InstallPwaPrompt() {
           <p className="mt-1 text-sm leading-6 text-slate-300">
             {showIosHint
               ? "Open Share and select Add to Home Screen."
-              : "Install Chakra Healing for a faster full-screen experience."}
+              : "Install The InnerPause for a faster full-screen experience."}
           </p>
         </div>
         <button

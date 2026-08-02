@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { BrandLogo, GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
 import { upsertProfile } from "@/lib/mvp-storage";
 
 export function AuthScreen() {
@@ -17,10 +17,18 @@ export function AuthScreen() {
     router.replace("/");
   };
 
+  const showProviderNotice = (provider: string) => {
+    window.alert(`${provider} sign-in is not connected in this demo build. Use the email mock account to continue.`);
+  };
+
   return (
     <MvpShell hideNav>
       <div className="mx-auto max-w-xl space-y-5">
-        <SectionTitle title={mode === "forgot" ? "Reset Password" : "Welcome"} copy="Supabase Authentication is the intended production provider. This local MVP persists a mock session until Supabase credentials are connected." />
+        <BrandLogo />
+        <SectionTitle
+          title={mode === "forgot" ? "Reset Password" : "Welcome"}
+          copy="Created by professionals with approximately 15 years of experience in healing practices and emotional wellness. This local build keeps your session on this device until secure account services are connected."
+        />
         <GlassCard className="space-y-4 p-5">
           {mode === "signup" ? (
             <label className="block">
@@ -46,8 +54,8 @@ export function AuthScreen() {
               {mode === "login" ? "Create an account" : "I already have an account"}
             </button>
             <button type="button" onClick={() => setMode("forgot")}>Forgot password?</button>
-            <button type="button" className="opacity-70">Continue with Google</button>
-            <button type="button" className="opacity-50">Apple sign-in placeholder</button>
+            <button type="button" onClick={() => showProviderNotice("Google")} className="opacity-70">Continue with Google</button>
+            <button type="button" onClick={() => showProviderNotice("Apple")} className="opacity-50">Continue with Apple</button>
           </div>
         </GlassCard>
       </div>

@@ -39,7 +39,7 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
         <div className="mx-auto grid h-16 w-16 place-items-center text-amber-200">
           <ChakraGlyph chakraId="crown" className="h-12 w-12 drop-shadow-[0_0_18px_rgba(252,211,77,0.35)]" />
         </div>
-        <h1 className="mt-2 font-serif text-4xl leading-none text-white sm:text-6xl">Chakra Healing</h1>
+        <h1 className="mt-2 font-serif text-4xl leading-none text-white sm:text-6xl">Healing Lessons</h1>
         <p className="mt-3 text-lg text-slate-300">Learn through guided healing sessions</p>
       </header>
 

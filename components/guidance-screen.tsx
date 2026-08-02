@@ -10,10 +10,17 @@ export function GuidanceScreen() {
   const state = useMvpState();
   const [phone, setPhone] = useState(state.profile.phone);
   const [time, setTime] = useState(state.profile.guidanceTime);
+  const [status, setStatus] = useState("");
 
   const enable = () => {
     upsertProfile({ phone, guidanceTime: time, morningGuidanceEnabled: true });
     createMorningGuidanceMessage();
+    setStatus("Mock morning guidance enabled. A sample message was created locally.");
+  };
+
+  const disable = () => {
+    upsertProfile({ morningGuidanceEnabled: false });
+    setStatus("Morning guidance disabled on this device.");
   };
 
   return (
@@ -41,7 +48,8 @@ export function GuidanceScreen() {
             <input type="time" value={time} onChange={(event) => setTime(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100 outline-none" />
           </label>
           <GoldButton onClick={enable}>Enable Mock Guidance</GoldButton>
-          <button type="button" onClick={() => upsertProfile({ morningGuidanceEnabled: false })} className="min-h-11 rounded-full border border-white/10 text-stone-300">Disable</button>
+          <button type="button" onClick={disable} className="min-h-11 rounded-full border border-white/10 text-stone-300">Disable</button>
+          {status ? <p className="text-sm text-[var(--gold-light)]">{status}</p> : null}
         </GlassCard>
 
         <GlassCard className="p-5">

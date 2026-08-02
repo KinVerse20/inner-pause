@@ -104,10 +104,10 @@ export function HealingAudioPlayerScreen() {
   return (
     <MvpShell hideNav>
       <div
-        className="fixed inset-0 overflow-y-auto px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))] text-stone-50"
+        className="relative min-h-dvh overflow-x-hidden px-0 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-stone-50"
         style={{ background: `radial-gradient(circle at 50% 40%, ${chakra.color}44, transparent 32%), linear-gradient(180deg,#030711,#050711 56%,#02040b)` }}
       >
-        <div className="mx-auto flex min-h-full max-w-3xl flex-col">
+        <div className="mx-auto flex min-h-dvh max-w-3xl flex-col px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
           <header className="flex items-center justify-between">
             <button type="button" onClick={() => router.push(`/healing?entry=${entry?.id}`)} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.06]" aria-label="Exit safely">⌄</button>
             <div className="text-center">
@@ -115,7 +115,14 @@ export function HealingAudioPlayerScreen() {
               <h1 className="font-serif text-3xl text-white">{chakra.name}</h1>
               <p className="text-sm text-stone-300">{block.title}</p>
             </div>
-            <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.06]" aria-label="Audio settings">≛</button>
+            <button
+              type="button"
+              onClick={() => window.alert("Audio settings are using the current session defaults in this demo build.")}
+              className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.06]"
+              aria-label="Audio settings"
+            >
+              ≛
+            </button>
           </header>
 
           <div className="grid flex-1 place-items-center py-8">
@@ -147,13 +154,29 @@ export function HealingAudioPlayerScreen() {
             ) : null}
 
             <div className="mt-5 grid grid-cols-5 items-center gap-2">
-              <button type="button" onClick={() => goToBlock(blockIndex - 1)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05]">‹</button>
+              <button
+                type="button"
+                disabled={blockIndex === 0}
+                onClick={() => goToBlock(blockIndex - 1)}
+                className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] disabled:opacity-35"
+                aria-label="Previous block"
+              >
+                ‹
+              </button>
               <button type="button" onClick={() => setGuidanceOn((value) => !value)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] text-xs">{guidanceOn ? "Guide" : "Silent"}</button>
               <button type="button" onClick={toggle} className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-[var(--gold-border)] bg-white/[0.08] text-sm font-semibold text-[var(--gold-light)]">
                 {playing ? "Pause" : "Play"}
               </button>
               <button type="button" onClick={() => setMusicOnly((value) => !value)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] text-xs">{musicOnly ? "Music" : "Mixed"}</button>
-              <button type="button" onClick={() => goToBlock(blockIndex + 1)} className="min-h-11 rounded-full border border-white/10 bg-white/[0.05]">›</button>
+              <button
+                type="button"
+                disabled={blockIndex === plan.blocks.length - 1}
+                onClick={() => goToBlock(blockIndex + 1)}
+                className="min-h-11 rounded-full border border-white/10 bg-white/[0.05] disabled:opacity-35"
+                aria-label="Next block"
+              >
+                ›
+              </button>
             </div>
             <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="mt-4 min-h-11 w-full rounded-full border border-white/10 text-sm text-stone-300">
               Exit safely

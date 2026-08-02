@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { GoldButton, GlassCard } from "@/components/mvp-shell";
+import { BrandLogo, GoldButton, GlassCard } from "@/components/mvp-shell";
 import { upsertProfile } from "@/lib/mvp-storage";
 
 const steps = [
@@ -13,7 +13,7 @@ const steps = [
   },
   {
     title: "Understand the emotions beneath your day.",
-    copy: "The app identifies key incidents, emotions and traditional chakra themes for review.",
+    copy: "The InnerPause identifies key incidents, emotions and traditional chakra themes for review.",
   },
   {
     title: "Receive a healing journey made for you.",
@@ -32,11 +32,12 @@ export function OnboardingScreen() {
   };
 
   return (
-    <main className="mvp-bg grid min-h-screen place-items-center px-4 py-[calc(1rem+env(safe-area-inset-top))]">
+    <main className="mvp-bg flex min-h-dvh items-start justify-center overflow-x-hidden px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:items-center">
       <GlassCard className="relative w-full max-w-md overflow-hidden p-5">
         <div className="pointer-events-none absolute inset-x-8 top-28 h-32 rounded-full mvp-energy-wave" />
         <div className="rounded-[1.4rem] border border-[var(--gold-border-soft)] p-5 text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold-muted)]">Heal Within</p>
+          <BrandLogo className="mt-4 justify-center" />
           <h1 className="mt-5 whitespace-pre-line font-serif text-5xl leading-[0.92] text-[var(--gold-light)]">
             {"Heal Within.\nLive Aligned."}
           </h1>
@@ -86,7 +87,7 @@ export function OnboardingScreen() {
           </div>
 
           <p className="mt-5 text-xs leading-5 text-stone-500">
-            This app supports relaxation and self-reflection and does not replace professional medical or mental-health care.
+            The InnerPause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
           </p>
         </div>
       </GlassCard>

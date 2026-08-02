@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { ChakraGlyph } from "@/components/chakra-symbol";
-import { GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
+import { BrandLogo, GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
 import { chakras } from "@/data/chakras";
 import { usePlayer } from "@/components/player-provider";
 import { useMvpState } from "@/lib/use-mvp-state";
@@ -35,14 +35,17 @@ export function MvpHomeScreen() {
     <MvpShell>
       <div className="space-y-5">
         <header className="flex items-center justify-between gap-4">
-          <button className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/[0.04]" aria-label="Menu">
-            ☰
-          </button>
+          <BrandLogo compact />
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-stone-400">{greeting}</p>
+            <p className="text-sm text-stone-400" suppressHydrationWarning>{greeting}</p>
             <h1 className="truncate font-serif text-3xl text-[var(--gold-light)]">{state.profile.fullName || "Friend"}</h1>
           </div>
-          <button className="relative grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/[0.04]" aria-label="Notifications">
+          <button
+            type="button"
+            onClick={() => router.push("/insights")}
+            className="relative grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/[0.04]"
+            aria-label="Notifications and insights"
+          >
             ♢
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--gold-primary)]" />
           </button>
@@ -55,7 +58,7 @@ export function MvpHomeScreen() {
             <div>
               <h2 className="font-serif text-4xl leading-none text-[var(--gold-light)]">How are you feeling today?</h2>
               <p className="mt-3 text-sm leading-6 text-stone-300">
-                Journal your day and receive a calm emotional analysis with a personalised chakra-based reset.
+                Journal your day and receive a calm emotional insight with a personalised chakra-based reset.
               </p>
               <GoldButton className="mt-5 w-full sm:w-auto" onClick={() => router.push("/journal")}>
                 Start Journaling

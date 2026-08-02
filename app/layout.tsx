@@ -15,14 +15,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chakra Healing",
-  applicationName: "Chakra Healing",
-  description: "Personal Chakra music, meditation and relaxation journeys",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://theinnerpause.app"),
+  title: "The InnerPause",
+  applicationName: "The InnerPause",
+  description: "Guided reflective journaling, emotional insight and personalised healing sessions.",
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: "The InnerPause",
+    description: "A daily ritual for release, reflection and renewal.",
+    images: ["/branding/innerpause-logo.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Chakra Healing",
+    title: "The InnerPause",
   },
   icons: {
     icon: [

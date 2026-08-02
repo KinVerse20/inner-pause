@@ -16,10 +16,10 @@ const prompts = [
 ];
 
 const saveModes: Array<{ value: SaveMode; label: string; copy: string }> = [
-  { value: "journal_and_analysis", label: "Save to Journal", copy: "Store the entry and create analysis." },
+  { value: "journal_and_analysis", label: "Save to Journal", copy: "Store the entry and create an emotional insight." },
   { value: "reset_only", label: "Create Reset Only", copy: "Use this entry for a session but do not keep it in journal history." },
   { value: "journal_without_analysis", label: "Save Without Analysis", copy: "Keep the reflection only." },
-  { value: "temporary_analysis", label: "Temporary Entry", copy: "Analyse now and mark it temporary." },
+  { value: "temporary_analysis", label: "Temporary Entry", copy: "Reflect now and mark it temporary." },
 ];
 
 export function JournalEntryScreen() {
@@ -71,11 +71,11 @@ export function JournalEntryScreen() {
         body: JSON.stringify({ text }),
       });
       const payload = (await response.json()) as { analysis?: EmotionalAnalysis; error?: string };
-      if (!response.ok || !payload.analysis) throw new Error(payload.error ?? "Analysis failed");
+      if (!response.ok || !payload.analysis) throw new Error(payload.error ?? "Insight failed");
       saveAnalysis(entry.id, payload.analysis);
       router.push(`/analysis?entry=${entry.id}`);
     } catch {
-      setError("We could not create analysis right now. Please try again.");
+      setError("We could not create an emotional insight right now. Please try again.");
       setLoading(false);
     }
   };
@@ -94,7 +94,7 @@ export function JournalEntryScreen() {
             ←
           </button>
           <p className="text-sm text-[var(--gold-muted)]">Today&apos;s Journal</p>
-          <button type="button" className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Saved entries">
+          <button type="button" onClick={() => router.push("/history")} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Saved entries">
             ◷
           </button>
         </header>
@@ -176,7 +176,7 @@ export function JournalEntryScreen() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <GoldButton disabled={!canSubmit || loading} onClick={() => submit(true)}>
-            {loading ? "Creating Analysis..." : "Create Emotional Analysis"}
+            {loading ? "Creating Insight..." : "Create Emotional Insight"}
           </GoldButton>
           <button
             type="button"

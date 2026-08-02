@@ -1,12 +1,13 @@
 {
-  "name": "healing-app",
+  "name": "the-innerpause",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:ui": "node scripts/mobile-usability-test.mjs"
   },
   "dependencies": {
     "next": "16.2.10",

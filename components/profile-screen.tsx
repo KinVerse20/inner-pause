@@ -2,16 +2,47 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
-import { upsertProfile } from "@/lib/mvp-storage";
+import { deleteAllLocalMvpData, signOutMockProfile, upsertProfile } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
 
 export function ProfileScreen() {
+  const router = useRouter();
   const state = useMvpState();
   const [name, setName] = useState(state.profile.fullName);
   const [email, setEmail] = useState(state.profile.email);
   const [phone, setPhone] = useState(state.profile.phone);
+  const [signingOut, setSigningOut] = useState(false);
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSignOut = () => {
+    setSigningOut(true);
+    setError("");
+    setStatus("");
+    try {
+      signOutMockProfile();
+      window.sessionStorage.clear();
+      setStatus("Signed out successfully.");
+      router.replace("/auth");
+    } catch {
+      setError("Sign out failed. Please try again.");
+      setSigningOut(false);
+    }
+  };
+
+  const handleDeleteData = () => {
+    const confirmed = window.confirm("Delete all local journal, insight and session data on this device?");
+    if (!confirmed) return;
+    deleteAllLocalMvpData();
+    setName("");
+    setEmail("");
+    setPhone("");
+    setStatus("Local data deleted.");
+    router.replace("/onboarding");
+  };
 
   return (
     <MvpShell>
@@ -23,7 +54,15 @@ export function ProfileScreen() {
           <Input label="Name" value={name} onChange={setName} />
           <Input label="Email" value={email} onChange={setEmail} />
           <Input label="Phone" value={phone} onChange={setPhone} />
-          <GoldButton onClick={() => upsertProfile({ fullName: name, email, phone })}>Save Profile</GoldButton>
+          <GoldButton
+            onClick={() => {
+              upsertProfile({ fullName: name, email, phone });
+              setStatus("Profile saved on this device.");
+              setError("");
+            }}
+          >
+            Save Profile
+          </GoldButton>
         </GlassCard>
 
         <GlassCard className="p-5">
@@ -53,12 +92,28 @@ export function ProfileScreen() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Link href="/guidance" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">WhatsApp preferences</Link>
           <Link href="/premium" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">Subscription and premium</Link>
+          <Link href="/about" className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] p-4 text-stone-100">About Us</Link>
         </div>
 
         <GlassCard className="space-y-3 p-5">
-          <button type="button" className="w-full rounded-full border border-white/10 px-4 py-3 text-stone-300">Sign out</button>
-          <button type="button" className="w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100">Delete data</button>
-          <button type="button" className="w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100">Delete account</button>
+          {status ? <p className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">{status}</p> : null}
+          {error ? <p className="rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-sm text-red-100">{error}</p> : null}
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="min-h-12 w-full rounded-full border border-white/10 px-4 py-3 text-stone-300 disabled:opacity-50"
+          >
+            {signingOut ? "Signing out..." : "Sign out"}
+          </button>
+          <button type="button" onClick={handleDeleteData} className="min-h-12 w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100">Delete data</button>
+          <button
+            type="button"
+            onClick={() => window.alert("Account deletion will be available when secure account services are connected. Use Delete data to clear this device now.")}
+            className="min-h-12 w-full rounded-full border border-red-300/20 bg-red-500/10 px-4 py-3 text-red-100"
+          >
+            Delete account
+          </button>
         </GlassCard>
       </div>
     </MvpShell>

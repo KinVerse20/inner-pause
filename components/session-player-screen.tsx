@@ -146,7 +146,7 @@ export function SessionPlayerScreen({
 
   return (
     <div
-      className={`chakra-player-shell relative min-h-screen overflow-hidden bg-gradient-to-b ${chakra.gradient} text-slate-50`}
+      className={`chakra-player-shell relative min-h-dvh overflow-x-hidden bg-gradient-to-b ${chakra.gradient} text-slate-50`}
       onPointerDown={() => setControlsVisible(true)}
       style={
         {
@@ -157,7 +157,7 @@ export function SessionPlayerScreen({
       }
     >
       <div className="psychedelic-backdrop pointer-events-none absolute inset-0" />
-      <main className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
+      <main className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="relative z-20 grid grid-cols-[2.75rem_1fr_2.75rem] items-start gap-2 sm:grid-cols-[3rem_1fr_3rem] sm:gap-3">
           <button
             type="button"
