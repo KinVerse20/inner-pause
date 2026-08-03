@@ -10,7 +10,15 @@
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
-    "@innerpause/shared": "file:../packages/shared"
+    "@aws-sdk/client-s3": "^3.1101.0",
+    "@aws-sdk/client-secrets-manager": "^3.1101.0",
+    "@aws-sdk/client-sqs": "^3.1101.0",
+    "@aws-sdk/rds-signer": "^3.1101.0",
+    "@aws-sdk/s3-request-presigner": "^3.1101.0",
+    "@innerpause/shared": "file:../packages/shared",
+    "@types/pg": "^8.20.3",
+    "jose": "^6.2.8",
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@types/node": "^20",

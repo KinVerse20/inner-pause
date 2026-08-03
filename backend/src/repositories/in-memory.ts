@@ -1,13 +1,18 @@
 import type { AudioRecord, JournalDetail, NotificationMessage } from "@innerpause/shared";
 import { forbidden, notFound } from "../shared/errors.js";
+import type { AppRepository, CreateAudioInput, CreateJournalInput } from "./types.js";
 
-export class InMemoryRepository {
+export class InMemoryRepository implements AppRepository {
   private journals = new Map<string, JournalDetail & { userId: string }>();
   private audio = new Map<string, AudioRecord & { userId: string }>();
   private notifications = new Map<string, NotificationMessage & { userId: string }>();
   private jobsByIdempotency = new Map<string, { jobId: string; userId: string }>();
 
-  createJournal(userId: string, input: { title: string; rawText: string; transcription?: string; emotionalIntensityBefore?: number }) {
+  async ensureUser(input: { providerSubject: string; email: string; fullName?: string }) {
+    return { id: input.providerSubject, email: input.email, fullName: input.fullName };
+  }
+
+  async createJournal(userId: string, input: CreateJournalInput) {
     const now = new Date().toISOString();
     const journal: JournalDetail & { userId: string } = {
       id: crypto.randomUUID(),
@@ -25,7 +30,7 @@ export class InMemoryRepository {
     return journal;
   }
 
-  listJournals(userId: string) {
+  async listJournals(userId: string) {
     return [...this.journals.values()]
       .filter((journal) => journal.userId === userId)
       .map((journal) => ({
@@ -39,7 +44,7 @@ export class InMemoryRepository {
       }));
   }
 
-  getJournalForUser(userId: string, journalId: string) {
+  async getJournalForUser(userId: string, journalId: string) {
     const journal = this.journals.get(journalId);
     if (!journal) throw notFound("Journal");
     if (journal.userId !== userId) throw forbidden();
@@ -57,28 +62,42 @@ export class InMemoryRepository {
     };
   }
 
-  deleteJournalForUser(userId: string, journalId: string) {
-    this.getJournalForUser(userId, journalId);
+  async deleteJournalForUser(userId: string, journalId: string) {
+    await this.getJournalForUser(userId, journalId);
     this.journals.delete(journalId);
   }
 
-  rememberJob(idempotencyKey: string | undefined, userId: string, jobId: string) {
+  async rememberJob(idempotencyKey: string | undefined, userId: string, jobId: string) {
     if (!idempotencyKey) return;
     this.jobsByIdempotency.set(`${userId}:${idempotencyKey}`, { userId, jobId });
   }
 
-  findJobByIdempotency(idempotencyKey: string | undefined, userId: string) {
+  async findJobByIdempotency(idempotencyKey: string | undefined, userId: string) {
     if (!idempotencyKey) return null;
     return this.jobsByIdempotency.get(`${userId}:${idempotencyKey}`) ?? null;
   }
 
-  createAudio(userId: string, input: Omit<AudioRecord, "id">) {
+  async createJob(input: { userId: string; type: "journal_analysis" | "reset_audio"; status: string; journalId?: string; idempotencyKey?: string }) {
+    const jobId = crypto.randomUUID();
+    await this.rememberJob(input.idempotencyKey, input.userId, jobId);
+    return { jobId };
+  }
+
+  async updateJob() {
+    return;
+  }
+
+  async getJobForUser(): Promise<{ jobId: string; type: "journal_analysis"; status: string }> {
+    throw notFound("Job");
+  }
+
+  async createAudio(userId: string, input: CreateAudioInput) {
     const record: AudioRecord & { userId: string } = { id: crypto.randomUUID(), userId, ...input };
     this.audio.set(record.id, record);
     return record;
   }
 
-  getAudioForUser(userId: string, audioId: string) {
+  async getAudioForUser(userId: string, audioId: string) {
     const record = this.audio.get(audioId);
     if (!record) throw notFound("Audio");
     if (record.userId !== userId) throw forbidden();
@@ -92,12 +111,12 @@ export class InMemoryRepository {
     };
   }
 
-  deleteAudioForUser(userId: string, audioId: string) {
-    this.getAudioForUser(userId, audioId);
+  async deleteAudioForUser(userId: string, audioId: string) {
+    await this.getAudioForUser(userId, audioId);
     this.audio.delete(audioId);
   }
 
-  listNotifications(userId: string) {
+  async listNotifications(userId: string) {
     return [...this.notifications.values()]
       .filter((message) => message.userId === userId)
       .map((message) => ({

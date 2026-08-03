@@ -25,7 +25,7 @@ export interface ApiSuccess<T> {
 }
 
 export type EmotionLevel = "low" | "medium" | "high";
-export type JobStatus = "queued" | "running" | "completed" | "failed";
+export type JobStatus = "queued" | "processing" | "completed" | "failed";
 export type JobType = "journal_analysis" | "reset_audio";
 
 export interface CurrentUser {
@@ -111,4 +111,3 @@ export interface NotificationMessage {
   deliveryStatus: "queued" | "sent" | "failed" | "mock_created";
   createdAt: string;
 }
-

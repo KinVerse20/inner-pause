@@ -1,18 +1,18 @@
-import type { InMemoryRepository } from "../repositories/in-memory.js";
+import type { AppRepository } from "../repositories/types.js";
 
 export class AudioService {
-  constructor(private readonly repository: InMemoryRepository) {}
+  constructor(private readonly repository: AppRepository) {}
 
-  get(userId: string, audioId: string) {
+  async get(userId: string, audioId: string) {
     return this.repository.getAudioForUser(userId, audioId);
   }
 
-  delete(userId: string, audioId: string) {
-    this.repository.deleteAudioForUser(userId, audioId);
+  async delete(userId: string, audioId: string) {
+    await this.repository.deleteAudioForUser(userId, audioId);
     return { deleted: true as const };
   }
 
-  createTestAudio(userId: string, journalId?: string) {
+  async createTestAudio(userId: string, journalId?: string) {
     return this.repository.createAudio(userId, {
       journalId,
       title: "Private signed test audio",
@@ -22,4 +22,3 @@ export class AudioService {
     });
   }
 }
-

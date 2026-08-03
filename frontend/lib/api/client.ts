@@ -12,6 +12,7 @@ import type {
   JournalSummary,
   NotificationMessage,
 } from "@innerpause/shared";
+import { readFrontendConfig } from "@/lib/config/env";
 
 export class ApiClientError extends Error {
   readonly status: number;
@@ -51,7 +52,7 @@ export class InnerPauseApiClient {
   private readonly onUnauthorised?: () => void;
 
   constructor(options: ApiClientOptions = {}) {
-    this.baseUrl = (options.baseUrl ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1").replace(/\/$/, "");
+    this.baseUrl = (options.baseUrl ?? readFrontendConfig().apiBaseUrl).replace(/\/$/, "");
     this.getAccessToken = options.getAccessToken;
     this.timeoutMs = options.timeoutMs ?? 12000;
     this.fetchImpl = options.fetchImpl ?? fetch;
@@ -114,6 +115,14 @@ export class InnerPauseApiClient {
 
   async getInsights() {
     return this.request<InsightSummary>("/insights");
+  }
+
+  async getPreferences() {
+    return this.request<Record<string, unknown>>("/preferences");
+  }
+
+  async updatePreferences(body: Record<string, unknown>) {
+    return this.request<Record<string, unknown>>("/preferences", { method: "PATCH", body });
   }
 
   async listNotifications() {

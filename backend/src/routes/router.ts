@@ -1,6 +1,9 @@
-import { authenticate, CognitoTokenVerifier, type TokenVerifier } from "../auth/cognito.js";
+import { authenticate, type TokenVerifier } from "../auth/cognito.js";
 import { InMemoryRepository } from "../repositories/in-memory.js";
+import type { AppRepository } from "../repositories/types.js";
+import { createRuntimeServices } from "../runtime/factory.js";
 import { JobService } from "../jobs/job-service.js";
+import type { QueueClient } from "../jobs/sqs-queue.js";
 import { JournalService } from "../services/journal-service.js";
 import { AudioService } from "../services/audio-service.js";
 import { NotificationService } from "../services/notification-service.js";
@@ -8,12 +11,13 @@ import { notFound } from "../shared/errors.js";
 import { fail, ok, type HttpRequest, type HttpResponse } from "../shared/http.js";
 
 export interface RouterOptions {
-  repository?: InMemoryRepository;
+  repository?: AppRepository;
   verifier?: TokenVerifier;
+  queue?: QueueClient;
 }
 
 export class ApiRouter {
-  private readonly repository: InMemoryRepository;
+  private readonly repository: AppRepository;
   private readonly verifier: TokenVerifier;
   private readonly journals: JournalService;
   private readonly jobs: JobService;
@@ -21,10 +25,11 @@ export class ApiRouter {
   private readonly notifications = new NotificationService();
 
   constructor(options: RouterOptions = {}) {
-    this.repository = options.repository ?? new InMemoryRepository();
-    this.verifier = options.verifier ?? new CognitoTokenVerifier();
+    const runtime = options.repository && options.verifier ? null : createRuntimeServices();
+    this.repository = options.repository ?? runtime?.repository ?? new InMemoryRepository();
+    this.verifier = options.verifier ?? runtime!.verifier;
     this.journals = new JournalService(this.repository);
-    this.jobs = new JobService(this.repository);
+    this.jobs = new JobService(this.repository, options.queue ?? runtime?.queue);
     this.audio = new AudioService(this.repository);
   }
 
@@ -43,7 +48,12 @@ export class ApiRouter {
         return ok({ analysis: createQuickAnalysis(text) }, request.requestId);
       }
 
-      const user = await authenticate(request.headers, this.verifier);
+      const tokenUser = await authenticate(request.headers, this.verifier);
+      const user = await this.repository.ensureUser({
+        providerSubject: tokenUser.id,
+        email: tokenUser.email,
+        fullName: tokenUser.fullName,
+      });
 
       if (request.method === "POST" && path === "/auth/session") {
         return ok(user, request.requestId);
@@ -54,54 +64,56 @@ export class ApiRouter {
       }
 
       if (request.method === "POST" && path === "/journals") {
-        return ok({ journal: this.journals.create(user.id, request.body as never) }, request.requestId, 201);
+        return ok({ journal: await this.journals.create(user.id, request.body as never) }, request.requestId, 201);
       }
 
       if (request.method === "GET" && path === "/journals") {
-        return ok(this.journals.list(user.id), request.requestId);
+        return ok(await this.journals.list(user.id), request.requestId);
       }
 
       const journalMatch = /^\/journals\/([^/]+)$/.exec(path);
       if (journalMatch && request.method === "GET") {
-        return ok(this.journals.get(user.id, decodeURIComponent(journalMatch[1])), request.requestId);
+        return ok(await this.journals.get(user.id, decodeURIComponent(journalMatch[1])), request.requestId);
       }
 
       if (journalMatch && request.method === "DELETE") {
-        return ok(this.journals.delete(user.id, decodeURIComponent(journalMatch[1])), request.requestId);
+        return ok(await this.journals.delete(user.id, decodeURIComponent(journalMatch[1])), request.requestId);
       }
 
       const analyseMatch = /^\/journals\/([^/]+)\/analyse$/.exec(path);
       if (analyseMatch && request.method === "POST") {
-        this.journals.get(user.id, decodeURIComponent(analyseMatch[1]));
-        return ok(this.jobs.createJob(user.id, "journal_analysis", request.headers["idempotency-key"]), request.requestId, 202);
+        const journalId = decodeURIComponent(analyseMatch[1]);
+        await this.journals.get(user.id, journalId);
+        return ok(await this.jobs.createJob(user.id, "journal_analysis", request.headers["idempotency-key"], journalId), request.requestId, 202);
       }
 
       const resetAudioMatch = /^\/journals\/([^/]+)\/reset-audio$/.exec(path);
       if (resetAudioMatch && request.method === "POST") {
-        this.journals.get(user.id, decodeURIComponent(resetAudioMatch[1]));
-        return ok(this.jobs.createJob(user.id, "reset_audio", request.headers["idempotency-key"]), request.requestId, 202);
+        const journalId = decodeURIComponent(resetAudioMatch[1]);
+        await this.journals.get(user.id, journalId);
+        return ok(await this.jobs.createJob(user.id, "reset_audio", request.headers["idempotency-key"], journalId), request.requestId, 202);
       }
 
       const jobMatch = /^\/jobs\/([^/]+)$/.exec(path);
       if (jobMatch && request.method === "GET") {
-        return ok(this.jobs.getJob(user.id, decodeURIComponent(jobMatch[1])), request.requestId);
+        return ok(await this.jobs.getJob(user.id, decodeURIComponent(jobMatch[1])), request.requestId);
       }
 
       const audioMatch = /^\/audio\/([^/]+)$/.exec(path);
       if (audioMatch && request.method === "GET") {
-        return ok(this.audio.get(user.id, decodeURIComponent(audioMatch[1])), request.requestId);
+        return ok(await this.audio.get(user.id, decodeURIComponent(audioMatch[1])), request.requestId);
       }
 
       if (audioMatch && request.method === "DELETE") {
-        return ok(this.audio.delete(user.id, decodeURIComponent(audioMatch[1])), request.requestId);
+        return ok(await this.audio.delete(user.id, decodeURIComponent(audioMatch[1])), request.requestId);
       }
 
       if (request.method === "GET" && path === "/insights") {
-        return ok({ journalCount: this.journals.list(user.id).length, recurringEmotions: [] }, request.requestId);
+        return ok({ journalCount: (await this.journals.list(user.id)).length, recurringEmotions: [] }, request.requestId);
       }
 
       if (request.method === "GET" && path === "/notifications") {
-        return ok(this.notifications.list(), request.requestId);
+        return ok(await this.notifications.list(), request.requestId);
       }
 
       if (request.method === "POST" && path === "/notifications/test") {
@@ -114,7 +126,7 @@ export class ApiRouter {
     }
   }
 
-  createTestAudioForUser(userId: string, journalId?: string) {
+  async createTestAudioForUser(userId: string, journalId?: string) {
     return this.audio.createTestAudio(userId, journalId);
   }
 }

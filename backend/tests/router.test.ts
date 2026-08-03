@@ -61,6 +61,50 @@ test("User A cannot access User B journals", async () => {
   assert.equal(denied.statusCode, 403);
 });
 
+test("User A cannot delete User B journals", async () => {
+  const router = new ApiRouter();
+  const created = await router.handle({
+    method: "POST",
+    path: "/api/v1/journals",
+    headers: headersB,
+    requestId: "req-create-b",
+    body: { rawText: "Private reflection for user B." },
+  });
+  const journalId = JSON.parse(created.body).data.journal.id;
+
+  const denied = await router.handle({
+    method: "DELETE",
+    path: `/api/v1/journals/${journalId}`,
+    headers: headersA,
+    requestId: "req-delete-denied",
+  });
+  assert.equal(denied.statusCode, 403);
+});
+
+test("frontend-supplied user ids are ignored during journal creation", async () => {
+  const router = new ApiRouter();
+  const created = await router.handle({
+    method: "POST",
+    path: "/api/v1/journals",
+    headers: headersA,
+    requestId: "req-ignore-user-id",
+    body: {
+      userId: "22222222-2222-4222-8222-222222222222",
+      rawText: "Attempt to force another user id should not work.",
+    },
+  });
+  assert.equal(created.statusCode, 201);
+  const journalId = JSON.parse(created.body).data.journal.id;
+
+  const userBRead = await router.handle({
+    method: "GET",
+    path: `/api/v1/journals/${journalId}`,
+    headers: headersB,
+    requestId: "req-b-read-forced",
+  });
+  assert.equal(userBRead.statusCode, 403);
+});
+
 test("invalid journal requests are rejected", async () => {
   const router = new ApiRouter();
   const response = await router.handle({
@@ -104,7 +148,7 @@ test("duplicate job request returns duplicate request error", async () => {
 
 test("User A cannot access User B audio", async () => {
   const router = new ApiRouter();
-  const audio = router.createTestAudioForUser("11111111-1111-4111-8111-111111111111");
+  const audio = await router.createTestAudioForUser("11111111-1111-4111-8111-111111111111");
   const denied = await router.handle({
     method: "GET",
     path: `/api/v1/audio/${audio.id}`,
@@ -113,4 +157,3 @@ test("User A cannot access User B audio", async () => {
   });
   assert.equal(denied.statusCode, 403);
 });
-

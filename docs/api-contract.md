@@ -135,6 +135,7 @@ Headers: optional `Idempotency-Key`.
 Response: `{ jobId, status }`  
 Validation: journal must exist.  
 Ownership checks: journal must belong to authenticated user before job creation.  
+Idempotency: duplicate `Idempotency-Key` for the same user returns the existing job conflict/result instead of creating a second job.  
 Errors: `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `DUPLICATE_REQUEST`  
 Mode: asynchronous through SQS.
 
@@ -147,6 +148,7 @@ Headers: optional `Idempotency-Key`.
 Response: `{ jobId, status }`  
 Validation: journal must exist.  
 Ownership checks: journal must belong to authenticated user before job creation.  
+Idempotency: duplicate `Idempotency-Key` for the same user is rejected as a duplicate request.  
 Errors: `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `DUPLICATE_REQUEST`  
 Mode: asynchronous through SQS.
 
@@ -155,7 +157,7 @@ Mode: asynchronous through SQS.
 Purpose: Check analysis/audio job status.  
 Authentication: required.  
 Request body: none.  
-Response: `{ jobId, type, status, resultId?, errorMessage? }`  
+Response: `{ jobId, type, status, resultId?, errorMessage? }`, where status is `queued`, `processing`, `completed` or `failed`.  
 Validation: job must exist.  
 Ownership checks: job must belong to authenticated user.  
 Errors: `UNAUTHENTICATED`, `NOT_FOUND`  
@@ -163,7 +165,7 @@ Mode: synchronous.
 
 ## `GET /api/v1/audio/:id`
 
-Purpose: Return metadata and a short-lived signed playback URL.  
+Purpose: Return metadata and a short-lived signed playback URL. The frontend never receives S3 credentials or a permanent public URL.  
 Authentication: required.  
 Request body: none.  
 Response: `{ id, journalId?, title, durationSeconds, playbackUrl, expiresAt }`  
@@ -182,6 +184,30 @@ Validation: audio id must exist.
 Ownership checks: audio record must belong to authenticated user.  
 Errors: `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`  
 Mode: synchronous transaction plus S3 delete.
+
+## `GET /api/v1/preferences`
+
+Purpose: Return current user's profile and notification preferences.  
+Authentication: required.  
+Request body: none.  
+Response: preference object.  
+Validation: token must be valid.  
+Ownership checks: preferences are loaded only by authenticated user id.  
+Idempotency: not applicable.  
+Errors: `UNAUTHENTICATED`, `INTERNAL_ERROR`  
+Mode: synchronous.
+
+## `PATCH /api/v1/preferences`
+
+Purpose: Update current user's profile and notification preferences.  
+Authentication: required.  
+Request body: partial preference object.  
+Response: updated preference object.  
+Validation: only known preference keys accepted.  
+Ownership checks: updates target only authenticated user id.  
+Idempotency: normal repeated PATCH with same values is safe.  
+Errors: `UNAUTHENTICATED`, `VALIDATION_ERROR`, `INTERNAL_ERROR`  
+Mode: synchronous database write.
 
 ## `GET /api/v1/insights`
 

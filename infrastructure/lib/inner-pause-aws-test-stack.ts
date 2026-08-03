@@ -7,7 +7,6 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
@@ -158,11 +157,17 @@ export class InnerPauseAwsTestStack extends Stack {
     const lambdaEnvironment = {
       INFRASTRUCTURE_PROVIDER: "aws",
       DATABASE_NAME: "innerpause_test",
-      DATABASE_PROXY_ENDPOINT: proxy.endpoint,
-      AUDIO_BUCKET_NAME: audioBucket.bucketName,
-      USER_POOL_ID: userPool.userPoolId,
-      USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
-      WORK_QUEUE_URL: workQueue.queueUrl,
+      AWS_DATABASE_PROXY_ENDPOINT: proxy.endpoint,
+      AWS_AUDIO_BUCKET_NAME: audioBucket.bucketName,
+      AWS_COGNITO_USER_POOL_ID: userPool.userPoolId,
+      AWS_COGNITO_USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
+      AWS_WORK_QUEUE_URL: workQueue.queueUrl,
+      BACKEND_RUNTIME_MODE: "aws",
+      AUTH_MODE: "cognito",
+      REPOSITORY_MODE: "postgres",
+      STORAGE_MODE: "s3",
+      AI_MODE: "openai",
+      NOTIFICATIONS_MODE: "disabled",
     };
 
     const apiLogGroup = new logs.LogGroup(this, "InnerPauseApiHandlerLogGroup", {
@@ -229,13 +234,6 @@ exports.handler = async (event) => {
     workQueue.grantSendMessages(apiHandler);
     workQueue.grantConsumeMessages(workerHandler);
 
-    apiHandler.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ["rds-db:connect"],
-        resources: ["*"],
-      }),
-    );
-
     const api = new apigateway.RestApi(this, "InnerPauseTestApi", {
       restApiName: "innerpause-aws-test-api",
       deployOptions: {
@@ -254,10 +252,18 @@ exports.handler = async (event) => {
 
     const lambdaIntegration = new apigateway.LambdaIntegration(apiHandler);
     api.root.addResource("health").addMethod("GET", lambdaIntegration);
-    api.root.addResource("analyze").addMethod("POST", lambdaIntegration);
-    api.root.addResource("profile").addMethod("ANY", lambdaIntegration);
-    api.root.addResource("journal").addMethod("ANY", lambdaIntegration);
-    api.root.addResource("healing").addMethod("ANY", lambdaIntegration);
+    const apiResource = api.root.addResource("api");
+    const v1Resource = apiResource.addResource("v1");
+    v1Resource.addProxy({
+      anyMethod: true,
+      defaultIntegration: lambdaIntegration,
+      defaultCorsPreflightOptions: {
+        allowOrigins: allowedFrontendOrigins,
+        allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowHeaders: ["content-type", "authorization", "idempotency-key", "x-request-id"],
+        allowCredentials: true,
+      },
+    });
 
     new events.Rule(this, "MorningGuidanceSchedule", {
       schedule: events.Schedule.rate(Duration.hours(24)),

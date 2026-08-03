@@ -1,26 +1,25 @@
 import type { CreateJournalRequest } from "@innerpause/shared";
 import { validateCreateJournal } from "../validation/journal.js";
-import type { InMemoryRepository } from "../repositories/in-memory.js";
+import type { AppRepository } from "../repositories/types.js";
 
 export class JournalService {
-  constructor(private readonly repository: InMemoryRepository) {}
+  constructor(private readonly repository: AppRepository) {}
 
-  create(userId: string, input: CreateJournalRequest) {
+  async create(userId: string, input: CreateJournalRequest) {
     const body = validateCreateJournal(input);
     return this.repository.createJournal(userId, body);
   }
 
-  list(userId: string) {
+  async list(userId: string) {
     return this.repository.listJournals(userId);
   }
 
-  get(userId: string, journalId: string) {
+  async get(userId: string, journalId: string) {
     return this.repository.getJournalForUser(userId, journalId);
   }
 
-  delete(userId: string, journalId: string) {
-    this.repository.deleteJournalForUser(userId, journalId);
+  async delete(userId: string, journalId: string) {
+    await this.repository.deleteJournalForUser(userId, journalId);
     return { deleted: true as const };
   }
 }
-
