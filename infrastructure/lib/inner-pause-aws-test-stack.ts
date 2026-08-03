@@ -1,4 +1,6 @@
 import * as cdk from "aws-cdk-lib";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Duration, RemovalPolicy, Stack, StackProps, Tags } from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as amplify from "aws-cdk-lib/aws-amplify";
@@ -9,13 +11,16 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as eventSources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 
-const lambdaRuntime = lambda.Runtime.NODEJS_24_X;
+const lambdaRuntime = lambda.Runtime.NODEJS_22_X;
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 export class InnerPauseAwsTestStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -25,11 +30,17 @@ export class InnerPauseAwsTestStack extends Stack {
     Tags.of(this).add("Environment", "test");
     Tags.of(this).add("ManagedBy", "cdk");
 
-    const allowedFrontendOrigins = this.node.tryGetContext("allowedFrontendOrigins") ?? [
+    const allowedFrontendOriginsInput = this.node.tryGetContext("allowedFrontendOrigins") ?? [
       "http://localhost:3000",
       "http://localhost:3001",
       "https://feature-aws-separated-frontend-backend.example.amplifyapp.com",
     ];
+    const allowedFrontendOrigins = Array.isArray(allowedFrontendOriginsInput)
+      ? allowedFrontendOriginsInput
+      : String(allowedFrontendOriginsInput)
+          .split(",")
+          .map((origin) => origin.trim())
+          .filter(Boolean);
 
     const frontendApp = new amplify.CfnApp(this, "InnerPauseAmplifyTestApp", {
       name: "innerpause-aws-separated-test",
@@ -140,6 +151,14 @@ export class InnerPauseAwsTestStack extends Stack {
       removalPolicy: RemovalPolicy.RETAIN,
     });
 
+    const openAiSecret = new secretsmanager.Secret(this, "InnerPauseOpenAiSecret", {
+      description: "OpenAI API key for The InnerPause AWS test analysis worker. Replace generated value before testing analysis.",
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({}),
+        generateStringKey: "OPENAI_API_KEY",
+      },
+    });
+
     const deadLetterQueue = new sqs.Queue(this, "InnerPauseDeadLetterQueue", {
       retentionPeriod: Duration.days(14),
       encryption: sqs.QueueEncryption.SQS_MANAGED,
@@ -178,7 +197,12 @@ export class InnerPauseAwsTestStack extends Stack {
     const lambdaEnvironment = {
       INFRASTRUCTURE_PROVIDER: "aws",
       DATABASE_NAME: "innerpause_test",
+      DATABASE_USER: "innerpause_admin",
+      DATABASE_PORT: "5432",
+      DATABASE_SSL: "true",
+      DATABASE_IAM_AUTH: "true",
       AWS_DATABASE_PROXY_ENDPOINT: proxy.endpoint,
+      AWS_DATABASE_SECRET_ARN: database.secret!.secretArn,
       AWS_AUDIO_BUCKET_NAME: audioBucket.bucketName,
       AWS_COGNITO_USER_POOL_ID: userPool.userPoolId,
       AWS_COGNITO_USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
@@ -190,7 +214,10 @@ export class InnerPauseAwsTestStack extends Stack {
       REPOSITORY_MODE: "postgres",
       STORAGE_MODE: "s3",
       AI_MODE: "openai",
+      OPENAI_API_KEY_SECRET_ARN: openAiSecret.secretArn,
+      OPENAI_MODEL: "gpt-4.1-mini",
       NOTIFICATIONS_MODE: "disabled",
+      ALLOWED_ORIGINS: allowedFrontendOrigins.join(","),
     };
 
     const apiLogGroup = new logs.LogGroup(this, "InnerPauseApiHandlerLogGroup", {
@@ -198,32 +225,28 @@ export class InnerPauseAwsTestStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    const apiHandler = new lambda.Function(this, "InnerPauseApiHandler", {
+    const commonNodeBundling: nodejs.BundlingOptions = {
+      target: "node22",
+      sourceMap: true,
+      minify: false,
+      keepNames: true,
+      externalModules: [],
+    };
+
+    const apiHandler = new nodejs.NodejsFunction(this, "InnerPauseApiHandler", {
       runtime: lambdaRuntime,
-      handler: "index.handler",
+      entry: path.join(repoRoot, "backend/src/handlers/api.ts"),
+      handler: "handler",
       timeout: Duration.seconds(20),
       memorySize: 256,
+      architecture: lambda.Architecture.ARM_64,
       logGroup: apiLogGroup,
       vpc,
       securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
-      code: lambda.Code.fromInline(`
-exports.handler = async (event) => {
-  const path = event.path || event.rawPath || "/";
-  if (path.endsWith("/health")) {
-    return {
-      statusCode: 200,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ok: true, service: "innerpause-aws-test" })
-    };
-  }
-  return {
-    statusCode: 501,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ error: "AWS test API handler scaffold. No production behavior is active." })
-  };
-};
-      `),
+      depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
+      projectRoot: repoRoot,
+      bundling: commonNodeBundling,
     });
 
     const analysisWorkerLogGroup = new logs.LogGroup(this, "InnerPauseAnalysisWorkerLogGroup", {
@@ -231,28 +254,29 @@ exports.handler = async (event) => {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    const analysisWorkerHandler = new lambda.Function(this, "InnerPauseAnalysisWorkerHandler", {
+    const analysisWorkerHandler = new nodejs.NodejsFunction(this, "InnerPauseAnalysisWorkerHandler", {
       runtime: lambdaRuntime,
-      handler: "index.handler",
+      entry: path.join(repoRoot, "backend/src/handlers/sqs-workers.ts"),
+      handler: "analysisQueueHandler",
       timeout: Duration.seconds(60),
       memorySize: 256,
+      architecture: lambda.Architecture.ARM_64,
       logGroup: analysisWorkerLogGroup,
       vpc,
       securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
-      code: lambda.Code.fromInline(`
-exports.handler = async (event) => {
-  console.log("InnerPause analysis worker scaffold received", { records: event.Records?.length || 0 });
-  return { batchItemFailures: [] };
-};
-      `),
+      depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
+      projectRoot: repoRoot,
+      bundling: commonNodeBundling,
     });
 
-    const audioWorkerHandler = new lambda.Function(this, "InnerPauseAudioWorkerHandler", {
+    const audioWorkerHandler = new nodejs.NodejsFunction(this, "InnerPauseAudioWorkerHandler", {
       runtime: lambdaRuntime,
-      handler: "index.handler",
+      entry: path.join(repoRoot, "backend/src/handlers/sqs-workers.ts"),
+      handler: "audioQueueHandler",
       timeout: Duration.seconds(120),
       memorySize: 512,
+      architecture: lambda.Architecture.ARM_64,
       logGroup: new logs.LogGroup(this, "InnerPauseAudioWorkerLogGroup", {
         retention: logs.RetentionDays.ONE_MONTH,
         removalPolicy: RemovalPolicy.DESTROY,
@@ -260,19 +284,18 @@ exports.handler = async (event) => {
       vpc,
       securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
-      code: lambda.Code.fromInline(`
-exports.handler = async (event) => {
-  console.log("InnerPause audio worker scaffold received", { records: event.Records?.length || 0 });
-  return { batchItemFailures: [] };
-};
-      `),
+      depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
+      projectRoot: repoRoot,
+      bundling: commonNodeBundling,
     });
 
-    const notificationWorkerHandler = new lambda.Function(this, "InnerPauseNotificationWorkerHandler", {
+    const notificationWorkerHandler = new nodejs.NodejsFunction(this, "InnerPauseNotificationWorkerHandler", {
       runtime: lambdaRuntime,
-      handler: "index.handler",
+      entry: path.join(repoRoot, "backend/src/handlers/sqs-workers.ts"),
+      handler: "notificationQueueHandler",
       timeout: Duration.seconds(45),
       memorySize: 256,
+      architecture: lambda.Architecture.ARM_64,
       logGroup: new logs.LogGroup(this, "InnerPauseNotificationWorkerLogGroup", {
         retention: logs.RetentionDays.ONE_MONTH,
         removalPolicy: RemovalPolicy.DESTROY,
@@ -280,28 +303,42 @@ exports.handler = async (event) => {
       vpc,
       securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
-      code: lambda.Code.fromInline(`
-exports.handler = async (event) => {
-  console.log("InnerPause notification worker scaffold received", { records: event.Records?.length || 0 });
-  return { batchItemFailures: [] };
-};
-      `),
+      depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
+      projectRoot: repoRoot,
+      bundling: commonNodeBundling,
+    });
+
+    const scheduleHandler = new nodejs.NodejsFunction(this, "InnerPauseScheduleHandler", {
+      runtime: lambdaRuntime,
+      entry: path.join(repoRoot, "backend/src/handlers/schedule.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(30),
+      memorySize: 256,
+      architecture: lambda.Architecture.ARM_64,
+      logGroup: new logs.LogGroup(this, "InnerPauseScheduleHandlerLogGroup", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+      vpc,
+      securityGroups: [lambdaSecurityGroup],
+      environment: lambdaEnvironment,
+      depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
+      projectRoot: repoRoot,
+      bundling: commonNodeBundling,
     });
 
     analysisWorkerHandler.addEventSource(new eventSources.SqsEventSource(analysisQueue, { batchSize: 5, reportBatchItemFailures: true }));
     audioWorkerHandler.addEventSource(new eventSources.SqsEventSource(audioQueue, { batchSize: 2, reportBatchItemFailures: true }));
     notificationWorkerHandler.addEventSource(new eventSources.SqsEventSource(notificationQueue, { batchSize: 10, reportBatchItemFailures: true }));
 
-    database.secret!.grantRead(apiHandler);
-    database.secret!.grantRead(analysisWorkerHandler);
-    database.secret!.grantRead(audioWorkerHandler);
-    database.secret!.grantRead(notificationWorkerHandler);
     proxy.grantConnect(apiHandler, "innerpause_admin");
     proxy.grantConnect(analysisWorkerHandler, "innerpause_admin");
     proxy.grantConnect(audioWorkerHandler, "innerpause_admin");
     proxy.grantConnect(notificationWorkerHandler, "innerpause_admin");
-    audioBucket.grantReadWrite(apiHandler);
-    audioBucket.grantReadWrite(audioWorkerHandler);
+    proxy.grantConnect(scheduleHandler, "innerpause_admin");
+    openAiSecret.grantRead(analysisWorkerHandler);
+    audioBucket.grantRead(apiHandler);
+    audioBucket.grantPut(audioWorkerHandler);
     analysisQueue.grantSendMessages(apiHandler);
     audioQueue.grantSendMessages(apiHandler);
     notificationQueue.grantSendMessages(apiHandler);
@@ -342,7 +379,7 @@ exports.handler = async (event) => {
 
     new events.Rule(this, "MorningGuidanceSchedule", {
       schedule: events.Schedule.rate(Duration.hours(24)),
-      targets: [new targets.SqsQueue(notificationQueue)],
+      targets: [new targets.LambdaFunction(scheduleHandler)],
     });
 
     new cloudwatch.Alarm(this, "ApiErrorsAlarm", {
@@ -365,6 +402,7 @@ exports.handler = async (event) => {
     new cdk.CfnOutput(this, "AudioBucketName", { value: audioBucket.bucketName });
     new cdk.CfnOutput(this, "DatabaseProxyEndpoint", { value: proxy.endpoint });
     new cdk.CfnOutput(this, "DatabaseSecretName", { value: database.secret!.secretName });
+    new cdk.CfnOutput(this, "OpenAiSecretName", { value: openAiSecret.secretName });
     new cdk.CfnOutput(this, "AnalysisQueueUrl", { value: analysisQueue.queueUrl });
     new cdk.CfnOutput(this, "AudioQueueUrl", { value: audioQueue.queueUrl });
     new cdk.CfnOutput(this, "NotificationQueueUrl", { value: notificationQueue.queueUrl });

@@ -1,4 +1,5 @@
 import { createRuntimeServices } from "../runtime/factory.js";
+import { readSecretString } from "../runtime/secrets.js";
 import { OpenAiProvider } from "../services/ai-provider.js";
 import { DisabledAudioProvider } from "../services/audio-provider.js";
 import { S3PrivateStorage } from "../storage/s3-storage.js";
@@ -82,10 +83,15 @@ function requireWorkerFields(message: WorkerMessage): RequiredWorkerMessage {
 async function processAnalysisMessage(message: RequiredWorkerMessage, messageId: string) {
   if (!message.journalId) throw new Error("Analysis message is missing journalId.");
   const runtime = createRuntimeServices();
-  if (!runtime.config.openAiApiKey) throw new Error("OPENAI_API_KEY is required for analysis workers.");
+  const apiKey =
+    runtime.config.openAiApiKey ??
+    (runtime.config.openAiApiKeySecretArn && runtime.config.region
+      ? await readSecretString({ region: runtime.config.region, secretArn: runtime.config.openAiApiKeySecretArn, jsonKey: "OPENAI_API_KEY" })
+      : undefined);
+  if (!apiKey) throw new Error("OPENAI_API_KEY or OPENAI_API_KEY_SECRET_ARN is required for analysis workers.");
   const worker = new AnalysisWorker(
     runtime.repository,
-    new OpenAiProvider({ apiKey: runtime.config.openAiApiKey, model: runtime.config.openAiModel }),
+    new OpenAiProvider({ apiKey, model: runtime.config.openAiModel }),
   );
   await worker.process({ userId: message.userId, jobId: message.jobId, journalId: message.journalId, requestId: messageId });
 }

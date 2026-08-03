@@ -21,10 +21,13 @@ export function createRuntimeServices(env = process.env): RuntimeServices {
       ? new PostgresRepository({
           connectionString: config.databaseUrl,
           host: config.databaseUrl ? undefined : config.databaseProxyEndpoint,
-          database: env.DATABASE_NAME,
-          user: env.DATABASE_USER,
-          password: env.DATABASE_PASSWORD,
+          port: config.databasePort,
+          database: config.databaseName,
+          user: config.databaseUser,
+          password: config.databasePassword,
           ssl: config.databaseSsl || config.runtimeMode === "aws",
+          iamAuth: config.databaseIamAuth || config.runtimeMode === "aws",
+          region: config.region,
         })
       : createMemoryRepository(config);
 

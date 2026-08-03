@@ -22,8 +22,14 @@ export interface BackendConfig {
   notificationQueueUrl?: string;
   databaseUrl?: string;
   databaseSsl: boolean;
+  databaseName?: string;
+  databaseUser?: string;
+  databasePassword?: string;
+  databasePort: number;
+  databaseIamAuth: boolean;
   approvedTestRecipient?: string;
   openAiApiKey?: string;
+  openAiApiKeySecretArn?: string;
   openAiModel: string;
 }
 
@@ -53,8 +59,14 @@ export function readConfig(env = process.env): BackendConfig {
     notificationQueueUrl: env.AWS_NOTIFICATION_QUEUE_URL,
     databaseUrl: env.DATABASE_URL,
     databaseSsl: env.DATABASE_SSL === "true",
+    databaseName: env.DATABASE_NAME,
+    databaseUser: env.DATABASE_USER,
+    databasePassword: env.DATABASE_PASSWORD,
+    databasePort: Number(env.DATABASE_PORT ?? 5432),
+    databaseIamAuth: env.DATABASE_IAM_AUTH === "true",
     approvedTestRecipient: env.APPROVED_TEST_RECIPIENT,
     openAiApiKey: env.OPENAI_API_KEY,
+    openAiApiKeySecretArn: env.OPENAI_API_KEY_SECRET_ARN,
     openAiModel: env.OPENAI_MODEL ?? "gpt-4.1-mini",
   };
 }
@@ -86,7 +98,9 @@ export function assertAwsRuntimeConfig(config = readConfig()) {
     ["AWS_AUDIO_QUEUE_URL", config.audioQueueUrl],
     ["AWS_NOTIFICATION_QUEUE_URL", config.notificationQueueUrl],
     ["DATABASE_URL or AWS_DATABASE_PROXY_ENDPOINT", config.databaseUrl ?? config.databaseProxyEndpoint],
-    ["OPENAI_API_KEY", config.aiMode === "openai" ? config.openAiApiKey : "not-required"],
+    ["DATABASE_NAME", config.databaseUrl ? "not-required" : config.databaseName],
+    ["DATABASE_USER", config.databaseUrl ? "not-required" : config.databaseUser],
+    ["OPENAI_API_KEY or OPENAI_API_KEY_SECRET_ARN", config.aiMode === "openai" ? config.openAiApiKey ?? config.openAiApiKeySecretArn : "not-required"],
   ].filter(([, value]) => !value);
 
   if (config.notificationsMode === "whatsapp" && !config.approvedTestRecipient) {

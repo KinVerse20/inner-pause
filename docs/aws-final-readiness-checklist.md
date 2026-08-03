@@ -8,6 +8,7 @@
 - PostgreSQL repository enforces user ownership checks for journals and audio.
 - Analysis worker persists structured insight results.
 - SQS worker handlers return partial batch failure responses.
+- Lambda packaging is ready: API, analysis worker, audio worker, notification worker and schedule handler use bundled CDK assets instead of inline placeholders.
 - CDK defines private RDS, RDS Proxy, private S3, Cognito, API Gateway, SQS queues, DLQ, EventBridge and CloudWatch alarms.
 - Safe migration runner exists and refuses production-looking targets by default.
 - Secret scan script exists.
@@ -28,7 +29,8 @@
 
 - Real reset-audio generation is blocked until a final audio provider is selected and configured.
 - WhatsApp delivery is blocked unless a real provider and `APPROVED_TEST_RECIPIENT` are configured for test mode.
-- CDK currently uses inline Lambda scaffolds. Before a real AWS runtime test, package the compiled backend handlers into Lambda assets or add a bundling step.
+- Some frontend screens still retain local-storage wellness flows and should be reviewed before claiming full backend-only operation.
+- Root/frontend dependency audits still report unresolved Next/PostCSS/Sharp advisories where npm proposes a breaking `audit fix --force` path.
 
 ## Optional later
 
@@ -36,4 +38,3 @@
 - Add scheduled notification preference UI beyond current API support.
 - Add automated end-to-end browser tests against Amplify.
 - Add CloudWatch dashboards for owner-friendly monitoring.
-

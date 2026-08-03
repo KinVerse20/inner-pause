@@ -1,4 +1,5 @@
 import pg from "pg";
+import { Signer } from "@aws-sdk/rds-signer";
 import type { AudioRecord, EmotionalInsight, JournalDetail, JournalSummary, NotificationMessage } from "@innerpause/shared";
 import { forbidden, notFound } from "../shared/errors.js";
 import type { AppRepository, CreateAudioInput, CreateJournalInput, UserPreferences } from "./types.js";
@@ -13,6 +14,8 @@ export interface PostgresRepositoryOptions {
   user?: string;
   password?: string;
   ssl?: boolean;
+  iamAuth?: boolean;
+  region?: string;
 }
 
 export class PostgresRepository implements AppRepository {
@@ -25,7 +28,7 @@ export class PostgresRepository implements AppRepository {
       port: options.port,
       database: options.database,
       user: options.user,
-      password: options.password,
+      password: options.iamAuth ? createIamPasswordProvider(options) : options.password,
       ssl: options.ssl ? { rejectUnauthorized: true } : undefined,
       max: 5,
       idleTimeoutMillis: 30_000,
@@ -375,6 +378,17 @@ export class PostgresRepository implements AppRepository {
       createdAt: row.created_at.toISOString(),
     };
   }
+}
+
+function createIamPasswordProvider(options: PostgresRepositoryOptions) {
+  if (!options.host || !options.user || !options.region) throw new Error("RDS IAM auth requires host, user and region.");
+  const signer = new Signer({
+    hostname: options.host,
+    port: options.port ?? 5432,
+    username: options.user,
+    region: options.region,
+  });
+  return () => signer.getAuthToken();
 }
 
 function mapJournalDetail(row: pg.QueryResultRow, hasAnalysis: boolean, hasResetAudio: boolean): JournalDetail {
