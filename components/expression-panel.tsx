@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ChakraProcessingScreen } from "@/components/chakra-processing-screen";
+import { ChakraPath } from "@/components/chakra-path-ui";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { GoldButton } from "@/components/mvp-shell";
 import { createJournalEntry, saveAnalysis, savePlan } from "@/lib/mvp-storage";
@@ -34,7 +35,7 @@ type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 const emotionChips = ["Anxious", "Angry", "Sad", "Overwhelmed", "Hurt", "Confused", "Tired", "Calm", "Something else"];
 
-export function ExpressionPanel({ compact = false }: { compact?: boolean }) {
+export function ExpressionPanel({ compact = false, embedded = false }: { compact?: boolean; embedded?: boolean }) {
   const router = useRouter();
   const [text, setText] = useState("");
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
@@ -135,15 +136,16 @@ export function ExpressionPanel({ compact = false }: { compact?: boolean }) {
     setSelectedEmotions((current) => (current.includes(emotion) ? current.filter((item) => item !== emotion) : [...current, emotion]));
   };
 
-  const submit = async () => {
-    if (!text.trim()) {
+  const submit = async (overrideText?: string) => {
+    const sourceText = overrideText ?? text;
+    if (!sourceText.trim()) {
       setError("Share at least one sentence before continuing.");
       return;
     }
     stopVoice();
     setLoading(true);
     setError("");
-    const decoratedText = selectedEmotions.length ? `${text.trim()}\n\nEmotions selected: ${selectedEmotions.join(", ")}` : text.trim();
+    const decoratedText = selectedEmotions.length ? `${sourceText.trim()}\n\nEmotions selected: ${selectedEmotions.join(", ")}` : sourceText.trim();
     const entry = createJournalEntry({
       rawText: decoratedText,
       saveMode: "temporary_analysis",
@@ -170,11 +172,16 @@ export function ExpressionPanel({ compact = false }: { compact?: boolean }) {
   if (loading) return <ChakraProcessingScreen />;
 
   return (
-    <section className="rounded-[1.5rem] border border-purple-200 bg-white/76 p-4 shadow-[0_18px_42px_rgba(88,28,135,0.12)] backdrop-blur-xl">
+    <section className="rounded-[1.5rem] border border-[var(--ip-border)] bg-white/82 p-4 shadow-[0_14px_34px_rgba(108,62,244,0.1)] backdrop-blur-xl">
+      {!embedded ? (
+        <div className="mb-3 rounded-[1.25rem] bg-[linear-gradient(180deg,rgba(237,232,255,0.82),rgba(255,255,255,0.62))] py-3">
+          <ChakraPath compact />
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-serif text-2xl text-[#130b4f]">{compact ? "What is weighing on you right now?" : "What is happening right now?"}</h2>
-          <p className="mt-1 text-sm text-[#4b3f86]">{compact ? "Share what is happening and prepare a personalised reset." : "Share as much or as little as you need."}</p>
+          <h2 className="font-serif text-2xl text-[var(--ip-ink)]">{compact ? "What is weighing on you right now?" : "Speak or type what’s on your mind."}</h2>
+          <p className="mt-1 text-sm text-[var(--ip-body)]">{compact ? "Share freely. This is your space." : "Your words stay editable before you continue."}</p>
         </div>
         <HelpTooltip label="Microphone information">Speak your thoughts and review the text before continuing. Your voice is converted into text so you can review it before continuing.</HelpTooltip>
       </div>
@@ -195,7 +202,7 @@ export function ExpressionPanel({ compact = false }: { compact?: boolean }) {
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
-            placeholder="Write or speak freely. Start wherever you are."
+            placeholder="What is weighing on you right now?"
             className="min-h-32 w-full resize-y bg-transparent p-1 text-base leading-6 text-[#130b4f] outline-none placeholder:text-[#8f81c2]"
           />
         </div>
@@ -214,6 +221,28 @@ export function ExpressionPanel({ compact = false }: { compact?: boolean }) {
       ) : null}
 
       {voiceUnsupported || voiceError ? <p className="mt-3 rounded-2xl border border-purple-200 bg-white/72 p-3 text-sm text-[#4b3f86]">{voiceError || "Voice input is not available in this browser. You can still type your thoughts."}</p> : null}
+
+      <div className="mt-2 flex items-center justify-between text-xs text-[var(--ip-muted)]">
+        <span>{text.length} characters</span>
+        <span>or type above</span>
+      </div>
+
+      <div className="mt-4 grid place-items-center text-center">
+        <button
+          type="button"
+          onClick={listening ? stopVoice : paused ? startVoice : startVoice}
+          className={`relative grid h-20 w-20 place-items-center rounded-full border text-2xl transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
+            listening ? "border-[var(--ip-purple)] bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "border-[var(--ip-border-strong)] bg-white text-[var(--ip-purple)]"
+          }`}
+          aria-label="Tap to Speak"
+          aria-pressed={listening}
+        >
+          {listening ? <span className="absolute inset-[-0.45rem] animate-ping rounded-full border border-[var(--ip-purple)] opacity-20" /> : null}
+          🎙
+        </button>
+        <p className="mt-2 text-sm font-semibold text-[var(--ip-ink)]">Tap to Speak</p>
+        <p className="text-xs text-[var(--ip-muted)]">or type above</p>
+      </div>
 
       <div className="mt-4">
         <p className="text-sm font-medium text-[#26156f]">What emotion are you experiencing?</p>
@@ -236,7 +265,16 @@ export function ExpressionPanel({ compact = false }: { compact?: boolean }) {
       {error ? <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <GoldButton className="flex-1" onClick={submit}>Help Me Feel Better</GoldButton>
+        <GoldButton className="flex-1" disabled={!text.trim()} onClick={() => submit()}>Continue</GoldButton>
+        <button
+          type="button"
+          onClick={() => {
+            void submit("I just want a quick reset.");
+          }}
+          className="min-h-11 rounded-full border border-[var(--ip-border)] bg-white px-4 py-2.5 font-semibold text-[var(--ip-purple)]"
+        >
+          I just want a quick reset
+        </button>
         <button
           type="button"
           onClick={() => {

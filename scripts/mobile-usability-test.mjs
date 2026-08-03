@@ -21,6 +21,7 @@ const viewports = [
   { width: 375, height: 812 },
   { width: 390, height: 844 },
   { width: 430, height: 932 },
+  { width: 768, height: 1024 },
   { width: 1440, height: 900 },
 ];
 
@@ -97,11 +98,11 @@ const assertFixedBottomNav = async (page, activeLabel, label) => {
 };
 
 const assertJournalHeaderAction = async (page, label) => {
-  const action = page.getByRole("button", { name: "View history" });
+  const action = page.getByRole("button", { name: "View Details" });
   await action.waitFor({ timeout: 10000 });
   assert(await action.isVisible(), `${label}: View History action is not visible`);
   const text = (await action.innerText()).trim();
-  assert(/view history/i.test(text), `${label}: header action text does not describe the action: "${text}"`);
+  assert(/view details/i.test(text), `${label}: header action text does not describe the action: "${text}"`);
   await action.click();
   await page.waitForURL(/\/history$/, { timeout: 15000 });
   await assertFixedBottomNav(page, null, `${label} history nav visible`);
@@ -184,36 +185,36 @@ for (const viewport of viewports) {
     await assertNoPremiumCta(page, `home ${viewport.width}x${viewport.height}`);
     await assertFixedBottomNav(page, "Home", `home nav ${viewport.width}x${viewport.height}`);
 
-    await page.goto(`${baseUrl}/journal`, { waitUntil: "networkidle" });
+    await page.getByRole("link", { name: /Start Expressing/ }).click();
+    await page.waitForURL(/\/journal$/, { timeout: 15000 });
     await checkPage(page, `journal ${viewport.width}x${viewport.height}`);
     await assertFixedBottomNav(page, null, `journal nav ${viewport.width}x${viewport.height}`);
     await assertJournalHeaderAction(page, `journal header action ${viewport.width}x${viewport.height}`);
     await checkPage(page, `journal after header action ${viewport.width}x${viewport.height}`);
     await assertFixedBottomNav(page, null, `journal nav after scroll ${viewport.width}x${viewport.height}`);
-    await page.getByPlaceholder("Write or speak freely. Start wherever you are.").fill("I felt ignored during an office meeting today. I wanted to speak up but stayed quiet. Now I feel angry with myself and anxious about tomorrow.");
-    await page.getByRole("button", { name: "Help Me Feel Better" }).click();
+    await page.getByPlaceholder("What is weighing on you right now?").fill("I felt ignored during an office meeting today. I wanted to speak up but stayed quiet. Now I feel angry with myself and anxious about tomorrow.");
+    await page.getByRole("button", { name: "Continue" }).click();
     await page.waitForURL(/\/analysis\?entry=/, { timeout: 60000 });
     await page.getByText("Here is what I understood").waitFor({ timeout: 20000 });
     await checkPage(page, `analysis ${viewport.width}x${viewport.height}`);
     await assertVisible(page, "Your reflection", `analysis shared ${viewport.width}x${viewport.height}`);
-    await assertVisible(page, "Your reflection summary", `analysis understood ${viewport.width}x${viewport.height}`);
-    await assertVisible(page, "Why it may be involved", `analysis chakra reason ${viewport.width}x${viewport.height}`);
-    await assertVisible(page, "How your reset will support it", `analysis chakra support ${viewport.width}x${viewport.height}`);
+    await assertVisible(page, "Chakra Themes", `analysis understood ${viewport.width}x${viewport.height}`);
+    await page.locator('button[aria-expanded="false"]').first().click();
+    await assertVisible(page, "Why it may be relevant", `analysis chakra reason ${viewport.width}x${viewport.height}`);
+    await assertVisible(page, "How the reset may support you", `analysis chakra support ${viewport.width}x${viewport.height}`);
     assert(await page.getByTestId("emotional-insight-artwork").isVisible(), `analysis artwork missing ${viewport.width}x${viewport.height}`);
 
-    await page.getByRole("button", { name: "Start My Reset" }).click();
+    await page.getByRole("button", { name: "Begin My Reset" }).click();
     await page.waitForURL(/\/healing\?entry=/);
     await checkPage(page, `personalised reset ${viewport.width}x${viewport.height}`);
     await page.getByRole("button", { name: "Save to My Journey" }).click();
+    await page.getByRole("button", { name: "Adjust Session" }).click();
     await page.getByRole("button", { name: "10 min" }).first().click();
-    await assertVisible(page, "10 minutes", `duration summary ${viewport.width}x${viewport.height}`);
-    await page.getByText("Customisation").click();
-    await page.locator("details").getByRole("button", { name: "None" }).first().click();
-    await assertVisible(page, "no voice guidance", `voice summary ${viewport.width}x${viewport.height}`);
+    await assertVisible(page, "10 min", `duration summary ${viewport.width}x${viewport.height}`);
+    await page.getByRole("button", { name: "None" }).first().click();
     await page.getByRole("button", { name: "Off" }).click();
-    await assertVisible(page, "Affirmations off", `affirmations summary ${viewport.width}x${viewport.height}`);
 
-    await page.getByRole("button", { name: "Start My Reset" }).click();
+    await page.getByRole("button", { name: "Start Reset" }).click();
     await page.waitForURL(/\/healing\/player\?plan=/);
     await checkPage(page, `audio player ${viewport.width}x${viewport.height}`);
     await assertStoredPlanDuration(page, 10, `player selected duration ${viewport.width}x${viewport.height}`);

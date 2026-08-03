@@ -7,17 +7,17 @@ import { ReactNode } from "react";
 
 const navItems = [
   { href: "/", label: "Home", icon: "⌂" },
-  { href: "/history", label: "Journey", icon: "✎" },
-  { href: "/healing", label: "Healing", icon: "✦" },
-  { href: "/insights", label: "Insights", icon: "◎" },
-  { href: "/profile", label: "Profile", icon: "♙" },
+  { href: "/journal", label: "Express", icon: "✎" },
+  { href: "/history", label: "Journey", icon: "♧" },
+  { href: "/insights", label: "Insights", icon: "▥" },
+  { href: "/profile", label: "You", icon: "♙" },
 ];
 
 export function MvpShell({ children, hideNav = false }: { children: ReactNode; hideNav?: boolean }) {
   return (
     <div className="mvp-bg min-h-dvh overflow-x-hidden text-[var(--cream)]">
       <main
-        className="mx-auto min-h-dvh w-full max-w-5xl px-3.5 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5"
+        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(0.65rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem]"
         style={{ paddingBottom: hideNav ? "calc(1rem + env(safe-area-inset-bottom))" : "var(--page-bottom-padding)" }}
       >
         {children}
@@ -36,7 +36,7 @@ export function BrandLogo({
 }) {
   return (
     <Link href="/" className={`inline-flex items-center gap-3 ${className}`} aria-label="The Inner Pause home">
-      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--gold-border-soft)] bg-black/30 shadow-[0_0_28px_rgba(178,89,231,0.2)]">
+      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--ip-border)] bg-white shadow-[0_8px_24px_rgba(108,62,244,0.12)]">
         <Image src="/branding/innerpause-icon.png" alt="" fill sizes="36px" className="object-cover" priority={compact} />
       </span>
       {!compact ? (
@@ -52,8 +52,8 @@ export function BrandLogo({
 function MvpBottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--gold-border-soft)] bg-white/86 shadow-[0_-18px_46px_rgba(88,28,135,0.12)] backdrop-blur-2xl">
-      <div className="mx-auto grid max-w-5xl grid-cols-5 gap-1 px-2 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5">
+    <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--ip-border)] bg-white/90 shadow-[0_-14px_36px_rgba(108,62,244,0.12)] backdrop-blur-2xl">
+      <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[44rem]">
         {navItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
@@ -61,13 +61,13 @@ function MvpBottomNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[var(--purple-primary)] ${
-                active ? "text-[var(--purple-primary)]" : "text-[#6d5ea8] hover:text-[#26156f]"
+              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
+                active ? "bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "text-[var(--ip-muted)] hover:text-[var(--ip-ink)]"
               }`}
             >
               <span className="text-lg leading-none">{item.icon}</span>
               <span>{item.label}</span>
-              <span className={`h-0.5 w-6 rounded-full ${active ? "bg-[var(--purple-primary)] shadow-[0_0_14px_rgba(124,58,237,0.35)]" : "bg-transparent"}`} />
+              <span className={`h-0.5 w-5 rounded-full ${active ? "bg-[var(--ip-purple)] shadow-[0_0_12px_rgba(108,62,244,0.28)]" : "bg-transparent"}`} />
             </Link>
           );
         })}
@@ -84,7 +84,7 @@ export function GoldButton({
   return (
     <button
       {...props}
-      className={`min-h-11 rounded-full border border-purple-400/30 bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-4 py-2.5 font-semibold text-white shadow-[0_12px_26px_rgba(109,40,217,0.22)] transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={`min-h-11 rounded-full border border-purple-400/30 bg-[linear-gradient(135deg,var(--ip-purple-2),var(--ip-purple))] px-4 py-2.5 font-semibold text-white shadow-[0_12px_24px_rgba(108,62,244,0.22)] transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
     >
       {children}
     </button>
@@ -102,7 +102,7 @@ export function GlassCard({
 }) {
   return (
     <section
-      className={`rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[var(--background-card)] shadow-[0_18px_42px_rgba(88,28,135,0.1)] backdrop-blur-xl ${className}`}
+      className={`rounded-[1.25rem] border border-[var(--ip-border)] bg-[var(--ip-card)] shadow-[0_14px_34px_rgba(108,62,244,0.09)] backdrop-blur-xl ${className}`}
       style={style}
     >
       {children}
@@ -114,8 +114,8 @@ export function SectionTitle({ eyebrow, title, copy }: { eyebrow?: string; title
   return (
     <div>
       {eyebrow ? <p className="text-xs uppercase tracking-[0.28em] text-[var(--gold-muted)]">{eyebrow}</p> : null}
-      <h1 className="mt-1 font-serif text-3xl leading-tight text-[var(--gold-light)] sm:text-5xl">{title}</h1>
-      {copy ? <p className="mt-2 max-w-2xl text-sm leading-5 text-[#4b3f86]">{copy}</p> : null}
+      <h1 className="mt-1 font-serif text-3xl leading-tight text-[var(--ip-ink)] sm:text-5xl">{title}</h1>
+      {copy ? <p className="mt-2 max-w-2xl text-sm leading-5 text-[var(--ip-body)]">{copy}</p> : null}
     </div>
   );
 }
