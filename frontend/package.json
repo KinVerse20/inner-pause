@@ -1,0 +1,19 @@
+{
+  "name": "@innerpause/frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --import tsx --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@innerpause/shared": "file:../packages/shared"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5"
+  }
+}

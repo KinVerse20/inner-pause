@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npm --prefix frontend run test && npm --prefix backend run test",
+    "test:separation": "npm --prefix frontend run build && npm --prefix frontend run test && npm --prefix backend run build && npm --prefix backend run test",
     "test:ui": "node scripts/mobile-usability-test.mjs"
   },
   "dependencies": {

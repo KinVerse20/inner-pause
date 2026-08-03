@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Duration, RemovalPolicy, Stack, StackProps, Tags } from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as amplify from "aws-cdk-lib/aws-amplify";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -23,6 +24,32 @@ export class InnerPauseAwsTestStack extends Stack {
     Tags.of(this).add("Project", "TheInnerPause");
     Tags.of(this).add("Environment", "test");
     Tags.of(this).add("ManagedBy", "cdk");
+
+    const allowedFrontendOrigins = this.node.tryGetContext("allowedFrontendOrigins") ?? [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://feature-aws-separated-frontend-backend.example.amplifyapp.com",
+    ];
+
+    const frontendApp = new amplify.CfnApp(this, "InnerPauseAmplifyTestApp", {
+      name: "innerpause-aws-separated-test",
+      description: "Isolated AWS test frontend for The InnerPause. Connect repository manually before deployment.",
+      platform: "WEB_COMPUTE",
+      customRules: [
+        {
+          source: "/<*>",
+          target: "/index.html",
+          status: "404-200",
+        },
+      ],
+    });
+
+    new amplify.CfnBranch(this, "InnerPauseAmplifyTestBranch", {
+      appId: frontendApp.attrAppId,
+      branchName: "feature/aws-separated-frontend-backend",
+      enableAutoBuild: false,
+      stage: "DEVELOPMENT",
+    });
 
     const vpc = new ec2.Vpc(this, "InnerPauseTestVpc", {
       maxAzs: 2,
@@ -218,9 +245,10 @@ exports.handler = async (event) => {
         metricsEnabled: true,
       },
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowOrigins: allowedFrontendOrigins,
         allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowHeaders: ["content-type", "authorization"],
+        allowCredentials: true,
       },
     });
 
@@ -249,6 +277,8 @@ exports.handler = async (event) => {
     });
 
     new cdk.CfnOutput(this, "ApiBaseUrl", { value: api.url });
+    new cdk.CfnOutput(this, "AmplifyAppId", { value: frontendApp.attrAppId });
+    new cdk.CfnOutput(this, "AwsRegion", { value: Stack.of(this).region });
     new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new cdk.CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });
     new cdk.CfnOutput(this, "AudioBucketName", { value: audioBucket.bucketName });
