@@ -4,7 +4,7 @@ This guide describes the separated AWS test architecture. It does not modify the
 
 ## 1. Frontend deployment
 
-The AWS test frontend lives in `frontend/`. It should be deployed to AWS Amplify Hosting on branch:
+The AWS test frontend now lives in `frontend/` as a standalone Next.js application. It should be deployed to AWS Amplify Hosting on branch:
 
 ```text
 feature/aws-separated-frontend-backend
@@ -15,6 +15,8 @@ The frontend must call the backend only through:
 ```text
 NEXT_PUBLIC_API_BASE_URL
 ```
+
+Do not deploy the root Next.js app for the AWS separated test. The root app remains a Vercel/Supabase reference until the AWS flow is fully verified.
 
 ## 2. Backend deployment
 
@@ -77,6 +79,13 @@ Frontend:
 ```bash
 cd frontend
 npm install
+npm run dev
+```
+
+Frontend checks:
+
+```bash
+npm run lint
 npm run build
 npm run test
 ```
@@ -87,6 +96,13 @@ Backend:
 cd backend
 npm install
 npm run dev
+```
+
+Backend checks:
+
+```bash
+npm run build
+npm run test
 ```
 
 Use:
@@ -165,4 +181,3 @@ To inspect the protected snapshot:
 ```bash
 git show pre-frontend-backend-separation
 ```
-

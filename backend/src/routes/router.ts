@@ -36,6 +36,13 @@ export class ApiRouter {
         return ok({ ok: true, service: "innerpause-backend" }, request.requestId);
       }
 
+      if (request.method === "POST" && path === "/analysis/quick") {
+        const body = request.body as { text?: string } | undefined;
+        const text = body?.text?.trim();
+        if (!text) throw notFound("Reflection text");
+        return ok({ analysis: createQuickAnalysis(text) }, request.requestId);
+      }
+
       const user = await authenticate(request.headers, this.verifier);
 
       if (request.method === "POST" && path === "/auth/session") {
@@ -116,3 +123,47 @@ function normalisePath(path: string) {
   return path.replace(/^\/api\/v1/, "") || "/";
 }
 
+function createQuickAnalysis(text: string) {
+  const lower = text.toLowerCase();
+  const safetyFlag = ["suicide", "kill myself", "self harm", "end my life"].some((word) => lower.includes(word));
+  const emotion = lower.includes("angry")
+    ? "Frustration"
+    : lower.includes("sad") || lower.includes("lonely")
+      ? "Sadness"
+      : lower.includes("focus") || lower.includes("confused")
+        ? "Mental noise"
+        : "Overwhelm";
+  const chakra = emotion === "Frustration" ? "throat" : emotion === "Sadness" ? "heart" : emotion === "Mental noise" ? "third-eye" : "root";
+
+  return {
+    summary: safetyFlag
+      ? "Your reflection may need immediate human support before a normal reset session."
+      : "Here is what we noticed in your reflection: your system may be asking for a slower, steadier reset.",
+    originalEntrySummary: text.length > 220 ? `${text.slice(0, 217)}...` : text,
+    understandingSummary: "Based on what you shared, this may be a moment to pause, breathe and let your body settle before deciding what comes next.",
+    keyIncidents: [{ id: crypto.randomUUID(), text: text.length > 180 ? `${text.slice(0, 177)}...` : text }],
+    emotions: [
+      {
+        name: emotion,
+        intensity: 7,
+        level: "medium",
+        explanation: "This emotion appeared from the words and tone in your reflection.",
+      },
+    ],
+    triggers: ["Emotional load"],
+    chakraAssociations: [
+      {
+        chakra,
+        emotionalTheme: "Supportive reset",
+        reason: "This theme may benefit from a calming sound and breath-based reset.",
+        sessionSupport: "The reset will use simple guidance and local Chakra audio to support reflection.",
+        confidence: 0.62,
+      },
+    ],
+    healingApproachSummary: "Start with grounding breath, continue with calming sound, and close with a simple reflection.",
+    suggestedOutcome: safetyFlag ? "Pause and seek immediate human support." : "Feel more settled and emotionally clear.",
+    recommendedDuration: safetyFlag ? 5 : 10,
+    safetyFlag,
+    analysisSource: "fallback",
+  };
+}

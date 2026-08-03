@@ -89,6 +89,10 @@ export class InnerPauseApiClient {
     });
   }
 
+  async analyseText(text: string) {
+    return this.request<unknown>("/analysis/quick", { method: "POST", body: { text } });
+  }
+
   async createResetAudio(id: string, idempotencyKey?: string) {
     return this.request<CreateJobResponse>(`/journals/${encodeURIComponent(id)}/reset-audio`, {
       method: "POST",
@@ -196,4 +200,3 @@ export function createRequestId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
-

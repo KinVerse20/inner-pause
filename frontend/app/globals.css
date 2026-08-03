@@ -1,0 +1,965 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8f4ff;
+  --foreground: #120b4f;
+  --background-primary: #fbf8ff;
+  --background-secondary: #f0e8ff;
+  --background-card: rgba(255, 255, 255, 0.82);
+  --background-card-soft: rgba(255, 255, 255, 0.64);
+  --cream: #130b4f;
+  --gold-primary: #7c3aed;
+  --gold-light: #26156f;
+  --gold-muted: #6d5ea8;
+  --gold-border: rgba(124, 58, 237, 0.46);
+  --gold-border-soft: rgba(124, 58, 237, 0.18);
+  --purple-primary: #7c3aed;
+  --purple-glow: #a78bfa;
+  --blue-primary: #6d5dfc;
+  --ip-bg: #f8f7ff;
+  --ip-bg-soft: #f3f0ff;
+  --ip-card: rgba(255, 255, 255, 0.86);
+  --ip-purple: #6c3ef4;
+  --ip-purple-2: #7b4dff;
+  --ip-ink: #1e245a;
+  --ip-body: #37406f;
+  --ip-muted: #6d6996;
+  --ip-lavender: #ede8ff;
+  --ip-border: rgba(108, 62, 244, 0.12);
+  --ip-border-strong: rgba(108, 62, 244, 0.24);
+  --bottom-nav-height: 4.25rem;
+  --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.75rem);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mvp-bg {
+  background:
+    radial-gradient(circle at 50% -8%, rgba(123, 77, 255, 0.2), transparent 19rem),
+    radial-gradient(circle at 88% 9%, rgba(251, 207, 232, 0.36), transparent 18rem),
+    linear-gradient(180deg, #fcfbff, #f8f7ff 58%, #f3f0ff);
+  position: relative;
+  isolation: isolate;
+}
+
+.mvp-bg::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background-image:
+    radial-gradient(circle, rgba(124, 58, 237, 0.12) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(167, 139, 250, 0.14) 0 1px, transparent 1.5px);
+  background-position: 0 0, 38px 58px;
+  background-size: 120px 140px, 160px 190px;
+  opacity: 0.32;
+  z-index: -1;
+}
+
+.mvp-orb {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.75), transparent 22%),
+    radial-gradient(circle, rgba(124, 58, 237, 0.34), rgba(236, 72, 153, 0.16) 54%, transparent 72%);
+  animation: mvp-breathe 8s ease-in-out infinite;
+}
+
+.mvp-energy-wave {
+  background:
+    linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.26), transparent),
+    linear-gradient(115deg, transparent, rgba(236, 72, 153, 0.16), transparent);
+  filter: blur(12px);
+  animation: mvp-wave 18s ease-in-out infinite alternate;
+}
+
+.soft-input {
+  border: 1px solid var(--ip-border);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ip-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.soft-input::placeholder {
+  color: rgba(109, 105, 150, 0.72);
+}
+
+.soft-pill {
+  border: 1px solid var(--ip-border);
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--ip-ink);
+}
+
+.chakra-activation-dot {
+  animation: chakra-activate 2.8s ease-in-out infinite;
+}
+
+@keyframes chakra-activate {
+  0%, 18% { opacity: 0.38; transform: scale(0.82); }
+  34%, 62% { opacity: 1; transform: scale(1.14); }
+  100% { opacity: 0.58; transform: scale(0.92); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chakra-activation-dot,
+  .mvp-orb,
+  .mvp-energy-wave {
+    animation: none !important;
+  }
+}
+
+.mvp-meditator {
+  position: relative;
+  width: min(44vw, 11.5rem);
+  height: min(44vw, 11.5rem);
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 217, 135, 0.22), transparent 18%),
+    radial-gradient(circle at 50% 70%, rgba(127, 56, 183, 0.34), transparent 54%);
+  box-shadow: 0 0 80px rgba(178, 89, 231, 0.28);
+}
+
+.mvp-meditator::before,
+.mvp-meditator::after {
+  position: absolute;
+  content: "";
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(5, 7, 17, 0.92);
+}
+
+.mvp-meditator::before {
+  top: 18%;
+  width: 18%;
+  height: 18%;
+  border-radius: 9999px;
+}
+
+.mvp-meditator::after {
+  bottom: 18%;
+  width: 62%;
+  height: 38%;
+  border-radius: 48% 48% 32% 32%;
+}
+
+.chakra-dot {
+  position: absolute;
+  left: 50%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 14px currentColor;
+}
+
+@keyframes mvp-breathe {
+  0%, 100% { transform: scale(0.97); opacity: 0.82; }
+  45% { transform: scale(1.04); opacity: 1; }
+}
+
+@keyframes mvp-wave {
+  from { transform: translate3d(-1rem, 0, 0) rotate(-2deg); opacity: 0.32; }
+  to { transform: translate3d(1rem, -0.6rem, 0) rotate(2deg); opacity: 0.58; }
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-bottom: 0;
+  }
+}
+
+.cosmic-app-bg {
+  background:
+    radial-gradient(circle at 18% 10%, rgba(79, 70, 229, 0.22), transparent 32%),
+    radial-gradient(circle at 82% 20%, rgba(20, 184, 166, 0.15), transparent 28%),
+    radial-gradient(circle at 50% 72%, rgba(124, 58, 237, 0.18), transparent 36%),
+    linear-gradient(180deg, #050816 0%, #0c1024 48%, #080b18 100%);
+}
+
+.aurora-field {
+  background:
+    linear-gradient(112deg, transparent 6%, rgba(34, 211, 238, 0.15) 30%, rgba(167, 139, 250, 0.22) 48%, rgba(74, 222, 128, 0.13) 66%, transparent 90%),
+    radial-gradient(circle at 20% 45%, rgba(96, 165, 250, 0.18), transparent 30%),
+    radial-gradient(circle at 78% 58%, rgba(168, 85, 247, 0.18), transparent 34%);
+  filter: blur(24px);
+  opacity: 0.78;
+  animation: aurora-drift 28s ease-in-out infinite alternate;
+}
+
+.star-field {
+  background-image:
+    radial-gradient(circle, rgba(191, 219, 254, 0.65) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(167, 139, 250, 0.45) 0 1px, transparent 1.5px);
+  background-position: 0 0, 34px 58px;
+  background-size: 110px 130px, 150px 180px;
+  opacity: 0.26;
+}
+
+.mood-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.mood-card::after {
+  position: absolute;
+  right: -1.5rem;
+  bottom: -2rem;
+  width: 7rem;
+  height: 7rem;
+  content: "";
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px 9999px 0 9999px;
+  opacity: 0.42;
+  transform: rotate(-25deg);
+}
+
+.chakra-player-shell {
+  isolation: isolate;
+}
+
+.psychedelic-backdrop {
+  background:
+    radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--chakra-core) 46%, transparent) 0%, transparent 26%),
+    radial-gradient(circle at 50% 50%, transparent 0 28%, color-mix(in srgb, var(--chakra-accent) 14%, transparent) 29%, transparent 31%),
+    radial-gradient(circle at 15% 42%, color-mix(in srgb, var(--chakra-core) 26%, transparent) 0%, transparent 28%),
+    radial-gradient(circle at 85% 42%, color-mix(in srgb, var(--chakra-core) 26%, transparent) 0%, transparent 28%),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.72));
+}
+
+.psychedelic-backdrop::before,
+.psychedelic-backdrop::after {
+  position: absolute;
+  inset: -15%;
+  content: "";
+  background:
+    conic-gradient(from 45deg, transparent, color-mix(in srgb, var(--chakra-core) 28%, transparent), transparent, color-mix(in srgb, var(--chakra-accent) 18%, transparent), transparent);
+  filter: blur(20px);
+  opacity: 0.42;
+  animation: chakra-mandala-rotate 70s linear infinite;
+}
+
+.psychedelic-backdrop::after {
+  animation-direction: reverse;
+  animation-duration: 90s;
+  opacity: 0.28;
+}
+
+.player-control-glass {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.36), rgba(2, 6, 23, 0.62)),
+    radial-gradient(circle at 28% 0%, color-mix(in srgb, var(--chakra-accent) 14%, transparent), transparent 40%);
+  box-shadow:
+    0 24px 80px rgba(2, 6, 23, 0.44),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.chakra-scene {
+  isolation: isolate;
+}
+
+.chakra-scene--paused * {
+  animation-play-state: paused !important;
+}
+
+.chakra-aura {
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--chakra-accent) 22%, transparent) 0%, transparent 46%),
+    radial-gradient(circle at 32% 30%, color-mix(in srgb, var(--chakra-core) 16%, transparent) 0%, transparent 44%),
+    radial-gradient(circle at 70% 68%, color-mix(in srgb, var(--chakra-accent) 12%, transparent) 0%, transparent 38%);
+  filter: blur(18px);
+  animation: chakra-aura-drift 24s ease-in-out infinite alternate;
+}
+
+.chakra-vignette {
+  background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(2, 6, 23, 0.22) 78%, rgba(2, 6, 23, 0.5) 100%);
+}
+
+.chakra-scene-stack {
+  position: absolute;
+  inset: 0;
+}
+
+.chakra-scene-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    opacity 4s ease,
+    transform 4s ease,
+    filter 4s ease;
+}
+
+.chakra-scene-layer--enter {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+
+.chakra-scene-layer--exit {
+  opacity: 0;
+  transform: scale(1.015);
+  filter: blur(10px);
+}
+
+.chakra-orb-immersive {
+  position: relative;
+  width: min(72vw, 25rem);
+  height: min(72vw, 25rem);
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 34% 28%, color-mix(in srgb, white 24%, transparent) 0%, transparent 24%),
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--chakra-accent) 58%, transparent) 0%, color-mix(in srgb, var(--chakra-core) 72%, transparent) 42%, rgba(15, 23, 42, 0.3) 82%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 90px var(--chakra-glow),
+    0 0 150px color-mix(in srgb, var(--chakra-core) 18%, transparent),
+    inset 0 -24px 70px rgba(15, 23, 42, 0.22);
+  animation: chakra-breathe 12s ease-in-out infinite;
+}
+
+.chakra-orb-immersive--still {
+  animation: none;
+}
+
+.chakra-orb-halo,
+.chakra-orb-sheen,
+.chakra-orb-inner-ring,
+.chakra-orb-inner-core,
+.chakra-orb-label {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+}
+
+.chakra-orb-halo {
+  inset: -12%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--chakra-accent) 18%, transparent) 0%, transparent 60%);
+  filter: blur(24px);
+}
+
+.chakra-orb-sheen {
+  inset: 8%;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), transparent 32%, transparent 64%, rgba(255, 255, 255, 0.06));
+  opacity: 0.85;
+}
+
+.chakra-orb-inner-ring {
+  inset: 14%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.chakra-orb-inner-core {
+  inset: 26%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, transparent 58%);
+  filter: blur(2px);
+}
+
+.chakra-orb-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.chakra-energy-ring {
+  position: absolute;
+  width: min(88vw, 34rem);
+  height: min(88vw, 34rem);
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--chakra-accent) 28%, transparent);
+  background: radial-gradient(circle, color-mix(in srgb, var(--chakra-accent) 6%, transparent) 0%, transparent 64%);
+  opacity: 0;
+  animation: chakra-ring 10s ease-out infinite;
+}
+
+.chakra-energy-ring--static {
+  animation: none;
+  opacity: 0.18;
+  transform: scale(1.06);
+}
+
+.chakra-scene-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: opacity 0.6s ease, transform 0.6s ease, background-color 0.6s ease;
+}
+
+.chakra-scene-dot--active {
+  background: color-mix(in srgb, var(--chakra-accent) 70%, white 30%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--chakra-accent) 38%, transparent);
+  transform: scale(1.15);
+}
+
+.chakra-particle {
+  position: absolute;
+  display: block;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--chakra-accent) 74%, white 26%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--chakra-accent) 36%, transparent);
+  opacity: 0.5;
+  animation: chakra-particle-float var(--duration, 18s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.chakra-particle--static {
+  animation: none;
+  opacity: 0.3;
+}
+
+.session-background-glow {
+  animation: session-background-drift 28s ease-in-out infinite alternate;
+}
+
+.session-background-glow--delayed {
+  animation-delay: 6s;
+}
+
+.session-background-glow--slow {
+  animation-duration: 36s;
+}
+
+.chakra-mandala {
+  position: relative;
+  width: min(76vw, 27rem);
+  height: min(76vw, 27rem);
+  border-radius: 9999px;
+  animation:
+    chakra-breathe 12s ease-in-out infinite,
+    chakra-mandala-rotate 42s linear infinite;
+}
+
+.chakra-mandala--still {
+  animation: none;
+}
+
+.chakra-mandala-core,
+.chakra-mandala-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+}
+
+.chakra-mandala-core {
+  inset: 26%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--chakra-accent) 60%, white 14%) 0%, color-mix(in srgb, var(--chakra-core) 48%, transparent) 64%, transparent 100%);
+  box-shadow: 0 0 60px var(--chakra-glow);
+}
+
+.chakra-mandala-ring--outer {
+  inset: 6%;
+  border: 1px solid color-mix(in srgb, var(--chakra-accent) 34%, transparent);
+}
+
+.chakra-mandala-ring--inner {
+  inset: 18%;
+  border: 1px solid color-mix(in srgb, white 12%, transparent);
+}
+
+.chakra-mandala-petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24%;
+  height: 40%;
+  margin-left: -12%;
+  margin-top: -39%;
+  border-radius: 100% 100% 70% 70%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--chakra-accent) 70%, white 12%), color-mix(in srgb, var(--chakra-core) 58%, transparent));
+  transform-origin: 50% 95%;
+  opacity: 0.78;
+  filter: blur(0.2px);
+  animation: chakra-petal-bloom 12s ease-in-out infinite;
+}
+
+.chakra-wave-field {
+  position: absolute;
+  inset: 8% 6%;
+  overflow: hidden;
+}
+
+.chakra-wave {
+  position: absolute;
+  left: 50%;
+  width: 120%;
+  height: 28%;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--chakra-accent) 18%, transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--chakra-accent) 18%, transparent), transparent);
+  filter: blur(0.5px);
+  animation: chakra-wave-flow 18s ease-in-out infinite;
+}
+
+.chakra-wave-glow {
+  position: absolute;
+  left: 50%;
+  width: 86%;
+  height: 18%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--chakra-accent) 22%, transparent), transparent);
+  filter: blur(18px);
+  opacity: 0.26;
+  animation: chakra-wave-glow-drift 24s ease-in-out infinite;
+}
+
+.chakra-wave-glow--one {
+  top: 26%;
+  transform: translateX(-50%) rotate(9deg);
+}
+
+.chakra-wave-glow--two {
+  top: 54%;
+  transform: translateX(-50%) rotate(-7deg);
+  animation-delay: -9s;
+}
+
+.chakra-wave-glow--still {
+  animation: none;
+}
+
+.chakra-wave--one {
+  top: 18%;
+  transform: translateX(-50%) rotate(-8deg);
+}
+
+.chakra-wave--two {
+  top: 38%;
+  transform: translateX(-50%) rotate(6deg);
+  animation-duration: 22s;
+  animation-delay: -6s;
+}
+
+.chakra-wave--three {
+  top: 58%;
+  transform: translateX(-50%) rotate(-4deg);
+  animation-duration: 20s;
+  animation-delay: -10s;
+}
+
+.chakra-wave--still {
+  animation: none;
+}
+
+.chakra-wave-orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(62vw, 22rem);
+  height: min(62vw, 22rem);
+  margin-left: calc(min(62vw, 22rem) / -2);
+  margin-top: calc(min(62vw, 22rem) / -2);
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--chakra-accent) 14%, transparent);
+  box-shadow: inset 0 0 34px color-mix(in srgb, var(--chakra-core) 16%, transparent);
+  animation: chakra-mandala-rotate 48s linear infinite reverse;
+}
+
+.chakra-wave-orbit--still {
+  animation: none;
+}
+
+.chakra-light-beam {
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  bottom: 8%;
+  width: 10rem;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--chakra-accent) 16%, transparent), color-mix(in srgb, white 10%, transparent), transparent);
+  filter: blur(28px);
+  animation: chakra-light-beam-pulse 12s ease-in-out infinite;
+}
+
+.chakra-light-beam--still {
+  animation: none;
+}
+
+.chakra-cosmic-star {
+  position: absolute;
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--chakra-accent) 74%, white 26%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--chakra-accent) 35%, transparent);
+  animation: chakra-star-twinkle 10s ease-in-out infinite;
+}
+
+.chakra-cosmic-star--still {
+  animation: none;
+}
+
+.chakra-lotus {
+  position: relative;
+  width: min(70vw, 24rem);
+  height: min(70vw, 24rem);
+  animation: chakra-breathe 12s ease-in-out infinite;
+}
+
+.chakra-lotus--still {
+  animation: none;
+}
+
+.chakra-lotus-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28%;
+  height: 28%;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--chakra-accent) 60%, white 10%) 0%, color-mix(in srgb, var(--chakra-core) 56%, transparent) 74%, transparent 100%);
+  box-shadow: 0 0 50px var(--chakra-glow);
+}
+
+.chakra-lotus-petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24%;
+  height: 38%;
+  margin-left: -12%;
+  margin-top: -34%;
+  border-radius: 100% 100% 20% 20%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--chakra-accent) 70%, white 14%), color-mix(in srgb, var(--chakra-core) 52%, transparent));
+  transform-origin: 50% 94%;
+  animation: chakra-lotus-bloom 12s ease-in-out infinite;
+}
+
+.chakra-lotus-petal--1 { transform: rotate(0deg) translateY(-12%); }
+.chakra-lotus-petal--2 { transform: rotate(35deg) translateY(-7%); }
+.chakra-lotus-petal--3 { transform: rotate(-35deg) translateY(-7%); }
+.chakra-lotus-petal--4 { transform: rotate(70deg) translateY(7%); }
+.chakra-lotus-petal--5 { transform: rotate(-70deg) translateY(7%); }
+.chakra-lotus-petal--6 { transform: rotate(180deg) translateY(14%); }
+
+.chakra-kaleidoscope {
+  position: relative;
+  width: min(78vw, 28rem);
+  height: min(78vw, 28rem);
+  border-radius: 9999px;
+  animation:
+    chakra-breathe 12s ease-in-out infinite,
+    chakra-kaleidoscope-rotate 54s linear infinite;
+}
+
+.chakra-kaleidoscope--still {
+  animation: none;
+}
+
+.chakra-kaleidoscope-core,
+.chakra-kaleidoscope-symbol {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+}
+
+.chakra-kaleidoscope-core {
+  width: 28%;
+  height: 28%;
+  background: radial-gradient(circle, color-mix(in srgb, white 30%, var(--chakra-accent) 70%) 0%, color-mix(in srgb, var(--chakra-core) 55%, transparent) 72%, transparent 100%);
+  box-shadow: 0 0 70px var(--chakra-glow);
+}
+
+.chakra-kaleidoscope-symbol {
+  width: 12%;
+  height: 12%;
+  border: 1px solid color-mix(in srgb, white 26%, transparent);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--chakra-accent) 26%, transparent),
+    inset 0 0 18px color-mix(in srgb, white 10%, transparent);
+}
+
+.chakra-kaleidoscope-petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22%;
+  height: 44%;
+  margin-left: -11%;
+  margin-top: -42%;
+  border-radius: 100% 100% 44% 44%;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--chakra-accent) 72%, white 12%), color-mix(in srgb, var(--chakra-core) 55%, transparent)),
+    radial-gradient(circle at 50% 36%, color-mix(in srgb, white 18%, transparent), transparent 52%);
+  opacity: 0.72;
+  filter: blur(0.25px);
+  transform-origin: 50% 96%;
+  animation: chakra-kaleidoscope-pulse 14s ease-in-out infinite;
+}
+
+.chakra-kaleidoscope-trail {
+  position: absolute;
+  inset: 17%;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--chakra-accent) 16%, transparent);
+  box-shadow: inset 0 0 42px color-mix(in srgb, var(--chakra-core) 14%, transparent);
+  animation: chakra-kaleidoscope-trail 24s ease-in-out infinite;
+}
+
+@keyframes chakra-breathe {
+  0% {
+    transform: scale(0.96);
+  }
+  33% {
+    transform: scale(1.02);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(-1rem, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(1rem, 1.5rem, 0) scale(1.08);
+  }
+}
+
+@keyframes chakra-mandala-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chakra-ring {
+  0% {
+    transform: scale(0.72);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+
+@keyframes chakra-petal-bloom {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scaleY(0.94) scaleX(0.98);
+  }
+  40% {
+    opacity: 0.92;
+    transform: scaleY(1.03) scaleX(1.02);
+  }
+  70% {
+    opacity: 0.78;
+    transform: scaleY(0.98) scaleX(1);
+  }
+}
+
+@keyframes chakra-particle-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.22;
+  }
+  35% {
+    transform: translate3d(0.6rem, -0.9rem, 0);
+    opacity: 0.55;
+  }
+  68% {
+    transform: translate3d(-0.45rem, -1.35rem, 0);
+    opacity: 0.36;
+  }
+}
+
+@keyframes chakra-wave-flow {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) scaleX(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translateX(-49%) translateY(-0.8rem) scaleX(1.04);
+    opacity: 0.44;
+  }
+}
+
+@keyframes chakra-aura-drift {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.04) translate3d(1.2%, -1.5%, 0);
+  }
+  100% {
+    transform: scale(1.02) translate3d(-1.8%, 1.8%, 0);
+  }
+}
+
+@keyframes chakra-wave-glow-drift {
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: translateX(-50%) scaleX(0.96);
+  }
+  50% {
+    opacity: 0.34;
+    transform: translateX(-50%) scaleX(1.04);
+  }
+}
+
+@keyframes session-background-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(1.5rem, -1rem, 0) scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes chakra-light-beam-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateX(-50%) scaleY(0.98);
+  }
+  45% {
+    opacity: 0.72;
+    transform: translateX(-50%) scaleY(1.04);
+  }
+}
+
+@keyframes chakra-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes chakra-lotus-bloom {
+  0%,
+  100% {
+    opacity: 0.72;
+    filter: blur(0.2px);
+  }
+  40% {
+    opacity: 0.94;
+    filter: blur(0);
+  }
+}
+
+@keyframes chakra-kaleidoscope-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chakra-kaleidoscope-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scaleY(0.94) scaleX(0.98);
+  }
+  40% {
+    opacity: 0.94;
+    transform: scaleY(1.04) scaleX(1.02);
+  }
+  70% {
+    opacity: 0.76;
+    transform: scaleY(0.98) scaleX(1);
+  }
+}
+
+@keyframes chakra-kaleidoscope-trail {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.34;
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chakra-aura,
+  .chakra-orb-immersive,
+  .chakra-energy-ring,
+  .chakra-particle,
+  .chakra-mandala,
+  .chakra-mandala-petal,
+  .chakra-wave,
+  .chakra-wave-glow,
+  .chakra-wave-orbit,
+  .chakra-light-beam,
+  .chakra-cosmic-star,
+  .chakra-lotus,
+  .chakra-lotus-petal,
+  .chakra-kaleidoscope,
+  .chakra-kaleidoscope-petal,
+  .chakra-kaleidoscope-trail,
+  .aurora-field,
+  .psychedelic-backdrop::before,
+  .psychedelic-backdrop::after,
+  .session-background-glow {
+    animation: none !important;
+  }
+
+  .chakra-energy-ring {
+    opacity: 0.14;
+    transform: scale(1.04);
+  }
+
+  .chakra-scene-layer {
+    transition: none;
+  }
+}

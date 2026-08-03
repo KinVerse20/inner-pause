@@ -6,7 +6,10 @@ const files = execFileSync("git", ["ls-files", "--others", "--cached", "--exclud
 })
   .split("\n")
   .filter(Boolean)
-  .filter((file) => !file.split("/").includes("node_modules") && !file.startsWith(".next/") && !file.includes("/cdk.out/"));
+  .filter((file) => {
+    const parts = file.split("/");
+    return !parts.includes("node_modules") && !parts.includes(".next") && !parts.includes("cdk.out") && !parts.includes("dist");
+  });
 
 const patterns = [
   { name: "AWS access key id", regex: /AKIA[0-9A-Z]{16}/ },

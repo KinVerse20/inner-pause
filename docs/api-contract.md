@@ -42,6 +42,24 @@ Ownership checks: backend derives user identity from token only.
 Errors: `UNAUTHENTICATED`, `CONFIGURATION_ERROR`  
 Mode: synchronous.
 
+## `POST /api/v1/analysis/quick`
+
+Purpose: Temporary AWS-test compatibility endpoint for the migrated frontend journal flow. It returns a deterministic emotional insight from the backend so the frontend does not call the old Next.js `/api/analyze` route or OpenAI directly.  
+Authentication: Not currently required in local test mode. Must be protected before AWS test launch.  
+Request body:
+
+```json
+{
+  "text": "string"
+}
+```
+
+Response: `{ analysis }`  
+Validation: `text` is required.  
+Ownership checks: none in the temporary local compatibility path.  
+Errors: `NOT_FOUND`, `INTERNAL_ERROR`  
+Mode: synchronous temporary backend fallback. Replace with `/journals/:id/analyse` plus SQS before real AWS testing.
+
 ## `GET /api/v1/me`
 
 Purpose: Return current authenticated profile identity.  
@@ -197,4 +215,3 @@ Validation: notification provider must be configured or mock mode enabled.
 Ownership checks: message is created for authenticated user only.  
 Errors: `UNAUTHENTICATED`, `CONFIGURATION_ERROR`  
 Mode: asynchronous provider job.
-
