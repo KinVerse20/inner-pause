@@ -7,7 +7,9 @@
     "dev": "node --import tsx src/local-server.ts",
     "build": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts",
+    "migrate:aws:test": "node scripts/run-migrations.mjs",
+    "test:aws:smoke": "node scripts/aws-integration-smoke.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1101.0",

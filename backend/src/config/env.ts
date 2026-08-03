@@ -17,9 +17,14 @@ export interface BackendConfig {
   databaseSecretArn?: string;
   databaseProxyEndpoint?: string;
   workQueueUrl?: string;
+  analysisQueueUrl?: string;
+  audioQueueUrl?: string;
+  notificationQueueUrl?: string;
   databaseUrl?: string;
   databaseSsl: boolean;
   approvedTestRecipient?: string;
+  openAiApiKey?: string;
+  openAiModel: string;
 }
 
 export function readConfig(env = process.env): BackendConfig {
@@ -43,9 +48,14 @@ export function readConfig(env = process.env): BackendConfig {
     databaseSecretArn: env.AWS_DATABASE_SECRET_ARN,
     databaseProxyEndpoint: env.AWS_DATABASE_PROXY_ENDPOINT,
     workQueueUrl: env.AWS_WORK_QUEUE_URL,
+    analysisQueueUrl: env.AWS_ANALYSIS_QUEUE_URL,
+    audioQueueUrl: env.AWS_AUDIO_QUEUE_URL,
+    notificationQueueUrl: env.AWS_NOTIFICATION_QUEUE_URL,
     databaseUrl: env.DATABASE_URL,
     databaseSsl: env.DATABASE_SSL === "true",
     approvedTestRecipient: env.APPROVED_TEST_RECIPIENT,
+    openAiApiKey: env.OPENAI_API_KEY,
+    openAiModel: env.OPENAI_MODEL ?? "gpt-4.1-mini",
   };
 }
 
@@ -55,6 +65,7 @@ export function assertAwsRuntimeConfig(config = readConfig()) {
       ["AUTH_MODE", config.authMode, "cognito"],
       ["REPOSITORY_MODE", config.repositoryMode, "postgres"],
       ["STORAGE_MODE", config.storageMode, "s3"],
+      ["AI_MODE", config.aiMode, "openai"],
     ].filter(([, actual, expected]) => actual !== expected);
 
     if (unsafe.length) {
@@ -71,9 +82,16 @@ export function assertAwsRuntimeConfig(config = readConfig()) {
     ["AWS_AUDIO_BUCKET_NAME", config.audioBucketName],
     ["AWS_DATABASE_SECRET_ARN", config.databaseSecretArn],
     ["AWS_DATABASE_PROXY_ENDPOINT", config.databaseProxyEndpoint],
-    ["AWS_WORK_QUEUE_URL", config.workQueueUrl],
+    ["AWS_ANALYSIS_QUEUE_URL", config.analysisQueueUrl],
+    ["AWS_AUDIO_QUEUE_URL", config.audioQueueUrl],
+    ["AWS_NOTIFICATION_QUEUE_URL", config.notificationQueueUrl],
     ["DATABASE_URL or AWS_DATABASE_PROXY_ENDPOINT", config.databaseUrl ?? config.databaseProxyEndpoint],
+    ["OPENAI_API_KEY", config.aiMode === "openai" ? config.openAiApiKey : "not-required"],
   ].filter(([, value]) => !value);
+
+  if (config.notificationsMode === "whatsapp" && !config.approvedTestRecipient) {
+    missing.push(["APPROVED_TEST_RECIPIENT", undefined]);
+  }
 
   if (missing.length) {
     throw validationError("Backend AWS environment is incomplete.", {

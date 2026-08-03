@@ -11,8 +11,9 @@ export class AnalysisWorker {
     await this.repository.updateJob({ userId: input.userId, jobId: input.jobId, status: "processing" });
     try {
       const journal = await this.repository.getJournalForUser(input.userId, input.journalId);
-      await this.aiProvider.analyseJournal({ journalId: input.journalId, text: journal.rawText, requestId: input.requestId });
-      await this.repository.updateJob({ userId: input.userId, jobId: input.jobId, status: "completed", resultId: input.journalId });
+      const insight = await this.aiProvider.analyseJournal({ journalId: input.journalId, text: journal.rawText, requestId: input.requestId });
+      const saved = await this.repository.saveAnalysis(input.userId, input.journalId, insight, "openai");
+      await this.repository.updateJob({ userId: input.userId, jobId: input.jobId, status: "completed", resultId: saved.analysisId });
     } catch (error) {
       await this.repository.updateJob({
         userId: input.userId,
@@ -24,4 +25,3 @@ export class AnalysisWorker {
     }
   }
 }
-

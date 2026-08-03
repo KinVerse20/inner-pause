@@ -1,7 +1,7 @@
 import pg from "pg";
-import type { AudioRecord, JournalDetail, JournalSummary, NotificationMessage } from "@innerpause/shared";
+import type { AudioRecord, EmotionalInsight, JournalDetail, JournalSummary, NotificationMessage } from "@innerpause/shared";
 import { forbidden, notFound } from "../shared/errors.js";
-import type { AppRepository, CreateAudioInput, CreateJournalInput } from "./types.js";
+import type { AppRepository, CreateAudioInput, CreateJournalInput, UserPreferences } from "./types.js";
 
 const { Pool } = pg;
 
@@ -88,8 +88,21 @@ export class PostgresRepository implements AppRepository {
       `
         select j.id, j.user_id, j.title, j.raw_text, j.transcription, j.emotional_intensity_before, j.created_at, j.updated_at,
           exists(select 1 from public.emotional_analyses a where a.journal_entry_id = j.id and a.user_id = $1) as has_analysis,
-          exists(select 1 from public.audio_records ar where ar.journal_entry_id = j.id and ar.user_id = $1 and ar.deleted_at is null) as has_reset_audio
+          exists(select 1 from public.audio_records ar where ar.journal_entry_id = j.id and ar.user_id = $1 and ar.deleted_at is null) as has_reset_audio,
+          a.summary as analysis_summary,
+          a.emotions_json as analysis_emotions,
+          a.triggers_json as analysis_triggers,
+          a.suggested_outcome as analysis_suggested_outcome,
+          a.recommended_duration as analysis_recommended_duration,
+          a.safety_flag as analysis_safety_flag
         from public.journal_entries j
+        left join lateral (
+          select summary, emotions_json, triggers_json, suggested_outcome, recommended_duration, safety_flag
+          from public.emotional_analyses
+          where user_id = $1 and journal_entry_id = j.id
+          order by created_at desc
+          limit 1
+        ) a on true
         where j.id = $2
       `,
       [userId, journalId],
@@ -165,6 +178,53 @@ export class PostgresRepository implements AppRepository {
     };
   }
 
+  async saveAnalysis(userId: string, journalId: string, insight: EmotionalInsight, modelVersion?: string) {
+    const client = await this.pool.connect();
+    try {
+      await client.query("begin");
+      const journal = await client.query("select user_id from public.journal_entries where id = $1 for update", [journalId]);
+      if (!journal.rows[0]) throw notFound("Journal");
+      if (journal.rows[0].user_id !== userId) throw forbidden();
+      const result = await client.query(
+        `
+          insert into public.emotional_analyses (
+            user_id,
+            journal_entry_id,
+            summary,
+            incidents_json,
+            emotions_json,
+            triggers_json,
+            chakra_analysis_json,
+            suggested_outcome,
+            recommended_duration,
+            safety_flag,
+            model_version
+          )
+          values ($1, $2, $3, '[]', $4, $5, '[]', $6, $7, $8, $9)
+          returning id
+        `,
+        [
+          userId,
+          journalId,
+          insight.summary,
+          JSON.stringify(insight.emotions),
+          JSON.stringify(insight.triggers),
+          insight.suggestedOutcome ?? null,
+          insight.recommendedDuration ?? null,
+          insight.safetyFlag,
+          modelVersion ?? null,
+        ],
+      );
+      await client.query("commit");
+      return { analysisId: result.rows[0].id };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async createAudio(userId: string, input: CreateAudioInput): Promise<AudioRecord> {
     const result = await this.pool.query(
       `
@@ -212,6 +272,55 @@ export class PostgresRepository implements AppRepository {
     if (result.rowCount === 0) throw notFound("Audio");
   }
 
+  async getPreferences(userId: string): Promise<UserPreferences> {
+    const result = await this.pool.query(
+      `
+        select timezone, onboarding_completed, preferred_session_duration, preferred_voice, preferred_music_style,
+          preferred_guidance_level, affirmations_enabled, nature_sounds_enabled
+        from public.profiles
+        where id = $1
+      `,
+      [userId],
+    );
+    const row = result.rows[0];
+    if (!row) throw notFound("Profile");
+    return mapPreferences(row);
+  }
+
+  async updatePreferences(userId: string, preferences: Partial<UserPreferences>): Promise<UserPreferences> {
+    const current = await this.getPreferences(userId);
+    const next = { ...current, ...preferences };
+    const result = await this.pool.query(
+      `
+        update public.profiles
+        set timezone = $2,
+          onboarding_completed = $3,
+          preferred_session_duration = $4,
+          preferred_voice = $5,
+          preferred_music_style = $6,
+          preferred_guidance_level = $7,
+          affirmations_enabled = $8,
+          nature_sounds_enabled = $9,
+          updated_at = now()
+        where id = $1
+        returning timezone, onboarding_completed, preferred_session_duration, preferred_voice, preferred_music_style,
+          preferred_guidance_level, affirmations_enabled, nature_sounds_enabled
+      `,
+      [
+        userId,
+        next.timezone ?? "UTC",
+        next.onboardingCompleted ?? false,
+        next.preferredSessionDuration ?? 20,
+        next.preferredVoice ?? "Soft guide",
+        next.preferredMusicStyle ?? "Cosmic ambient",
+        next.preferredGuidanceLevel ?? "Balanced",
+        next.affirmationsEnabled ?? true,
+        next.natureSoundsEnabled ?? false,
+      ],
+    );
+    return mapPreferences(result.rows[0]);
+  }
+
   async listNotifications(userId: string): Promise<NotificationMessage[]> {
     const result = await this.pool.query(
       "select id, message_text, delivery_channel, delivery_status, created_at from public.notification_messages where user_id = $1 order by created_at desc",
@@ -225,10 +334,51 @@ export class PostgresRepository implements AppRepository {
       createdAt: row.created_at.toISOString(),
     }));
   }
+
+  async createNotification(input: {
+    userId: string;
+    messageText: string;
+    deliveryChannel: NotificationMessage["deliveryChannel"];
+    deliveryStatus: NotificationMessage["deliveryStatus"];
+    idempotencyKey?: string;
+    scheduledFor?: string;
+    providerMessageId?: string;
+    errorMessage?: string;
+  }): Promise<NotificationMessage> {
+    const result = await this.pool.query(
+      `
+        insert into public.notification_messages (
+          user_id, idempotency_key, message_text, scheduled_for, delivery_channel, delivery_status, provider_message_id, error_message
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8)
+        on conflict (user_id, idempotency_key) where idempotency_key is not null
+        do update set updated_at = public.notification_messages.updated_at
+        returning id, message_text, delivery_channel, delivery_status, created_at
+      `,
+      [
+        input.userId,
+        input.idempotencyKey ?? null,
+        input.messageText,
+        input.scheduledFor ?? null,
+        input.deliveryChannel,
+        input.deliveryStatus,
+        input.providerMessageId ?? null,
+        input.errorMessage ?? null,
+      ],
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      messageText: row.message_text,
+      deliveryChannel: row.delivery_channel,
+      deliveryStatus: row.delivery_status,
+      createdAt: row.created_at.toISOString(),
+    };
+  }
 }
 
 function mapJournalDetail(row: pg.QueryResultRow, hasAnalysis: boolean, hasResetAudio: boolean): JournalDetail {
-  return {
+  const detail: JournalDetail = {
     id: row.id,
     title: row.title,
     rawText: row.raw_text,
@@ -239,5 +389,28 @@ function mapJournalDetail(row: pg.QueryResultRow, hasAnalysis: boolean, hasReset
     hasAnalysis,
     hasResetAudio,
   };
+  if (row.analysis_summary) {
+    detail.analysis = {
+      summary: row.analysis_summary,
+      emotions: Array.isArray(row.analysis_emotions) ? row.analysis_emotions : [],
+      triggers: Array.isArray(row.analysis_triggers) ? row.analysis_triggers : [],
+      suggestedOutcome: row.analysis_suggested_outcome ?? undefined,
+      recommendedDuration: row.analysis_recommended_duration ?? undefined,
+      safetyFlag: Boolean(row.analysis_safety_flag),
+    };
+  }
+  return detail;
 }
 
+function mapPreferences(row: pg.QueryResultRow): UserPreferences {
+  return {
+    timezone: row.timezone ?? undefined,
+    onboardingCompleted: row.onboarding_completed ?? undefined,
+    preferredSessionDuration: row.preferred_session_duration ?? undefined,
+    preferredVoice: row.preferred_voice ?? undefined,
+    preferredMusicStyle: row.preferred_music_style ?? undefined,
+    preferredGuidanceLevel: row.preferred_guidance_level ?? undefined,
+    affirmationsEnabled: row.affirmations_enabled ?? undefined,
+    natureSoundsEnabled: row.nature_sounds_enabled ?? undefined,
+  };
+}

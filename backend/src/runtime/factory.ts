@@ -36,10 +36,16 @@ export function createRuntimeServices(env = process.env): RuntimeServices {
         : new TestTokenVerifier();
 
   const queue =
-    config.workQueueUrl && config.region
-      ? new SqsQueueClient({ region: config.region, queueUrl: config.workQueueUrl })
+    config.region && (config.analysisQueueUrl || config.audioQueueUrl || config.notificationQueueUrl || config.workQueueUrl)
+      ? new SqsQueueClient({
+          region: config.region,
+          queueUrl: config.workQueueUrl,
+          analysisQueueUrl: config.analysisQueueUrl,
+          audioQueueUrl: config.audioQueueUrl,
+          notificationQueueUrl: config.notificationQueueUrl,
+        })
       : config.runtimeMode === "aws"
-        ? failAwsMock("missing AWS_WORK_QUEUE_URL")
+        ? failAwsMock("missing AWS queue URLs")
         : new NoopQueueClient();
 
   return { config, repository, verifier, queue };

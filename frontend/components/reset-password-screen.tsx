@@ -4,10 +4,14 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { BrandLogo, GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { useAuth } from "@/lib/auth/auth-provider";
 
 export function ResetPasswordScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const auth = useAuth();
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
+  const [code, setCode] = useState(searchParams.get("code") ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,8 +32,8 @@ export function ResetPasswordScreen() {
 
     setLoading(true);
     try {
-      searchParams.get("code");
-      setStatus("Password reset will be completed through Cognito in the AWS test environment.");
+      await auth.confirmForgotPassword({ email, code, password });
+      setStatus("Password updated. You can now log in.");
       setTimeout(() => router.replace("/auth"), 900);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not update password.");
@@ -44,6 +48,14 @@ export function ResetPasswordScreen() {
         <BrandLogo />
         <SectionTitle title="Choose a new password" copy="Enter a new password for your Inner Pause account." />
         <GlassCard className="space-y-4 p-5">
+          <label className="block">
+            <span className="text-sm text-stone-400">Email</span>
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" />
+          </label>
+          <label className="block">
+            <span className="text-sm text-stone-400">Reset code</span>
+            <input value={code} onChange={(event) => setCode(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" />
+          </label>
           <label className="block">
             <span className="text-sm text-stone-400">New password</span>
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" />

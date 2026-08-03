@@ -5,12 +5,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { useAuth } from "@/lib/auth/auth-provider";
 import { clearFrontendSession } from "@/lib/auth/session";
 import { deleteAllLocalMvpData, upsertProfile } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
 
 export function ProfileScreen() {
   const router = useRouter();
+  const auth = useAuth();
   const state = useMvpState();
   const [name, setName] = useState(state.profile.fullName);
   const [email, setEmail] = useState(state.profile.email);
@@ -25,6 +27,7 @@ export function ProfileScreen() {
     setStatus("");
     void (async () => {
       try {
+        auth.signOut();
         clearFrontendSession();
         window.sessionStorage.clear();
         setStatus("Signed out successfully.");

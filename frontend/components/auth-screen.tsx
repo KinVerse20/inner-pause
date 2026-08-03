@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { BrandLogo, GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
-import { createFrontendApiClient, setFrontendSession } from "@/lib/auth/session";
+import { useAuth } from "@/lib/auth/auth-provider";
 
 export function AuthScreen() {
   const router = useRouter();
+  const auth = useAuth();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo")?.startsWith("/") ? searchParams.get("redirectTo") : "/";
   const routeMessage = searchParams.get("message");
@@ -15,6 +16,7 @@ export function AuthScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(routeMessage ?? "");
   const [error, setError] = useState("");
@@ -31,7 +33,8 @@ export function AuthScreen() {
     setLoading(true);
     try {
       if (mode === "forgot") {
-        setStatus("Password reset will be handled by Cognito in the AWS test environment.");
+        await auth.forgotPassword(email);
+        setStatus("Password reset code sent. Check your inbox.");
         return;
       }
 
@@ -41,19 +44,13 @@ export function AuthScreen() {
       }
 
       if (mode === "signup") {
-        setStatus("AWS Cognito sign-up UI is prepared. Connect the Cognito frontend SDK before creating live test users.");
+        await auth.signUp({ email, password, fullName: name });
+        setStatus("Check your email for the verification code.");
         setMode("login");
         return;
       }
 
-      const testToken = password.startsWith("test-user-") ? password : "test-user-a";
-      const api = createFrontendApiClient();
-      const user = await api.session().catch(() => ({
-        id: "11111111-1111-4111-8111-111111111111",
-        email,
-        fullName: name || "Sahil",
-      }));
-      setFrontendSession(testToken, { ...user, email: user.email || email, fullName: user.fullName || name });
+      await auth.signIn({ email, password, fullName: name });
 
       router.replace(redirectTo ?? "/");
       router.refresh();
@@ -73,7 +70,8 @@ export function AuthScreen() {
     }
     setLoading(true);
     try {
-      setStatus("Verification resend will be handled by Cognito in the AWS test environment.");
+      await auth.resendVerification(email);
+      setStatus("Verification email resent. Check your inbox.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not resend verification email.");
     } finally {
@@ -108,6 +106,25 @@ export function AuthScreen() {
             <label className="block">
               <span className="text-sm text-[#4b3f86]">Password</span>
               <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+            </label>
+          ) : null}
+          {mode === "login" ? (
+            <label className="block">
+              <span className="text-sm text-[#4b3f86]">Verification code</span>
+              <input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+              <button
+                type="button"
+                disabled={loading || !email || !verificationCode}
+                onClick={() =>
+                  auth
+                    .confirmSignUp({ email, code: verificationCode })
+                    .then(() => setStatus("Account verified. You can now log in."))
+                    .catch((caught) => setError(caught instanceof Error ? caught.message : "Could not verify account."))
+                }
+                className="mt-2 min-h-10 w-full rounded-full border border-purple-200 bg-white text-sm text-[#6d28d9] disabled:opacity-45"
+              >
+                Verify account
+              </button>
             </label>
           ) : null}
           {status ? <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{status}</p> : null}

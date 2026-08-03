@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PlayerProvider } from "@/components/player-provider";
 import { PwaRegistration } from "@/components/pwa-registration";
-import { AuthSessionSync } from "@/components/auth-session-sync";
+import { AuthProvider } from "@/lib/auth/auth-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -58,9 +58,10 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[var(--background)] text-[var(--foreground)] flex flex-col">
         <PlayerProvider>
-          <AuthSessionSync />
-          {children}
-          <PwaRegistration />
+          <AuthProvider>
+            {children}
+            <PwaRegistration />
+          </AuthProvider>
         </PlayerProvider>
       </body>
     </html>

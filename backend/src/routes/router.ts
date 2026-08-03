@@ -6,7 +6,6 @@ import { JobService } from "../jobs/job-service.js";
 import type { QueueClient } from "../jobs/sqs-queue.js";
 import { JournalService } from "../services/journal-service.js";
 import { AudioService } from "../services/audio-service.js";
-import { NotificationService } from "../services/notification-service.js";
 import { notFound } from "../shared/errors.js";
 import { fail, ok, type HttpRequest, type HttpResponse } from "../shared/http.js";
 
@@ -22,7 +21,6 @@ export class ApiRouter {
   private readonly journals: JournalService;
   private readonly jobs: JobService;
   private readonly audio: AudioService;
-  private readonly notifications = new NotificationService();
 
   constructor(options: RouterOptions = {}) {
     const runtime = options.repository && options.verifier ? null : createRuntimeServices();
@@ -112,12 +110,27 @@ export class ApiRouter {
         return ok({ journalCount: (await this.journals.list(user.id)).length, recurringEmotions: [] }, request.requestId);
       }
 
+      if (request.method === "GET" && path === "/preferences") {
+        return ok(await this.repository.getPreferences(user.id), request.requestId);
+      }
+
+      if (request.method === "PATCH" && path === "/preferences") {
+        return ok(await this.repository.updatePreferences(user.id, request.body as never), request.requestId);
+      }
+
       if (request.method === "GET" && path === "/notifications") {
-        return ok(await this.notifications.list(), request.requestId);
+        return ok(await this.repository.listNotifications(user.id), request.requestId);
       }
 
       if (request.method === "POST" && path === "/notifications/test") {
-        return ok(this.notifications.createTest(), request.requestId, 202);
+        const message = await this.repository.createNotification({
+          userId: user.id,
+          messageText: "Test notification queued for AWS safety validation.",
+          deliveryChannel: "mock",
+          deliveryStatus: "queued",
+          idempotencyKey: request.headers["idempotency-key"],
+        });
+        return ok({ queued: true, notification: message }, request.requestId, 202);
       }
 
       throw notFound("Endpoint");

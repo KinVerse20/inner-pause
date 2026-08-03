@@ -8,6 +8,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as eventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -45,7 +46,7 @@ export class InnerPauseAwsTestStack extends Stack {
 
     new amplify.CfnBranch(this, "InnerPauseAmplifyTestBranch", {
       appId: frontendApp.attrAppId,
-      branchName: "feature/aws-separated-frontend-backend",
+      branchName: "feature/aws-deployment-ready",
       enableAutoBuild: false,
       stage: "DEVELOPMENT",
     });
@@ -144,8 +145,28 @@ export class InnerPauseAwsTestStack extends Stack {
       encryption: sqs.QueueEncryption.SQS_MANAGED,
     });
 
-    const workQueue = new sqs.Queue(this, "InnerPauseWorkQueue", {
+    const analysisQueue = new sqs.Queue(this, "InnerPauseAnalysisQueue", {
       visibilityTimeout: Duration.seconds(90),
+      retentionPeriod: Duration.days(4),
+      encryption: sqs.QueueEncryption.SQS_MANAGED,
+      deadLetterQueue: {
+        queue: deadLetterQueue,
+        maxReceiveCount: 3,
+      },
+    });
+
+    const audioQueue = new sqs.Queue(this, "InnerPauseAudioQueue", {
+      visibilityTimeout: Duration.seconds(180),
+      retentionPeriod: Duration.days(4),
+      encryption: sqs.QueueEncryption.SQS_MANAGED,
+      deadLetterQueue: {
+        queue: deadLetterQueue,
+        maxReceiveCount: 3,
+      },
+    });
+
+    const notificationQueue = new sqs.Queue(this, "InnerPauseNotificationQueue", {
+      visibilityTimeout: Duration.seconds(60),
       retentionPeriod: Duration.days(4),
       encryption: sqs.QueueEncryption.SQS_MANAGED,
       deadLetterQueue: {
@@ -161,7 +182,9 @@ export class InnerPauseAwsTestStack extends Stack {
       AWS_AUDIO_BUCKET_NAME: audioBucket.bucketName,
       AWS_COGNITO_USER_POOL_ID: userPool.userPoolId,
       AWS_COGNITO_USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
-      AWS_WORK_QUEUE_URL: workQueue.queueUrl,
+      AWS_ANALYSIS_QUEUE_URL: analysisQueue.queueUrl,
+      AWS_AUDIO_QUEUE_URL: audioQueue.queueUrl,
+      AWS_NOTIFICATION_QUEUE_URL: notificationQueue.queueUrl,
       BACKEND_RUNTIME_MODE: "aws",
       AUTH_MODE: "cognito",
       REPOSITORY_MODE: "postgres",
@@ -203,36 +226,88 @@ exports.handler = async (event) => {
       `),
     });
 
-    const workerLogGroup = new logs.LogGroup(this, "InnerPauseWorkerHandlerLogGroup", {
+    const analysisWorkerLogGroup = new logs.LogGroup(this, "InnerPauseAnalysisWorkerLogGroup", {
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    const workerHandler = new lambda.Function(this, "InnerPauseWorkerHandler", {
+    const analysisWorkerHandler = new lambda.Function(this, "InnerPauseAnalysisWorkerHandler", {
       runtime: lambdaRuntime,
       handler: "index.handler",
       timeout: Duration.seconds(60),
       memorySize: 256,
-      logGroup: workerLogGroup,
+      logGroup: analysisWorkerLogGroup,
       vpc,
       securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
       code: lambda.Code.fromInline(`
 exports.handler = async (event) => {
-  console.log("InnerPause AWS test worker received", JSON.stringify(event));
-  return { ok: true };
+  console.log("InnerPause analysis worker scaffold received", { records: event.Records?.length || 0 });
+  return { batchItemFailures: [] };
 };
       `),
     });
 
+    const audioWorkerHandler = new lambda.Function(this, "InnerPauseAudioWorkerHandler", {
+      runtime: lambdaRuntime,
+      handler: "index.handler",
+      timeout: Duration.seconds(120),
+      memorySize: 512,
+      logGroup: new logs.LogGroup(this, "InnerPauseAudioWorkerLogGroup", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+      vpc,
+      securityGroups: [lambdaSecurityGroup],
+      environment: lambdaEnvironment,
+      code: lambda.Code.fromInline(`
+exports.handler = async (event) => {
+  console.log("InnerPause audio worker scaffold received", { records: event.Records?.length || 0 });
+  return { batchItemFailures: [] };
+};
+      `),
+    });
+
+    const notificationWorkerHandler = new lambda.Function(this, "InnerPauseNotificationWorkerHandler", {
+      runtime: lambdaRuntime,
+      handler: "index.handler",
+      timeout: Duration.seconds(45),
+      memorySize: 256,
+      logGroup: new logs.LogGroup(this, "InnerPauseNotificationWorkerLogGroup", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+      vpc,
+      securityGroups: [lambdaSecurityGroup],
+      environment: lambdaEnvironment,
+      code: lambda.Code.fromInline(`
+exports.handler = async (event) => {
+  console.log("InnerPause notification worker scaffold received", { records: event.Records?.length || 0 });
+  return { batchItemFailures: [] };
+};
+      `),
+    });
+
+    analysisWorkerHandler.addEventSource(new eventSources.SqsEventSource(analysisQueue, { batchSize: 5, reportBatchItemFailures: true }));
+    audioWorkerHandler.addEventSource(new eventSources.SqsEventSource(audioQueue, { batchSize: 2, reportBatchItemFailures: true }));
+    notificationWorkerHandler.addEventSource(new eventSources.SqsEventSource(notificationQueue, { batchSize: 10, reportBatchItemFailures: true }));
+
     database.secret!.grantRead(apiHandler);
-    database.secret!.grantRead(workerHandler);
+    database.secret!.grantRead(analysisWorkerHandler);
+    database.secret!.grantRead(audioWorkerHandler);
+    database.secret!.grantRead(notificationWorkerHandler);
     proxy.grantConnect(apiHandler, "innerpause_admin");
-    proxy.grantConnect(workerHandler, "innerpause_admin");
+    proxy.grantConnect(analysisWorkerHandler, "innerpause_admin");
+    proxy.grantConnect(audioWorkerHandler, "innerpause_admin");
+    proxy.grantConnect(notificationWorkerHandler, "innerpause_admin");
     audioBucket.grantReadWrite(apiHandler);
-    audioBucket.grantReadWrite(workerHandler);
-    workQueue.grantSendMessages(apiHandler);
-    workQueue.grantConsumeMessages(workerHandler);
+    audioBucket.grantReadWrite(audioWorkerHandler);
+    analysisQueue.grantSendMessages(apiHandler);
+    audioQueue.grantSendMessages(apiHandler);
+    notificationQueue.grantSendMessages(apiHandler);
+    analysisQueue.grantConsumeMessages(analysisWorkerHandler);
+    audioQueue.grantConsumeMessages(audioWorkerHandler);
+    notificationQueue.grantConsumeMessages(notificationWorkerHandler);
 
     const api = new apigateway.RestApi(this, "InnerPauseTestApi", {
       restApiName: "innerpause-aws-test-api",
@@ -267,7 +342,7 @@ exports.handler = async (event) => {
 
     new events.Rule(this, "MorningGuidanceSchedule", {
       schedule: events.Schedule.rate(Duration.hours(24)),
-      targets: [new targets.SqsQueue(workQueue)],
+      targets: [new targets.SqsQueue(notificationQueue)],
     });
 
     new cloudwatch.Alarm(this, "ApiErrorsAlarm", {
@@ -289,5 +364,10 @@ exports.handler = async (event) => {
     new cdk.CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });
     new cdk.CfnOutput(this, "AudioBucketName", { value: audioBucket.bucketName });
     new cdk.CfnOutput(this, "DatabaseProxyEndpoint", { value: proxy.endpoint });
+    new cdk.CfnOutput(this, "DatabaseSecretName", { value: database.secret!.secretName });
+    new cdk.CfnOutput(this, "AnalysisQueueUrl", { value: analysisQueue.queueUrl });
+    new cdk.CfnOutput(this, "AudioQueueUrl", { value: audioQueue.queueUrl });
+    new cdk.CfnOutput(this, "NotificationQueueUrl", { value: notificationQueue.queueUrl });
+    new cdk.CfnOutput(this, "DeadLetterQueueUrl", { value: deadLetterQueue.queueUrl });
   }
 }
