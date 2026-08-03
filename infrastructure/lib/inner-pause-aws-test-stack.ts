@@ -57,7 +57,7 @@ export class InnerPauseAwsTestStack extends Stack {
 
     new amplify.CfnBranch(this, "InnerPauseAmplifyTestBranch", {
       appId: frontendApp.attrAppId,
-      branchName: "feature/aws-deployment-ready",
+      branchName: "feature/aws-account-setup",
       enableAutoBuild: false,
       stage: "DEVELOPMENT",
     });

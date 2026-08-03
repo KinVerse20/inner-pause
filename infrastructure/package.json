@@ -7,6 +7,8 @@
     "build": "tsc --noEmit",
     "synth": "cdk synth",
     "diff": "cdk diff",
+    "diff:safe": "bash ../scripts/cdk-diff-safe.sh",
+    "bootstrap:safe": "bash ../scripts/cdk-bootstrap-safe.sh",
     "deploy": "cdk deploy --all",
     "destroy": "cdk destroy --all"
   },

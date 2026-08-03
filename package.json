@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test": "npm --prefix frontend run test && npm --prefix backend run test",
     "test:separation": "npm --prefix frontend run build && npm --prefix frontend run test && npm --prefix backend run build && npm --prefix backend run test",
-    "test:ui": "node scripts/mobile-usability-test.mjs"
+    "test:ui": "node scripts/mobile-usability-test.mjs",
+    "aws:verify": "bash scripts/aws-verify-identity.sh",
+    "bootstrap:safe": "bash scripts/cdk-bootstrap-safe.sh",
+    "diff:safe": "bash scripts/cdk-diff-safe.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

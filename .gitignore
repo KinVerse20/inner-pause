@@ -19,6 +19,7 @@
 **/.next/
 /out/
 **/cdk.out
+.aws-review/
 
 # production
 /build
