@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey || isPublicPath(pathname)) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     return response;
   }
 
@@ -51,17 +51,21 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (pathname === "/auth" && user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (isPublicPath(pathname)) {
+    return response;
+  }
+
   if (!user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/auth";
     redirectUrl.searchParams.set("redirectTo", `${pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  if (pathname === "/auth") {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/";
-    redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
 

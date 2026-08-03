@@ -9,7 +9,7 @@ import { ChakraGlyph } from "@/components/chakra-symbol";
 import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
 import { chakraMap } from "@/data/chakras";
 import { defaultPlanCustomisation } from "@/lib/healing-engine";
-import { savePlan } from "@/lib/mvp-storage";
+import { keepReflectionTemporary, savePlan, saveReflectionToJourney, updateJournalEntry } from "@/lib/mvp-storage";
 import { HealingPlanCustomisation, GuidanceFrequency, MusicStyle, NatureSound, VoiceGuidanceLevel } from "@/lib/mvp-types";
 import { useMvpState } from "@/lib/use-mvp-state";
 
@@ -54,9 +54,9 @@ export function HealingPlanScreen() {
     return (
       <MvpShell>
         <GlassCard className="mx-auto max-w-xl p-6">
-          <h1 className="font-serif text-3xl text-[var(--gold-light)]">No healing plan yet</h1>
-          <p className="mt-3 text-sm leading-6 text-stone-300">Create a journal entry and emotional insight to generate your first personalised plan.</p>
-          <Link href="/journal" className="mt-5 inline-flex rounded-full border border-[var(--gold-border)] px-5 py-3 text-[var(--gold-light)]">Start Journal</Link>
+          <h1 className="font-serif text-3xl text-[#130b4f]">No personalised reset yet</h1>
+          <p className="mt-3 text-sm leading-6 text-[#4b3f86]">Share what you feel to create your first personalised reset.</p>
+          <Link href="/journal" className="mt-5 inline-flex rounded-full border border-purple-200 bg-white px-5 py-3 text-[#6d28d9]">Share What You Feel</Link>
         </GlassCard>
       </MvpShell>
     );
@@ -66,9 +66,9 @@ export function HealingPlanScreen() {
     return (
       <MvpShell>
         <GlassCard className="mx-auto max-w-xl p-6">
-          <h1 className="font-serif text-3xl text-[var(--gold-light)]">Plan not created yet</h1>
-          <p className="mt-3 text-sm leading-6 text-stone-300">Confirm the insight to create your personalised healing plan.</p>
-          <GoldButton className="mt-5" onClick={() => { savePlan(entry.id); router.refresh(); }}>Create Healing Plan</GoldButton>
+          <h1 className="font-serif text-3xl text-[#130b4f]">Reset not created yet</h1>
+          <p className="mt-3 text-sm leading-6 text-[#4b3f86]">Confirm the insight to create your personalised reset.</p>
+          <GoldButton className="mt-5" onClick={() => { savePlan(entry.id); router.refresh(); }}>Create Personalised Reset</GoldButton>
         </GlassCard>
       </MvpShell>
     );
@@ -89,12 +89,12 @@ export function HealingPlanScreen() {
     <MvpShell>
       <div className="mx-auto max-w-3xl space-y-3.5">
         <header className="flex items-center justify-between">
-          <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]" aria-label="Back">←</button>
+          <button type="button" onClick={() => router.back()} className="grid h-11 w-11 place-items-center rounded-full border border-purple-200 bg-white/70 text-[#6d28d9]" aria-label="Back">←</button>
           <div className="text-center">
-            <p className="text-sm text-[var(--gold-muted)]">Your Healing Plan</p>
-            <p className="text-xs text-stone-500">Personalised just for you</p>
+            <p className="text-sm text-[#6d28d9]">Your Personalised Reset</p>
+            <p className="text-xs text-[#6d5ea8]">Based on what you shared</p>
           </div>
-          <span className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04]">✧</span>
+          <span className="grid h-11 w-11 place-items-center rounded-full border border-purple-200 bg-white/70 text-[#6d28d9]">✧</span>
         </header>
 
         <div className="relative grid min-h-24 place-items-center overflow-hidden rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/[0.04]">
@@ -102,11 +102,40 @@ export function HealingPlanScreen() {
           <div className="mvp-meditator scale-50" />
         </div>
 
-        <SectionTitle title={plan.title} copy={plan.intendedOutcome} />
+        <SectionTitle title="Your personalised reset is ready" copy={plan.intendedOutcome} />
+
+        <GlassCard className="p-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-xl text-[#130b4f]">Would you like to remember this reflection?</h2>
+              <p className="mt-2 text-sm leading-5 text-[#4b3f86]">Saving the summary can help you notice emotional patterns over time.</p>
+            </div>
+            <span className={`rounded-full border px-3 py-1 text-xs ${entry.isTemporary ? "border-purple-200 bg-purple-50 text-[#6d28d9]" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+              {entry.isTemporary ? "Not saved yet" : "Saved"}
+            </span>
+          </div>
+          <p className="mt-3 rounded-2xl border border-purple-100 bg-white/70 p-3 text-sm leading-5 text-[#4b3f86]">
+            {entry.analysis?.understandingSummary ?? entry.analysis?.summary ?? entry.title}
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <GoldButton onClick={() => saveReflectionToJourney(entry.id)}>Save to My Journey</GoldButton>
+            <button type="button" onClick={() => keepReflectionTemporary(entry.id)} className="min-h-11 rounded-full border border-purple-200 bg-white px-4 py-2.5 font-semibold text-[#6d28d9]">Not Now</button>
+            <button
+              type="button"
+              onClick={() => {
+                const next = window.prompt("Edit Summary", entry.analysis?.understandingSummary ?? entry.analysis?.summary ?? entry.title);
+                if (next?.trim() && entry.analysis) updateJournalEntry(entry.id, { analysis: { ...entry.analysis, understandingSummary: next.trim(), summary: next.trim() } });
+              }}
+              className="min-h-11 rounded-full border border-purple-200 bg-white px-4 py-2.5 font-semibold text-[#6d28d9]"
+            >
+              Edit Summary
+            </button>
+          </div>
+        </GlassCard>
 
         <GlassCard className="p-3.5">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm uppercase tracking-[0.24em] text-[var(--gold-muted)]">Total Duration</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-[var(--gold-muted)]">Recommended duration</p>
             <p className="font-serif text-2xl text-[var(--gold-light)]">{plan.totalDurationMinutes} min</p>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -115,7 +144,7 @@ export function HealingPlanScreen() {
                 key={`${duration}`}
                 type="button"
                 onClick={() => regenerate(duration)}
-                className={`min-h-10 rounded-full border px-3 py-1.5 text-sm ${plan.selectedDuration === duration ? "border-[var(--gold-border)] bg-amber-300/10 text-[var(--gold-light)]" : "border-white/10 bg-white/[0.04] text-stone-300"}`}
+                className={`min-h-10 rounded-full border px-3 py-1.5 text-sm ${plan.selectedDuration === duration ? "border-purple-300 bg-purple-100 text-[#6d28d9]" : "border-purple-100 bg-white/70 text-[#4b3f86]"}`}
               >
                 {duration === "full" ? "Full recommended" : `${duration} min`}
               </button>
@@ -129,7 +158,7 @@ export function HealingPlanScreen() {
             return (
               <div key={block.id} className="relative pl-7">
                 <div className="absolute bottom-[-0.5rem] left-[0.72rem] top-8 w-px bg-[var(--gold-border-soft)]" />
-                <span className="absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full border border-[var(--gold-border)] bg-[#030711] text-xs text-[var(--gold-light)]">{index + 1}</span>
+                <span className="absolute left-0 top-3 grid h-6 w-6 place-items-center rounded-full border border-[var(--gold-border)] bg-white text-xs text-[var(--gold-light)]">{index + 1}</span>
                 <GlassCard className="p-3" style={{ boxShadow: `0 0 28px ${chakra.glow}` }}>
                   <div className="flex gap-3">
                     <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border" style={{ borderColor: chakra.accent, color: chakra.accent }}>
@@ -137,11 +166,11 @@ export function HealingPlanScreen() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h2 className="line-clamp-1 font-serif text-xl text-stone-100">{block.title}</h2>
-                        <p className="shrink-0 text-xs text-stone-500">{block.durationMinutes}m</p>
+                        <h2 className="line-clamp-1 font-serif text-xl text-[#130b4f]">{block.title}</h2>
+                        <p className="shrink-0 text-xs text-[#6d5ea8]">{block.durationMinutes}m</p>
                       </div>
                       <p className="mt-1 text-xs text-[var(--gold-muted)]">{chakra.name} • {block.frequencyLabel}</p>
-                      <p className="mt-1 line-clamp-1 text-sm leading-5 text-stone-300">{block.intention}</p>
+                      <p className="mt-1 line-clamp-1 text-sm leading-5 text-[#4b3f86]">{block.intention}</p>
                     </div>
                   </div>
                 </GlassCard>
@@ -152,14 +181,14 @@ export function HealingPlanScreen() {
 
         <GlassCard className="p-3.5">
           <p className="font-serif text-xl text-[var(--gold-light)]">Your session</p>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-stone-300 sm:grid-cols-5">
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#4b3f86] sm:grid-cols-5">
             <SummaryChip label={`${plan.totalDurationMinutes} minutes`} />
             <SummaryChip label={settings.voiceGuidanceLevel === "none" ? "no voice guidance" : `${labelFor(settings.voiceGuidanceLevel, voiceOptions)} guidance`} />
             <SummaryChip label={labelFor(settings.musicStyle, musicStyleOptions)} />
             <SummaryChip label={`Affirmations ${settings.affirmationsEnabled ? "on" : "off"}`} />
             <SummaryChip label={settings.natureSound === "none" ? "No nature sounds" : labelFor(settings.natureSound, natureOptions)} />
           </div>
-          <p className="mt-3 text-xs leading-5 text-stone-500">
+          <p className="mt-3 text-xs leading-5 text-[#6d5ea8]">
             Music style is saved in the session summary. Extra nature layers are coming soon and are disabled until local assets exist.
           </p>
         </GlassCard>
@@ -219,7 +248,7 @@ export function HealingPlanScreen() {
         </details>
 
         <GoldButton className="w-full" onClick={() => router.push(`/healing/player?plan=${plan.id}`)}>
-          Start Healing
+          Start My Reset
         </GoldButton>
       </div>
     </MvpShell>
@@ -231,7 +260,7 @@ function labelFor<T extends string>(value: T, options: Array<{ value: T; label: 
 }
 
 function SummaryChip({ label }: { label: string }) {
-  return <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-center">{label}</span>;
+  return <span className="rounded-full border border-purple-100 bg-white/70 px-3 py-1.5 text-center">{label}</span>;
 }
 
 function ControlGroup({ label, children }: { label: string; children: ReactNode }) {
@@ -250,7 +279,7 @@ function ChipButton({ selected, disabled = false, onClick, children }: { selecte
       disabled={disabled}
       onClick={onClick}
       className={`min-h-10 rounded-full border px-3 py-1.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-45 ${
-        selected ? "border-[var(--gold-border)] bg-amber-300/10 text-[var(--gold-light)]" : "border-white/10 bg-white/[0.04] text-stone-300 hover:border-[var(--gold-border-soft)]"
+        selected ? "border-purple-300 bg-purple-100 text-[#6d28d9]" : "border-purple-100 bg-white/70 text-[#4b3f86] hover:border-[var(--gold-border-soft)]"
       }`}
     >
       {children}

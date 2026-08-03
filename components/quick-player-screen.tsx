@@ -132,7 +132,7 @@ export function QuickPlayerScreen() {
           <div className="text-center">
             <h1 className="font-serif text-3xl leading-tight text-white sm:text-6xl">{chakra.name}</h1>
             <p className="mt-1 text-sm sm:mt-2 sm:text-base" style={{ color: chakra.accent }}>
-              {mood?.label ?? "The InnerPause Music"}
+              {mood?.label ?? "The Inner Pause Music"}
             </p>
             <p className="mt-1 text-base sm:mt-2 sm:text-lg" style={{ color: chakra.accent }}>
               {chakra.frequencyLabel}
@@ -178,7 +178,7 @@ export function QuickPlayerScreen() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-medium text-white sm:text-lg">
-                  {mood ? `${mood.label} InnerPause session` : `${chakra.name} InnerPause session`}
+                  {mood ? `${mood.label} Inner Pause session` : `${chakra.name} Inner Pause session`}
                 </p>
                 <p className="mt-1 text-sm text-slate-300">
                   {activePlayback.keepPlaying ? "Playing continuously" : `Session length: ${activePlayback.duration} minutes`}

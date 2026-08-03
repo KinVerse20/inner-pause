@@ -117,7 +117,7 @@ function buildUnderstanding(text: string, lower: string) {
 }
 
 function buildChakraReason(chakraId: ChakraId, lower: string) {
-  if (chakraId === "throat") return "You wanted expression, clarity or acknowledgement, and some words may have stayed unspoken.";
+  if (chakraId === "throat") return "You wanted expression, clarity or acknowledgement and some words may have stayed unspoken.";
   if (chakraId === "root") return lower.includes("tomorrow") || lower.includes("anxious") ? "Anxiety about what comes next suggests a need for steadiness, safety and grounding." : "Your system may be asking for more steadiness and physical grounding.";
   if (chakraId === "solar-plexus") return "Frustration with yourself or pressure to respond differently may have touched confidence and personal power.";
   if (chakraId === "heart") return "Emotional distance, hurt or tenderness suggests a need for compassion and reconnection.";
@@ -137,7 +137,7 @@ function buildSessionSupport(chakraId: ChakraId) {
 
 function buildHealingApproach(chakras: ChakraId[]) {
   if (chakras.includes("root") && chakras.includes("throat") && chakras.includes("solar-plexus")) {
-    return "We will begin by helping you feel grounded, then create space for the words you held back, and close with a confidence-focused reset.";
+    return "We will begin by helping you feel grounded, then create space for the words you held back and close with a confidence-focused reset.";
   }
   if (chakras.includes("heart") && chakras.includes("sacral")) {
     return "We will begin by softening emotional tension, then support gentle reconnection and close with a calm integration.";
@@ -183,7 +183,7 @@ export function createHealingPlan(entry: JournalEntry, analysis: EmotionalAnalys
   return {
     id: entry.plan?.id ?? id(),
     journalEntryId: entry.id,
-    title: "Personalised Healing Plan",
+    title: "Personalised Reset",
     intendedOutcome: analysis.suggestedOutcome,
     totalDurationMinutes: blocks.reduce((sum, block) => sum + block.durationMinutes, 0),
     selectedDuration,

@@ -1,15 +1,10 @@
-const CACHE_VERSION = "chakra-healing-v1";
+const CACHE_VERSION = "innerpause-v2";
 const APP_SHELL_CACHE = `${CACHE_VERSION}-app-shell`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 const AUDIO_CACHE = `${CACHE_VERSION}-audio`;
 const OFFLINE_URL = "/offline";
 
 const APP_SHELL_ASSETS = [
-  "/",
-  "/chakras",
-  "/journey",
-  "/history",
-  "/progress",
   OFFLINE_URL,
   "/manifest.webmanifest",
   "/icons/icon-192.png",
@@ -122,11 +117,7 @@ self.addEventListener("fetch", (event) => {
   if (isAppNavigation(request)) {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(APP_SHELL_CACHE).then((cache) => cache.put(request, responseClone));
-          return response;
-        })
+        .then((response) => response)
         .catch(async () => (await caches.match(request)) || caches.match(OFFLINE_URL)),
     );
     return;

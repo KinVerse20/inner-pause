@@ -5,13 +5,13 @@ import { BrandLogo, GlassCard, MvpShell, SectionTitle } from "@/components/mvp-s
 
 const steps = [
   {
-    title: "Journal or speak",
+    title: "Share or speak",
     copy: "Share what happened, describe how you feel or simply ask for a quick reset.",
     icon: "✎",
   },
   {
     title: "Receive insight",
-    copy: "The InnerPause identifies the emotions, important incidents and areas within you that may need gentle attention.",
+    copy: "The Inner Pause identifies the emotions, important incidents and areas within you that may need gentle attention.",
     icon: "◎",
   },
   {
@@ -25,17 +25,17 @@ const cards = [
   {
     title: "Short-term healing",
     icon: "◌",
-    copy: "When you need support immediately, The InnerPause creates short, personalised healing sessions designed to help you slow down, settle your emotions and feel lighter in the moment.\n\nThese experiences may combine calming soundscapes, gentle breathing, guided reflection and frequency-based audio.",
+    copy: "When you need support immediately, The Inner Pause creates short, personalised reset sessions designed to help you slow down, settle your emotions and feel lighter in the moment.\n\nThese experiences may combine calming soundscapes, gentle breathing, guided reflection and frequency-based audio.",
   },
   {
     title: "Long-term healing",
     icon: "☾",
-    copy: "Your daily reflections gradually reveal recurring emotions, triggers and behavioural patterns. The InnerPause helps you recognise these patterns with greater clarity so you can build emotional awareness and respond more consciously over time.\n\nYour journal is not only a record of your day. It becomes a private space for reflection, release and personal growth.",
+    copy: "Your daily reflections gradually reveal recurring emotions, triggers and behavioural patterns. The Inner Pause helps you recognise these patterns with greater clarity so you can build emotional awareness and respond more consciously over time.\n\nYour journey is a private space for reflection, release and personal growth.",
   },
   {
     title: "Why sound and frequency?",
     icon: "≈",
-    copy: "The human body naturally responds to sound, rhythm and vibration. Music and thoughtfully designed sound environments can influence breathing, attention, relaxation and emotional state.\n\nThe InnerPause uses carefully selected frequency-based soundscapes as part of a broader reflective wellness experience. These sounds are designed to support calm, focus and emotional balance.",
+    copy: "The human body naturally responds to sound, rhythm and vibration. Music and thoughtfully designed sound environments can influence breathing, attention, relaxation and emotional state.\n\nThe Inner Pause uses carefully selected frequency-based soundscapes as part of a broader reflective wellness experience. These sounds are designed to support calm, focus and emotional balance.",
   },
 ];
 
@@ -55,13 +55,13 @@ export function AboutScreen() {
           <div className="relative grid gap-6 sm:grid-cols-[1fr_12rem] sm:items-center">
             <div>
               <SectionTitle
-                eyebrow="About The InnerPause"
+                eyebrow="About The Inner Pause"
                 title="A daily ritual for release, reflection and renewal"
-                copy="Turn your day into a personalised healing experience. The InnerPause helps you feel lighter in the moment and understand yourself more deeply over time."
+                copy="Turn your day into a personalised healing experience. The Inner Pause helps you feel lighter in the moment and understand yourself more deeply over time."
               />
             </div>
             <div className="mx-auto overflow-hidden rounded-[2rem] border border-[var(--gold-border-soft)] bg-black/25 p-3 shadow-[0_0_50px_rgba(178,89,231,0.2)]">
-              <Image src="/branding/innerpause-logo-small.png" alt="The InnerPause logo" width={900} height={396} className="h-auto w-48 rounded-[1.4rem]" priority />
+              <Image src="/branding/innerpause-logo-small.png" alt="The Inner Pause logo" width={900} height={396} className="h-auto w-48 rounded-[1.4rem]" priority />
             </div>
           </div>
         </GlassCard>
@@ -99,13 +99,13 @@ export function AboutScreen() {
         <GlassCard className="p-5 sm:p-6">
           <h2 className="font-serif text-3xl text-[var(--gold-light)]">Built with experience and care</h2>
           <p className="mt-4 text-sm leading-7 text-stone-300 sm:text-base">
-            The InnerPause has been shaped by professionals with approximately 15 years of experience working with healing practices, emotional wellness and guided personal transformation.
+            The Inner Pause has been shaped by professionals with approximately 15 years of experience working with healing practices, emotional wellness and guided personal transformation.
           </p>
           <p className="mt-4 text-sm leading-7 text-stone-300 sm:text-base">
             That experience has been used to create a thoughtful daily practice that combines reflection, sound and personalised guidance in a simple and accessible format.
           </p>
           <p className="mt-4 border-t border-white/10 pt-4 text-sm leading-6 text-stone-400">
-            Every experience inside The InnerPause is designed with care, responsibility and respect for the user’s emotional privacy.
+            Every experience inside The Inner Pause is designed with care, responsibility and respect for the user’s emotional privacy.
           </p>
         </GlassCard>
 
@@ -121,7 +121,7 @@ export function AboutScreen() {
             Begin Your Journey
           </Link>
           <p className="mx-auto mt-5 max-w-xl text-xs leading-5 text-stone-500">
-            The InnerPause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
+            The Inner Pause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
           </p>
         </GlassCard>
       </div>

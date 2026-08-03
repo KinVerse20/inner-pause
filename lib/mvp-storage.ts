@@ -172,6 +172,14 @@ export function saveAnalysis(entryId: string, analysis: EmotionalAnalysis) {
   updateJournalEntry(entryId, { analysis });
 }
 
+export function saveReflectionToJourney(entryId: string) {
+  updateJournalEntry(entryId, { saveMode: "journal_and_analysis", isTemporary: false });
+}
+
+export function keepReflectionTemporary(entryId: string) {
+  updateJournalEntry(entryId, { saveMode: "temporary_analysis", isTemporary: true });
+}
+
 export function savePlan(entryId: string, selectedDuration?: number | "full", customisation?: Partial<HealingPlanCustomisation>) {
   const state = readMvpState();
   const entry = state.entries.find((item) => item.id === entryId);

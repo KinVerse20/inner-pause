@@ -60,7 +60,7 @@ export function ResetPasswordScreen() {
     <MvpShell hideNav>
       <div className="mx-auto max-w-xl space-y-5">
         <BrandLogo />
-        <SectionTitle title="Choose a new password" copy="Enter a new password for your InnerPause account." />
+        <SectionTitle title="Choose a new password" copy="Enter a new password for your Inner Pause account." />
         <GlassCard className="space-y-4 p-5">
           <label className="block">
             <span className="text-sm text-stone-400">New password</span>

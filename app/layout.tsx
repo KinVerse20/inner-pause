@@ -17,19 +17,19 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://theinnerpause.app"),
-  title: "The InnerPause",
-  applicationName: "The InnerPause",
-  description: "Guided reflective journaling, emotional insight and personalised healing sessions.",
+  title: "The Inner Pause",
+  applicationName: "The Inner Pause",
+  description: "Guided reflective expression, emotional insight and personalised reset sessions.",
   manifest: "/manifest.webmanifest",
   openGraph: {
-    title: "The InnerPause",
+    title: "The Inner Pause",
     description: "A daily ritual for release, reflection and renewal.",
     images: ["/branding/innerpause-logo.png"],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "The InnerPause",
+    title: "The Inner Pause",
   },
   icons: {
     icon: [
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f172a",
-  colorScheme: "dark",
+  themeColor: "#f8f4ff",
+  colorScheme: "light",
   viewportFit: "cover",
 };
 

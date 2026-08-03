@@ -20,6 +20,7 @@ export function SessionFeedbackScreen() {
   const [wouldRepeat, setWouldRepeat] = useState(true);
   const [reflection, setReflection] = useState("");
   const [uncomfortable, setUncomfortable] = useState("");
+  const [feelingNow, setFeelingNow] = useState("A little calmer");
   const [saving, setSaving] = useState(false);
 
   if (!entry || !plan) {
@@ -42,31 +43,46 @@ export function SessionFeedbackScreen() {
       helpfulSection,
       uncomfortable,
       wouldRepeat,
-      reflection,
+      reflection: reflection ? `${feelingNow}: ${reflection}` : feelingNow,
       createdAt: new Date().toISOString(),
     });
     router.push("/");
   };
 
   return (
-    <MvpShell hideNav>
+    <MvpShell>
       <div className="mx-auto max-w-2xl space-y-3.5">
-        <SectionTitle title="How do you feel now?" copy="Save what changed after this session." />
+        <SectionTitle title="How do you feel now?" copy="Notice what changed after this reset." />
 
         <GlassCard className="p-3.5">
-          <h2 className="font-serif text-xl text-[var(--gold-light)]">Before and after</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {["Much calmer", "A little calmer", "About the same", "More unsettled"].map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setFeelingNow(option)}
+                className={`min-h-12 rounded-2xl border px-3 text-sm font-medium ${feelingNow === option ? "border-purple-300 bg-purple-100 text-[#6d28d9]" : "border-purple-100 bg-white/70 text-[#4b3f86]"}`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-3.5">
+          <h2 className="font-serif text-xl text-[#130b4f]">Before and after</h2>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <p className="text-xs text-stone-400">Before</p>
-              <p className="mt-1 font-serif text-3xl text-stone-100">{before}/10</p>
+            <div className="rounded-2xl border border-purple-100 bg-white/70 p-3">
+              <p className="text-xs text-[#6d5ea8]">Before</p>
+              <p className="mt-1 font-serif text-3xl text-[#130b4f]">{before}/10</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <p className="text-xs text-stone-400">After</p>
-              <p className="mt-1 font-serif text-3xl text-[var(--gold-light)]">{emotionalAfter}/10</p>
+            <div className="rounded-2xl border border-purple-100 bg-white/70 p-3">
+              <p className="text-xs text-[#6d5ea8]">Now</p>
+              <p className="mt-1 font-serif text-3xl text-[#6d28d9]">{emotionalAfter}/10</p>
             </div>
           </div>
-          <p className="mt-3 text-sm text-stone-300">
-            {emotionalAfter < before ? "You reported feeling calmer after this session." : "Your response has been saved without assuming a guaranteed result."}
+          <p className="mt-3 text-sm text-[#4b3f86]">
+            {emotionalAfter < before ? "Your check-in suggests this session helped you feel slightly calmer." : "Your check-in has been saved without assuming a guaranteed result."}
           </p>
         </GlassCard>
 

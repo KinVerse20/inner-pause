@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "The InnerPause",
-    short_name: "The InnerPause",
-    description: "Guided reflective journaling, emotional insight and personalised healing sessions.",
+    name: "The Inner Pause",
+    short_name: "The Inner Pause",
+    description: "Guided reflective expression, emotional insight and personalised reset sessions.",
     start_url: "/",
     display: "standalone",
-    background_color: "#0f172a",
-    theme_color: "#0f172a",
+    background_color: "#f8f4ff",
+    theme_color: "#f8f4ff",
     orientation: "portrait",
     icons: [
       {

@@ -90,7 +90,16 @@ export function AuthScreen() {
         return;
       }
 
-      const user = data.user;
+      if (!data.session || !data.user) {
+        setError("We could not start your session. Please try again.");
+        return;
+      }
+
+      const {
+        data: { session: confirmedSession },
+      } = await supabase.auth.getSession();
+
+      const user = confirmedSession?.user ?? data.user;
       if (!user?.email_confirmed_at && !user?.confirmed_at) {
         await supabase.auth.signOut();
         setError("Please verify your email before logging in.");
@@ -104,7 +113,7 @@ export function AuthScreen() {
         onboardingCompleted: true,
       });
 
-      await fetch("/api/profile", {
+      fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -114,6 +123,7 @@ export function AuthScreen() {
       }).catch(() => undefined);
 
       router.replace(redirectTo ?? "/");
+      router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Authentication failed. Please try again.");
     } finally {
@@ -158,34 +168,34 @@ export function AuthScreen() {
         <BrandLogo />
         <SectionTitle
           title={mode === "forgot" ? "Reset Password" : "Welcome"}
-          copy="Sign in to keep your InnerPause reflections and healing sessions connected to your account."
+          copy="Sign in to keep your Inner Pause reflections and reset sessions connected to your account."
         />
         <GlassCard className="space-y-4 p-5">
           {mode === "signup" ? (
             <label className="block">
-              <span className="text-sm text-stone-400">Full name</span>
-              <input value={name} onChange={(event) => setName(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" />
+              <span className="text-sm text-[#4b3f86]">Full name</span>
+              <input value={name} onChange={(event) => setName(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
             </label>
           ) : null}
           <label className="block">
-            <span className="text-sm text-stone-400">Email</span>
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" />
+            <span className="text-sm text-[#4b3f86]">Email</span>
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
           </label>
           {mode !== "forgot" ? (
             <label className="block">
-              <span className="text-sm text-stone-400">Password</span>
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" />
+              <span className="text-sm text-[#4b3f86]">Password</span>
+              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
             </label>
           ) : null}
-          {status ? <p className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">{status}</p> : null}
-          {error ? <p className="rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-sm text-red-100">{error}</p> : null}
+          {status ? <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{status}</p> : null}
+          {error ? <p className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
           <GoldButton className="w-full" disabled={loading} onClick={submit}>
             {loading ? "Please wait..." : mode === "forgot" ? "Send Reset Link" : mode === "login" ? "Log In" : "Create Account"}
           </GoldButton>
-          <button type="button" disabled={loading} onClick={resendVerification} className="min-h-11 w-full rounded-full border border-[var(--gold-border-soft)] text-sm text-[var(--gold-light)] disabled:opacity-45">
+          <button type="button" disabled={loading} onClick={resendVerification} className="min-h-11 w-full rounded-full border border-purple-200 bg-white text-sm text-[#6d28d9] disabled:opacity-45">
             Resend verification email
           </button>
-          <div className="grid gap-2 text-sm text-stone-400">
+          <div className="grid gap-2 text-sm text-[#6d5ea8]">
             <button type="button" onClick={() => setMode(mode === "login" ? "signup" : "login")}>
               {mode === "login" ? "Create an account" : "I already have an account"}
             </button>
@@ -198,4 +208,3 @@ export function AuthScreen() {
     </MvpShell>
   );
 }
-
