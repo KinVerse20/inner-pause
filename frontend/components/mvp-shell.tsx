@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/auth-provider";
 
 const navItems = [
@@ -17,14 +17,114 @@ const navItems = [
 export function MvpShell({ children, hideNav = false }: { children: ReactNode; hideNav?: boolean }) {
   return (
     <div className="mvp-bg min-h-dvh overflow-x-hidden text-[var(--cream)]">
+      {!hideNav ? <MvpTopMenu /> : null}
       <main
-        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(0.65rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem]"
+        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(4.2rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem]"
         style={{ paddingBottom: hideNav ? "calc(1rem + env(safe-area-inset-bottom))" : "var(--page-bottom-padding)" }}
       >
         {children}
       </main>
       {!hideNav ? <MvpBottomNav /> : null}
     </div>
+  );
+}
+
+
+function MvpTopMenu() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
+
+  const signOut = () => {
+    auth.signOut();
+    setOpen(false);
+    router.replace("/auth");
+  };
+
+  return (
+    <>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--ip-border)] bg-white/88 pt-[env(safe-area-inset-top)] shadow-[0_8px_28px_rgba(108,62,244,0.08)] backdrop-blur-2xl">
+        <div className="mx-auto flex h-14 max-w-[28rem] items-center justify-between px-3.5 sm:px-5 md:max-w-[44rem]">
+          <button
+            type="button"
+            onClick={() => setOpen((current) => !current)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            aria-controls="innerpause-top-menu"
+            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--ip-border)] bg-white text-xl text-[var(--ip-purple)] shadow-sm transition hover:bg-[var(--ip-lavender)] focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)]"
+          >
+            {open ? "×" : "☰"}
+          </button>
+
+          <BrandLogo compact />
+
+          <div className="h-11 w-11" aria-hidden="true" />
+        </div>
+      </header>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 bg-[#130b4f]/20 backdrop-blur-[2px]"
+          />
+          <div
+            id="innerpause-top-menu"
+            className="fixed left-1/2 top-[calc(4rem+env(safe-area-inset-top))] z-50 w-[calc(100%-1.5rem)] max-w-[27rem] -translate-x-1/2 rounded-[1.25rem] border border-[var(--ip-border)] bg-white p-3 shadow-[0_22px_55px_rgba(58,35,133,0.22)]"
+          >
+            <nav className="grid gap-1">
+              {navItems.map((item) => {
+                const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium transition ${
+                      active
+                        ? "bg-[var(--ip-lavender)] text-[var(--ip-purple)]"
+                        : "text-[var(--ip-ink)] hover:bg-purple-50"
+                    }`}
+                  >
+                    <span className="w-6 text-center text-lg">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+
+              {auth.profile ? (
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="flex min-h-12 items-center gap-3 rounded-xl px-4 text-left text-sm font-medium text-[var(--ip-ink)] transition hover:bg-purple-50"
+                >
+                  <span className="w-6 text-center text-lg">↩</span>
+                  <span>Logout</span>
+                </button>
+              ) : null}
+            </nav>
+          </div>
+        </>
+      ) : null}
+    </>
   );
 }
 
