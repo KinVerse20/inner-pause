@@ -404,7 +404,7 @@ export class InnerPauseAwsTestStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: allowedFrontendOrigins,
         allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowHeaders: ["content-type", "authorization"],
+        allowHeaders: ["content-type", "authorization", "idempotency-key", "x-request-id"],
         allowCredentials: true,
       },
     });

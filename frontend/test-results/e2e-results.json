@@ -1,0 +1,327 @@
+{
+  "config": {
+    "argv": [
+      "/usr/local/bin/node",
+      "/Users/sahil/Documents/Healing App/frontend/node_modules/.bin/playwright",
+      "test"
+    ],
+    "configFile": "/Users/sahil/Documents/Healing App/frontend/playwright.config.ts",
+    "rootDir": "/Users/sahil/Documents/Healing App/frontend/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/sahil/Documents/Healing App/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/e2e-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 5,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "aws-innerpause.spec.ts",
+      "file": "aws-innerpause.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "AWS Inner Pause live E2E",
+          "file": "aws-innerpause.spec.ts",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "homepage loads and mobile layouts have no horizontal scrolling",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 3165,
+                      "error": {
+                        "message": "Error: Browser errors: NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 6\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: Browser errors: NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 6\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at /Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts:31:60",
+                        "location": {
+                          "file": "/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts",
+                          "column": 60,
+                          "line": 31
+                        },
+                        "snippet": "  29 |     }\n  30 |\n> 31 |     expect(errors, `Browser errors: ${errors.join(\"\\n\")}`).toEqual([]);\n     |                                                            ^\n  32 |   });\n  33 |\n  34 |   test(\"invalid login details show an error\", async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts",
+                            "column": 60,
+                            "line": 31
+                          },
+                          "message": "Error: Browser errors: NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\nNEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 6\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+   \"NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.\",\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  29 |     }\n  30 |\n> 31 |     expect(errors, `Browser errors: ${errors.join(\"\\n\")}`).toEqual([]);\n     |                                                            ^\n  32 |   });\n  33 |\n  34 |   test(\"invalid login details show an error\", async ({ page }) => {\n    at /Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts:31:60"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-04T09:36:51.469Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-9a397-ave-no-horizontal-scrolling-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-9a397-ave-no-horizontal-scrolling-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-9a397-ave-no-horizontal-scrolling-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-9a397-ave-no-horizontal-scrolling-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts",
+                        "column": 60,
+                        "line": 31
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "450b0b65daa0d65396c9-f9e3e0e349cfaa18a506",
+              "file": "aws-innerpause.spec.ts",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "invalid login details show an error",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1215,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-04T09:36:55.073Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "450b0b65daa0d65396c9-b580c808f6cef54d58c5",
+              "file": "aws-innerpause.spec.ts",
+              "line": 34,
+              "column": 3
+            },
+            {
+              "title": "protected pages redirect to login when the browser session is missing",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 445,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-04T09:36:56.355Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "450b0b65daa0d65396c9-385ce0f75bd8bbb876e4",
+              "file": "aws-innerpause.spec.ts",
+              "line": 43,
+              "column": 3
+            },
+            {
+              "title": "signup, verification, login, journal persistence, logout and second-user isolation",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1275,
+                      "error": {
+                        "message": "Error: AWS frontend is missing NEXT_PUBLIC_API_BASE_URL, so Cognito signup cannot start.",
+                        "stack": "Error: AWS frontend is missing NEXT_PUBLIC_API_BASE_URL, so Cognito signup cannot start.\n    at signUp (/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts:132:11)\n    at /Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts:51:5",
+                        "location": {
+                          "file": "/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts",
+                          "column": 11,
+                          "line": 132
+                        },
+                        "snippet": "  130 |   await page.getByRole(\"button\", { name: \"Create Account\" }).click();\n  131 |   if (await page.getByText(/NEXT_PUBLIC_API_BASE_URL is required/i).isVisible().catch(() => false)) {\n> 132 |     throw new Error(\"AWS frontend is missing NEXT_PUBLIC_API_BASE_URL, so Cognito signup cannot start.\");\n      |           ^\n  133 |   }\n  134 |   await expect(page.getByText(/check your email|verification code/i)).toBeVisible();\n  135 | }"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts",
+                            "column": 11,
+                            "line": 132
+                          },
+                          "message": "Error: AWS frontend is missing NEXT_PUBLIC_API_BASE_URL, so Cognito signup cannot start.\n\n  130 |   await page.getByRole(\"button\", { name: \"Create Account\" }).click();\n  131 |   if (await page.getByText(/NEXT_PUBLIC_API_BASE_URL is required/i).isVisible().catch(() => false)) {\n> 132 |     throw new Error(\"AWS frontend is missing NEXT_PUBLIC_API_BASE_URL, so Cognito signup cannot start.\");\n      |           ^\n  133 |   }\n  134 |   await expect(page.getByText(/check your email|verification code/i)).toBeVisible();\n  135 | }\n    at signUp (/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts:132:11)\n    at /Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts:51:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-04T09:36:56.804Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-785bf-t-and-second-user-isolation-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-785bf-t-and-second-user-isolation-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-785bf-t-and-second-user-isolation-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/sahil/Documents/Healing App/frontend/test-results/e2e-artifacts/aws-innerpause-AWS-Inner-P-785bf-t-and-second-user-isolation-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/sahil/Documents/Healing App/frontend/e2e/aws-innerpause.spec.ts",
+                        "column": 11,
+                        "line": 132
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "450b0b65daa0d65396c9-db4b481ee68da8e92bd3",
+              "file": "aws-innerpause.spec.ts",
+              "line": 50,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-08-04T09:36:51.253Z",
+    "duration": 6890.668,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}
