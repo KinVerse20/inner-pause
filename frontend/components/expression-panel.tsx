@@ -160,9 +160,13 @@ export function ExpressionPanel({ compact = false, embedded = false }: { compact
       saveAnalysis(entry.id, payload.analysis);
       savePlan(entry.id);
       window.setTimeout(() => router.push(`/analysis?entry=${entry.id}`), 900);
-    } catch {
+    } catch (caught) {
       setLoading(false);
-      setError("We could not prepare your emotional insight right now. Please try again.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "We could not prepare your emotional insight right now. Please try again.",
+      );
     }
   };
 
