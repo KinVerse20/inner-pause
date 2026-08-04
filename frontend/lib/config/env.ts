@@ -41,5 +41,5 @@ export function readFrontendConfig(
     cognitoClientId: env.NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID,
   };
 }
-}
+
 
