@@ -37,8 +37,7 @@ export interface BackendConfig {
   awsApiStage?: string;
   awsDatabaseIdentifier?: string;
   awsDeadLetterQueueUrl?: string;
-  awsAmplifyAppId?: string;
-  awsAmplifyBranchName?: string;
+  awsFrontendUrl?: string;
   awsMonthlyBudgetAmount?: number;
 }
 
@@ -83,8 +82,7 @@ export function readConfig(env = process.env): BackendConfig {
     awsApiStage: env.AWS_API_STAGE,
     awsDatabaseIdentifier: env.AWS_DATABASE_IDENTIFIER,
     awsDeadLetterQueueUrl: env.AWS_DEAD_LETTER_QUEUE_URL,
-    awsAmplifyAppId: env.AWS_AMPLIFY_APP_ID,
-    awsAmplifyBranchName: env.AWS_AMPLIFY_BRANCH_NAME,
+    awsFrontendUrl: env.AWS_FRONTEND_URL,
     awsMonthlyBudgetAmount: env.AWS_MONTHLY_BUDGET_AMOUNT ? Number(env.AWS_MONTHLY_BUDGET_AMOUNT) : undefined,
   };
 }

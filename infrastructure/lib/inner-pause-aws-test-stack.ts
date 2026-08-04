@@ -3,7 +3,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Duration, RemovalPolicy, Stack, StackProps, Tags } from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as amplify from "aws-cdk-lib/aws-amplify";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -31,10 +30,13 @@ export class InnerPauseAwsTestStack extends Stack {
     Tags.of(this).add("Environment", "test");
     Tags.of(this).add("ManagedBy", "cdk");
 
+    const frontendUrl = String(
+      this.node.tryGetContext("frontendUrl") ?? "https://feature-aws-account-setup.d3mrns75cpzj85.amplifyapp.com",
+    ).replace(/\/$/, "");
     const allowedFrontendOriginsInput = this.node.tryGetContext("allowedFrontendOrigins") ?? [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://feature-aws-separated-frontend-backend.example.amplifyapp.com",
+      frontendUrl,
     ];
     const allowedFrontendOrigins = Array.isArray(allowedFrontendOriginsInput)
       ? allowedFrontendOriginsInput
@@ -42,26 +44,6 @@ export class InnerPauseAwsTestStack extends Stack {
           .split(",")
           .map((origin) => origin.trim())
           .filter(Boolean);
-
-    const frontendApp = new amplify.CfnApp(this, "InnerPauseAmplifyTestApp", {
-      name: "innerpause-aws-separated-test",
-      description: "Isolated AWS test frontend for The InnerPause. Connect repository manually before deployment.",
-      platform: "WEB_COMPUTE",
-      customRules: [
-        {
-          source: "/<*>",
-          target: "/index.html",
-          status: "404-200",
-        },
-      ],
-    });
-
-    new amplify.CfnBranch(this, "InnerPauseAmplifyTestBranch", {
-      appId: frontendApp.attrAppId,
-      branchName: "feature/aws-account-setup",
-      enableAutoBuild: false,
-      stage: "DEVELOPMENT",
-    });
 
     const vpc = new ec2.Vpc(this, "InnerPauseTestVpc", {
       maxAzs: 2,
@@ -431,8 +413,7 @@ export class InnerPauseAwsTestStack extends Stack {
     apiHandler.addEnvironment("ADMIN_GROUP_NAME", adminGroup.groupName!);
     apiHandler.addEnvironment("AWS_DATABASE_IDENTIFIER", database.instanceIdentifier);
     apiHandler.addEnvironment("AWS_DEAD_LETTER_QUEUE_URL", deadLetterQueue.queueUrl);
-    apiHandler.addEnvironment("AWS_AMPLIFY_APP_ID", frontendApp.attrAppId);
-    apiHandler.addEnvironment("AWS_AMPLIFY_BRANCH_NAME", "feature/aws-account-setup");
+    apiHandler.addEnvironment("AWS_FRONTEND_URL", frontendUrl);
     apiHandler.addEnvironment("AWS_API_ID", api.restApiId);
     apiHandler.addEnvironment("AWS_API_NAME", "innerpause-aws-test-api");
     apiHandler.addEnvironment("AWS_API_STAGE", "test");
@@ -469,7 +450,7 @@ export class InnerPauseAwsTestStack extends Stack {
     });
 
     new cdk.CfnOutput(this, "ApiBaseUrl", { value: api.url });
-    new cdk.CfnOutput(this, "AmplifyAppId", { value: frontendApp.attrAppId });
+    new cdk.CfnOutput(this, "FrontendUrl", { value: frontendUrl });
     new cdk.CfnOutput(this, "AwsRegion", { value: Stack.of(this).region });
     new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new cdk.CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });

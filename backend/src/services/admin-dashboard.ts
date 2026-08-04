@@ -98,7 +98,7 @@ export class AwsAdminDashboardProvider implements AdminDashboardProvider {
     ]);
 
     const cards = [
-      card("frontend", "Frontend status", this.config.awsAmplifyAppId ? "Healthy" : "Unknown", this.config.awsAmplifyBranchName ?? "AWS branch", "Amplify branch metadata is configured in backend environment."),
+      card("frontend", "Frontend status", this.config.awsFrontendUrl ? "Healthy" : "Unknown", this.config.awsFrontendUrl ?? "Unknown", "Frontend URL is configured externally; CloudFormation does not manage the Amplify app."),
       card("backend", "Backend health", statusOf(backendHealth), valueOf(backendHealth, "value", "Online"), valueOf(backendHealth, "detail", "Backend health endpoint should be checked externally too.")),
       card("database", "Database status", statusOf(database), valueOf(database, "runningStatus", "Unknown"), valueOf(database, "warningStatus", "RDS status was checked through AWS APIs where permitted.")),
       card("test", "Latest full-app test", latestRun.status === "completed" ? "Healthy" : latestRun.status === "failed" ? "Critical" : "Unknown", latestRun.status, latestRun.message),
