@@ -7,7 +7,7 @@ export interface FrontendConfig {
 }
 
 export function readFrontendConfig(env = process.env): FrontendConfig {
-  const apiBaseUrl = env.NEXT_PUBLIC_API_BASE_URL;
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   if (!apiBaseUrl) {
     throw new Error("NEXT_PUBLIC_API_BASE_URL is required for the separated frontend.");
   }
