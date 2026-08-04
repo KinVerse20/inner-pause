@@ -9,6 +9,7 @@ import {
   ResendConfirmationCodeCommand,
   SignUpCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
+
 import { readFrontendConfig } from "@/lib/config/env";
 
 export interface CognitoSession {
@@ -26,36 +27,73 @@ export class FrontendCognitoAuthService {
 
   constructor() {
     const config = readFrontendConfig();
-    if (!config.awsRegion || !config.cognitoClientId || !config.cognitoUserPoolId) {
+
+    if (
+      !config.awsRegion ||
+      !config.cognitoClientId ||
+      !config.cognitoUserPoolId
+    ) {
       throw new Error("Cognito public configuration is incomplete.");
     }
+
     this.clientId = config.cognitoClientId;
-    this.client = new CognitoIdentityProviderClient({ region: config.awsRegion });
+    this.client = new CognitoIdentityProviderClient({
+      region: config.awsRegion,
+    });
   }
 
-  async signUp(input: { email: string; password: string; fullName?: string }) {
+  async signUp(input: {
+    email: string;
+    password: string;
+    fullName?: string;
+  }) {
     await this.client.send(
       new SignUpCommand({
         ClientId: this.clientId,
         Username: input.email,
         Password: input.password,
         UserAttributes: [
-          { Name: "email", Value: input.email },
-          ...(input.fullName ? [{ Name: "name", Value: input.fullName }] : []),
+          {
+            Name: "email",
+            Value: input.email,
+          },
+          ...(input.fullName
+            ? [
+                {
+                  Name: "name",
+                  Value: input.fullName,
+                },
+              ]
+            : []),
         ],
       }),
     );
   }
 
   async confirmSignUp(input: { email: string; code: string }) {
-    await this.client.send(new ConfirmSignUpCommand({ ClientId: this.clientId, Username: input.email, ConfirmationCode: input.code }));
+    await this.client.send(
+      new ConfirmSignUpCommand({
+        ClientId: this.clientId,
+        Username: input.email,
+        ConfirmationCode: input.code,
+      }),
+    );
   }
 
   async resendVerification(email: string) {
-    await this.client.send(new ResendConfirmationCodeCommand({ ClientId: this.clientId, Username: email }));
+    await this.client.send(
+      new ResendConfirmationCodeCommand({
+        ClientId: this.clientId,
+        Username: email,
+      }),
+    );
   }
 
-  async signIn(input: { email: string; password: string; fullName?: string }): Promise<CognitoSession> {
+  async signIn(input: {
+    email: string;
+    password: string;
+    fullName?: string;
+  }): Promise<CognitoSession> {
     const response = await this.client.send(
       new InitiateAuthCommand({
         ClientId: this.clientId,
@@ -66,8 +104,25 @@ export class FrontendCognitoAuthService {
         },
       }),
     );
+
     const result = response.AuthenticationResult;
-    if (!result?.AccessToken) throw new Error("Cognito did not return a session.");
+
+    if (!result?.AccessToken) {
+      if (response.ChallengeName === "NEW_PASSWORD_REQUIRED") {
+        throw new Error(
+          "This account uses a temporary password. Delete this test user from Cognito and create the account again through The InnerPause app.",
+        );
+      }
+
+      if (response.ChallengeName) {
+        throw new Error(
+          `Cognito requires another authentication step: ${response.ChallengeName}`,
+        );
+      }
+
+      throw new Error("Cognito did not return a session.");
+    }
+
     return {
       accessToken: result.AccessToken,
       idToken: result.IdToken,
@@ -78,16 +133,25 @@ export class FrontendCognitoAuthService {
     };
   }
 
-  async refresh(refreshToken: string): Promise<Pick<CognitoSession, "accessToken" | "idToken" | "expiresAt">> {
+  async refresh(
+    refreshToken: string,
+  ): Promise<Pick<CognitoSession, "accessToken" | "idToken" | "expiresAt">> {
     const response = await this.client.send(
       new InitiateAuthCommand({
         ClientId: this.clientId,
         AuthFlow: "REFRESH_TOKEN_AUTH",
-        AuthParameters: { REFRESH_TOKEN: refreshToken },
+        AuthParameters: {
+          REFRESH_TOKEN: refreshToken,
+        },
       }),
     );
+
     const result = response.AuthenticationResult;
-    if (!result?.AccessToken) throw new Error("Could not refresh session.");
+
+    if (!result?.AccessToken) {
+      throw new Error("Could not refresh session.");
+    }
+
     return {
       accessToken: result.AccessToken,
       idToken: result.IdToken,
@@ -96,10 +160,19 @@ export class FrontendCognitoAuthService {
   }
 
   async forgotPassword(email: string) {
-    await this.client.send(new ForgotPasswordCommand({ ClientId: this.clientId, Username: email }));
+    await this.client.send(
+      new ForgotPasswordCommand({
+        ClientId: this.clientId,
+        Username: email,
+      }),
+    );
   }
 
-  async confirmForgotPassword(input: { email: string; code: string; password: string }) {
+  async confirmForgotPassword(input: {
+    email: string;
+    code: string;
+    password: string;
+  }) {
     await this.client.send(
       new ConfirmForgotPasswordCommand({
         ClientId: this.clientId,
@@ -110,4 +183,3 @@ export class FrontendCognitoAuthService {
     );
   }
 }
-
