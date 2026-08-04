@@ -214,6 +214,13 @@ export class ApiRouter {
 
       throw notFound("Endpoint");
     } catch (error) {
+      console.error("API request failed", {
+        requestId: request.requestId,
+        method: request.method,
+        path: request.path,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
       return fail(error, request.requestId);
     }
   }
@@ -331,17 +338,42 @@ async function createAiQuickAnalysis(input: {
     throw new Error("OpenAI could not prepare the emotional insight.");
   }
 
-  const payload = (await response.json()) as { output_text?: string };
-  if (!payload.output_text) {
+  const payload = (await response.json()) as OpenAiResponsesPayload;
+  const outputText = extractOpenAiOutputText(payload);
+
+  if (!outputText) {
+    console.error("OpenAI returned no readable text", {
+      requestId: input.requestId,
+      responseId: payload.id,
+      status: payload.status,
+      outputItems: Array.isArray(payload.output) ? payload.output.length : 0,
+    });
     throw new Error("OpenAI returned an empty emotional insight.");
   }
 
-  const analysis = JSON.parse(payload.output_text) as Record<string, unknown>;
+  let analysis: Record<string, unknown>;
+  try {
+    analysis = JSON.parse(outputText) as Record<string, unknown>;
+  } catch (error) {
+    console.error("OpenAI returned invalid JSON", {
+      requestId: input.requestId,
+      responseId: payload.id,
+      preview: outputText.slice(0, 300),
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+    throw new Error("OpenAI returned an invalid emotional insight.");
+  }
+
   if (
     typeof analysis.summary !== "string" ||
     !Array.isArray(analysis.emotions) ||
     typeof analysis.understandingSummary !== "string"
   ) {
+    console.error("OpenAI insight shape validation failed", {
+      requestId: input.requestId,
+      responseId: payload.id,
+      keys: Object.keys(analysis),
+    });
     throw new Error("OpenAI returned an invalid emotional insight.");
   }
 
@@ -349,5 +381,34 @@ async function createAiQuickAnalysis(input: {
     ...analysis,
     analysisSource: "openai",
   };
+}
+
+interface OpenAiResponsesPayload {
+  id?: string;
+  status?: string;
+  output_text?: string;
+  output?: Array<{
+    type?: string;
+    content?: Array<{
+      type?: string;
+      text?: string;
+      refusal?: string;
+    }>;
+  }>;
+}
+
+function extractOpenAiOutputText(payload: OpenAiResponsesPayload) {
+  if (typeof payload.output_text === "string" && payload.output_text.trim()) {
+    return payload.output_text.trim();
+  }
+
+  const textParts = (payload.output ?? []).flatMap((item) =>
+    (item.content ?? [])
+      .filter((content) => content.type === "output_text" && typeof content.text === "string")
+      .map((content) => content.text!.trim())
+      .filter(Boolean),
+  );
+
+  return textParts.join("\n").trim();
 }
 
