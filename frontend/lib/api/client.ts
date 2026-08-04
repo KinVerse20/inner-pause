@@ -233,7 +233,7 @@ export class InnerPauseApiClient {
   }
 }
 
-export type AdminStatus = "Healthy" | "Warning" | "Critical" | "Unknown";
+export type AdminStatus = "Healthy" | "Warning" | "Critical" | "Unknown" | "Not configured" | "No data yet";
 export type AdminSection =
   | "costs"
   | "database"
