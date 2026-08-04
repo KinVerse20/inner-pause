@@ -8,6 +8,19 @@ applications:
             - npm ci
         build:
           commands:
+            - test -n "$NEXT_PUBLIC_API_BASE_URL" || (echo "Missing NEXT_PUBLIC_API_BASE_URL" && exit 1)
+            - test -n "$NEXT_PUBLIC_APP_URL" || (echo "Missing NEXT_PUBLIC_APP_URL" && exit 1)
+            - test -n "$NEXT_PUBLIC_AWS_REGION" || (echo "Missing NEXT_PUBLIC_AWS_REGION" && exit 1)
+            - test -n "$NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID" || (echo "Missing NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID" && exit 1)
+            - test -n "$NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID" || (echo "Missing NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID" && exit 1)
+            - |
+              {
+                echo "NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL"
+                echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
+                echo "NEXT_PUBLIC_AWS_REGION=$NEXT_PUBLIC_AWS_REGION"
+                echo "NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID=$NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID"
+                echo "NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID=$NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID"
+              } > .env.production
             - npm run build
       artifacts:
         baseDirectory: .next

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ReactNode } from "react";
+import { useAuth } from "@/lib/auth/auth-provider";
 
 const navItems = [
   { href: "/", label: "Home", icon: "⌂" },
@@ -51,9 +52,16 @@ export function BrandLogo({
 
 function MvpBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+  const signOut = () => {
+    auth.signOut();
+    router.replace("/auth");
+  };
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--ip-border)] bg-white/90 shadow-[0_-14px_36px_rgba(108,62,244,0.12)] backdrop-blur-2xl">
-      <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[44rem]">
+      <div className="mx-auto grid max-w-[28rem] grid-cols-6 gap-1 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[44rem]">
         {navItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
@@ -71,6 +79,17 @@ function MvpBottomNav() {
             </Link>
           );
         })}
+        {auth.profile ? (
+          <button
+            type="button"
+            onClick={signOut}
+            className="grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] text-[var(--ip-muted)] transition hover:text-[var(--ip-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)]"
+          >
+            <span className="text-lg leading-none">↩</span>
+            <span>Logout</span>
+            <span className="h-0.5 w-5 rounded-full bg-transparent" />
+          </button>
+        ) : null}
       </div>
     </nav>
   );

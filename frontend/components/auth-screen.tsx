@@ -6,13 +6,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo, GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
 import { useAuth } from "@/lib/auth/auth-provider";
 
+type AuthMode = "login" | "signup" | "verify" | "forgot";
+
 export function AuthScreen() {
   const router = useRouter();
   const auth = useAuth();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo")?.startsWith("/") ? searchParams.get("redirectTo") : "/";
   const routeMessage = searchParams.get("message");
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("signup");
+  const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +37,7 @@ export function AuthScreen() {
       if (mode === "forgot") {
         await auth.forgotPassword(email);
         setStatus("Password reset code sent. Check your inbox.");
+        router.push(`/auth/reset-password?email=${encodeURIComponent(email)}`);
         return;
       }
 
@@ -46,7 +49,8 @@ export function AuthScreen() {
       if (mode === "signup") {
         await auth.signUp({ email, password, fullName: name });
         setStatus("Check your email for the verification code.");
-        setMode("login");
+        setVerificationCode("");
+        setMode("verify");
         return;
       }
 
@@ -56,6 +60,30 @@ export function AuthScreen() {
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Authentication failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyAccount = async () => {
+    setError("");
+    setStatus("");
+    if (!email) {
+      setError("Email is required.");
+      return;
+    }
+    if (!verificationCode) {
+      setError("Verification code is required.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await auth.confirmSignUp({ email, code: verificationCode });
+      setStatus("Account verified. You can now log in.");
+      setVerificationCode("");
+      setMode("login");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not verify account.");
     } finally {
       setLoading(false);
     }
@@ -79,18 +107,27 @@ export function AuthScreen() {
     }
   };
 
-  const showProviderNotice = (provider: string) => {
-    window.alert(`${provider} sign-in is not connected yet. Use email and password.`);
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setError("");
+    setStatus("");
   };
+
+  const title = mode === "signup" ? "Create Account" : mode === "verify" ? "Verify Account" : mode === "forgot" ? "Reset Password" : "Login";
+  const copy =
+    mode === "signup"
+      ? "Create your account to keep your Inner Pause reflections connected."
+      : mode === "verify"
+        ? "Enter the verification code sent to your email."
+        : mode === "forgot"
+          ? "Enter your email and we will send a password reset code."
+          : "Sign in to continue your Inner Pause practice.";
 
   return (
     <MvpShell hideNav>
       <div className="mx-auto max-w-xl space-y-5">
         <BrandLogo />
-        <SectionTitle
-          title={mode === "forgot" ? "Reset Password" : "Welcome"}
-          copy="Sign in to keep your Inner Pause reflections and reset sessions connected to your account."
-        />
+        <SectionTitle title={title} copy={copy} />
         <GlassCard className="space-y-4 p-5">
           {mode === "signup" ? (
             <label className="block">
@@ -98,50 +135,56 @@ export function AuthScreen() {
               <input value={name} onChange={(event) => setName(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
             </label>
           ) : null}
-          <label className="block">
-            <span className="text-sm text-[#4b3f86]">Email</span>
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
-          </label>
-          {mode !== "forgot" ? (
+          {mode !== "verify" ? (
+            <label className="block">
+              <span className="text-sm text-[#4b3f86]">Email</span>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+            </label>
+          ) : null}
+          {mode === "login" || mode === "signup" ? (
             <label className="block">
               <span className="text-sm text-[#4b3f86]">Password</span>
               <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
             </label>
           ) : null}
-          {mode === "login" ? (
+          {mode === "verify" ? (
+            <label className="block">
+              <span className="text-sm text-[#4b3f86]">Email</span>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+            </label>
+          ) : null}
+          {mode === "verify" ? (
             <label className="block">
               <span className="text-sm text-[#4b3f86]">Verification code</span>
               <input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
-              <button
-                type="button"
-                disabled={loading || !email || !verificationCode}
-                onClick={() =>
-                  auth
-                    .confirmSignUp({ email, code: verificationCode })
-                    .then(() => setStatus("Account verified. You can now log in."))
-                    .catch((caught) => setError(caught instanceof Error ? caught.message : "Could not verify account."))
-                }
-                className="mt-2 min-h-10 w-full rounded-full border border-purple-200 bg-white text-sm text-[#6d28d9] disabled:opacity-45"
-              >
-                Verify account
-              </button>
             </label>
           ) : null}
           {status ? <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{status}</p> : null}
           {error ? <p className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-          <GoldButton className="w-full" disabled={loading} onClick={submit}>
-            {loading ? "Please wait..." : mode === "forgot" ? "Send Reset Link" : mode === "login" ? "Log In" : "Create Account"}
-          </GoldButton>
-          <button type="button" disabled={loading} onClick={resendVerification} className="min-h-11 w-full rounded-full border border-purple-200 bg-white text-sm text-[#6d28d9] disabled:opacity-45">
-            Resend verification email
-          </button>
-          <div className="grid gap-2 text-sm text-[#6d5ea8]">
-            <button type="button" onClick={() => setMode(mode === "login" ? "signup" : "login")}>
-              {mode === "login" ? "Create an account" : "I already have an account"}
+          {mode === "verify" ? (
+            <GoldButton className="w-full" disabled={loading || !email || !verificationCode} onClick={verifyAccount}>
+              {loading ? "Please wait..." : "Verify Account"}
+            </GoldButton>
+          ) : (
+            <GoldButton className="w-full" disabled={loading} onClick={submit}>
+              {loading ? "Please wait..." : mode === "forgot" ? "Send Reset Link" : mode === "signup" ? "Create Account" : "Login"}
+            </GoldButton>
+          )}
+          {mode === "verify" ? (
+            <button type="button" disabled={loading} onClick={resendVerification} className="min-h-11 w-full rounded-full border border-purple-200 bg-white text-sm text-[#6d28d9] disabled:opacity-45">
+              Resend verification email
             </button>
-            <button type="button" onClick={() => setMode("forgot")}>Forgot password?</button>
-            <button type="button" onClick={() => showProviderNotice("Google")} className="opacity-70">Continue with Google</button>
-            <button type="button" onClick={() => showProviderNotice("Apple")} className="opacity-50">Continue with Apple</button>
+          ) : null}
+          <div className="grid gap-2 text-sm text-[#6d5ea8]">
+            {mode === "login" ? (
+              <>
+                <button type="button" onClick={() => switchMode("forgot")}>Forgot password?</button>
+                <button type="button" onClick={() => switchMode("signup")}>Create new account</button>
+              </>
+            ) : null}
+            {mode === "signup" || mode === "verify" || mode === "forgot" ? (
+              <button type="button" onClick={() => switchMode("login")}>Back to Login</button>
+            ) : null}
           </div>
         </GlassCard>
       </div>
