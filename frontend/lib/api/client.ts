@@ -55,7 +55,11 @@ export class InnerPauseApiClient {
     this.baseUrl = (options.baseUrl ?? readFrontendConfig().apiBaseUrl).replace(/\/$/, "");
     this.getAccessToken = options.getAccessToken;
     this.timeoutMs = options.timeoutMs ?? 12000;
-    this.fetchImpl = options.fetchImpl ?? fetch;
+    this.fetchImpl =
+      options.fetchImpl ??
+      (typeof window !== "undefined"
+        ? window.fetch.bind(window)
+        : globalThis.fetch.bind(globalThis));
     this.onUnauthorised = options.onUnauthorised;
   }
 
