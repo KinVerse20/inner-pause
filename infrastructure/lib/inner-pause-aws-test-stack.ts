@@ -88,7 +88,7 @@ export class InnerPauseAwsTestStack extends Stack {
 
     const database = new rds.DatabaseInstance(this, "InnerPauseTestDatabase", {
       vpc,
-      engine: rds.DatabaseInstanceEngine.postgres({ version: rds.PostgresEngineVersion.VER_16_3 }),
+      engine: rds.DatabaseInstanceEngine.postgres({ version: rds.PostgresEngineVersion.of("16.14", "16") }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
       allocatedStorage: 20,
       maxAllocatedStorage: 100,
