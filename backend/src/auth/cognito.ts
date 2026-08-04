@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   fullName?: string;
+  groups: string[];
 }
 
 export interface TokenVerifier {
@@ -34,7 +35,9 @@ export class CognitoJwtVerifier implements TokenVerifier {
       if (!subject) throw unauthenticated();
       const email = typeof payload.email === "string" ? payload.email : `${subject}@cognito.local`;
       const fullName = typeof payload.name === "string" ? payload.name : undefined;
-      return { id: subject, email, fullName };
+      const rawGroups = payload["cognito:groups"];
+      const groups = Array.isArray(rawGroups) ? rawGroups.filter((group): group is string => typeof group === "string") : [];
+      return { id: subject, email, fullName, groups };
     } catch {
       throw unauthenticated();
     }
@@ -46,13 +49,16 @@ export class TestTokenVerifier implements TokenVerifier {
     if (!accessToken || accessToken === "expired" || accessToken === "invalid") throw unauthenticated();
 
     if (accessToken.startsWith("test-user-a")) {
-      return { id: "11111111-1111-4111-8111-111111111111", email: "user-a@example.com", fullName: "User A" };
+      return { id: "11111111-1111-4111-8111-111111111111", email: "user-a@example.com", fullName: "User A", groups: [] };
     }
     if (accessToken.startsWith("test-user-b")) {
-      return { id: "22222222-2222-4222-8222-222222222222", email: "user-b@example.com", fullName: "User B" };
+      return { id: "22222222-2222-4222-8222-222222222222", email: "user-b@example.com", fullName: "User B", groups: [] };
+    }
+    if (accessToken.startsWith("test-admin")) {
+      return { id: "99999999-9999-4999-8999-999999999999", email: "admin@example.com", fullName: "Test Admin", groups: ["InnerPauseAdmins"] };
     }
 
-    return { id: `cognito-${accessToken.slice(0, 16)}`, email: "test-user@example.com" };
+    return { id: `cognito-${accessToken.slice(0, 16)}`, email: "test-user@example.com", groups: [] };
   }
 }
 

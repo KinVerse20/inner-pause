@@ -31,6 +31,15 @@ export interface BackendConfig {
   openAiApiKey?: string;
   openAiApiKeySecretArn?: string;
   openAiModel: string;
+  adminGroupName: string;
+  awsApiName?: string;
+  awsApiId?: string;
+  awsApiStage?: string;
+  awsDatabaseIdentifier?: string;
+  awsDeadLetterQueueUrl?: string;
+  awsAmplifyAppId?: string;
+  awsAmplifyBranchName?: string;
+  awsMonthlyBudgetAmount?: number;
 }
 
 export function readConfig(env = process.env): BackendConfig {
@@ -68,6 +77,15 @@ export function readConfig(env = process.env): BackendConfig {
     openAiApiKey: env.OPENAI_API_KEY,
     openAiApiKeySecretArn: env.OPENAI_API_KEY_SECRET_ARN,
     openAiModel: env.OPENAI_MODEL ?? "gpt-4.1-mini",
+    adminGroupName: env.ADMIN_GROUP_NAME ?? "InnerPauseAdmins",
+    awsApiName: env.AWS_API_NAME,
+    awsApiId: env.AWS_API_ID,
+    awsApiStage: env.AWS_API_STAGE,
+    awsDatabaseIdentifier: env.AWS_DATABASE_IDENTIFIER,
+    awsDeadLetterQueueUrl: env.AWS_DEAD_LETTER_QUEUE_URL,
+    awsAmplifyAppId: env.AWS_AMPLIFY_APP_ID,
+    awsAmplifyBranchName: env.AWS_AMPLIFY_BRANCH_NAME,
+    awsMonthlyBudgetAmount: env.AWS_MONTHLY_BUDGET_AMOUNT ? Number(env.AWS_MONTHLY_BUDGET_AMOUNT) : undefined,
   };
 }
 

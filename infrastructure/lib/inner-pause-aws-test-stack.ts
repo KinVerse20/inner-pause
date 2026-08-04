@@ -9,6 +9,7 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as eventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
@@ -141,6 +142,13 @@ export class InnerPauseAwsTestStack extends Stack {
       accessTokenValidity: Duration.minutes(60),
       idTokenValidity: Duration.minutes(60),
       refreshTokenValidity: Duration.days(30),
+    });
+
+    const adminGroup = new cognito.CfnUserPoolGroup(this, "InnerPauseAdminGroup", {
+      userPoolId: userPool.userPoolId,
+      groupName: "InnerPauseAdmins",
+      description: "Approved administrators for The Inner Pause AWS test Admin Control Room.",
+      precedence: 1,
     });
 
     const audioBucket = new s3.Bucket(this, "InnerPauseTestAudioBucket", {
@@ -346,6 +354,63 @@ export class InnerPauseAwsTestStack extends Stack {
     audioQueue.grantConsumeMessages(audioWorkerHandler);
     notificationQueue.grantConsumeMessages(notificationWorkerHandler);
 
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadCloudWatchStatus",
+        actions: ["cloudwatch:DescribeAlarms", "cloudwatch:GetMetricStatistics", "cloudwatch:ListMetrics"],
+        resources: ["*"],
+      }),
+    );
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadCostExplorer",
+        actions: ["ce:GetCostAndUsage"],
+        resources: ["*"],
+      }),
+    );
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadRdsStatus",
+        actions: ["rds:DescribeDBInstances", "rds:DescribeDBSnapshots"],
+        resources: ["*"],
+      }),
+    );
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadCognitoStatus",
+        actions: ["cognito-idp:ListUsers"],
+        resources: [userPool.userPoolArn],
+      }),
+    );
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadQueueStatus",
+        actions: ["sqs:GetQueueAttributes"],
+        resources: [deadLetterQueue.queueArn],
+      }),
+    );
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadS3PublicAccessStatus",
+        actions: ["s3:GetBucketPublicAccessBlock", "s3:GetBucketPolicyStatus", "s3:ListBucket"],
+        resources: [audioBucket.bucketArn],
+      }),
+    );
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadAccessAnalyzer",
+        actions: ["access-analyzer:ListFindings"],
+        resources: ["*"],
+      }),
+    );
+    apiHandler.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: "AdminReadBackupStatus",
+        actions: ["backup:ListRecoveryPointsByBackupVault"],
+        resources: ["*"],
+      }),
+    );
+
     const api = new apigateway.RestApi(this, "InnerPauseTestApi", {
       restApiName: "innerpause-aws-test-api",
       deployOptions: {
@@ -363,6 +428,15 @@ export class InnerPauseAwsTestStack extends Stack {
     });
 
     const lambdaIntegration = new apigateway.LambdaIntegration(apiHandler);
+    apiHandler.addEnvironment("ADMIN_GROUP_NAME", adminGroup.groupName!);
+    apiHandler.addEnvironment("AWS_DATABASE_IDENTIFIER", database.instanceIdentifier);
+    apiHandler.addEnvironment("AWS_DEAD_LETTER_QUEUE_URL", deadLetterQueue.queueUrl);
+    apiHandler.addEnvironment("AWS_AMPLIFY_APP_ID", frontendApp.attrAppId);
+    apiHandler.addEnvironment("AWS_AMPLIFY_BRANCH_NAME", "feature/aws-account-setup");
+    apiHandler.addEnvironment("AWS_API_ID", api.restApiId);
+    apiHandler.addEnvironment("AWS_API_NAME", "innerpause-aws-test-api");
+    apiHandler.addEnvironment("AWS_API_STAGE", "test");
+    apiHandler.addEnvironment("AWS_MONTHLY_BUDGET_AMOUNT", "25");
     api.root.addResource("health").addMethod("GET", lambdaIntegration);
     const apiResource = api.root.addResource("api");
     const v1Resource = apiResource.addResource("v1");

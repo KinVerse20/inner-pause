@@ -1,4 +1,4 @@
-import { authenticate, type TokenVerifier } from "../auth/cognito.js";
+import { authenticate, type AuthenticatedUser, type TokenVerifier } from "../auth/cognito.js";
 import { InMemoryRepository } from "../repositories/in-memory.js";
 import type { AppRepository } from "../repositories/types.js";
 import { createRuntimeServices } from "../runtime/factory.js";
@@ -6,13 +6,17 @@ import { JobService } from "../jobs/job-service.js";
 import type { QueueClient } from "../jobs/sqs-queue.js";
 import { JournalService } from "../services/journal-service.js";
 import { AudioService } from "../services/audio-service.js";
-import { notFound } from "../shared/errors.js";
+import { AwsAdminDashboardProvider, type AdminDashboardProvider } from "../services/admin-dashboard.js";
+import { forbidden, notFound } from "../shared/errors.js";
 import { fail, ok, type HttpRequest, type HttpResponse } from "../shared/http.js";
+import { readConfig, type BackendConfig } from "../config/env.js";
 
 export interface RouterOptions {
   repository?: AppRepository;
   verifier?: TokenVerifier;
   queue?: QueueClient;
+  adminProvider?: AdminDashboardProvider;
+  config?: BackendConfig;
 }
 
 export class ApiRouter {
@@ -21,14 +25,18 @@ export class ApiRouter {
   private readonly journals: JournalService;
   private readonly jobs: JobService;
   private readonly audio: AudioService;
+  private readonly adminProvider: AdminDashboardProvider;
+  private readonly config: BackendConfig;
 
   constructor(options: RouterOptions = {}) {
     const runtime = options.repository && options.verifier ? null : createRuntimeServices();
+    this.config = options.config ?? readConfig();
     this.repository = options.repository ?? runtime?.repository ?? new InMemoryRepository();
     this.verifier = options.verifier ?? runtime!.verifier;
     this.journals = new JournalService(this.repository);
     this.jobs = new JobService(this.repository, options.queue ?? runtime?.queue);
     this.audio = new AudioService(this.repository);
+    this.adminProvider = options.adminProvider ?? new AwsAdminDashboardProvider(this.config);
   }
 
   async handle(request: HttpRequest): Promise<HttpResponse> {
@@ -47,6 +55,67 @@ export class ApiRouter {
       }
 
       const tokenUser = await authenticate(request.headers, this.verifier);
+
+      if (path === "/admin/overview" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getOverview(), request.requestId);
+      }
+
+      if (path === "/admin/alerts" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getAlerts(queryFilters(request.path)), request.requestId);
+      }
+
+      if (path === "/admin/costs" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getCosts(), request.requestId);
+      }
+
+      if (path === "/admin/database" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getDatabaseHealth(), request.requestId);
+      }
+
+      if (path === "/admin/api-usage" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getApiUsage(), request.requestId);
+      }
+
+      if (path === "/admin/file-upload-security" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getFileUploadSecurity(), request.requestId);
+      }
+
+      if (path === "/admin/security" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getSecurityStatus(), request.requestId);
+      }
+
+      if (path === "/admin/suspicious-logins" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getSuspiciousLogins(), request.requestId);
+      }
+
+      if (path === "/admin/privacy-tests" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getPrivacyTests(), request.requestId);
+      }
+
+      if (path === "/admin/backups" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getBackupStatus(), request.requestId);
+      }
+
+      if (path === "/admin/test-runs" && request.method === "GET") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.getTestRuns(), request.requestId);
+      }
+
+      if (path === "/admin/test-runs" && request.method === "POST") {
+        this.requireAdmin(tokenUser);
+        return ok(await this.adminProvider.runCompleteTest({ actorId: tokenUser.id, idempotencyKey: request.headers["idempotency-key"] }), request.requestId, 202);
+      }
+
       const user = await this.repository.ensureUser({
         providerSubject: tokenUser.id,
         email: tokenUser.email,
@@ -142,10 +211,25 @@ export class ApiRouter {
   async createTestAudioForUser(userId: string, journalId?: string) {
     return this.audio.createTestAudio(userId, journalId);
   }
+
+  private requireAdmin(user: AuthenticatedUser) {
+    if (!user.groups.includes(this.config.adminGroupName)) throw forbidden();
+    console.info("admin_action", JSON.stringify({ action: "admin_route_access", actorId: user.id, at: new Date().toISOString() }));
+  }
 }
 
 function normalisePath(path: string) {
-  return path.replace(/^\/api\/v1/, "") || "/";
+  return path.replace(/^\/api\/v1/, "").split("?")[0] || "/";
+}
+
+function queryFilters(path: string) {
+  const [, query = ""] = path.split("?");
+  const params = new URLSearchParams(query);
+  return {
+    service: params.get("service") ?? undefined,
+    severity: params.get("severity") ?? undefined,
+    state: params.get("state") ?? undefined,
+  };
 }
 
 function createQuickAnalysis(text: string) {
