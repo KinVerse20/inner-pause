@@ -10,6 +10,7 @@ import { AwsAdminDashboardProvider, type AdminDashboardProvider } from "../servi
 import { forbidden, notFound } from "../shared/errors.js";
 import { fail, ok, type HttpRequest, type HttpResponse } from "../shared/http.js";
 import { readConfig, type BackendConfig } from "../config/env.js";
+import { readSecretString } from "../runtime/secrets.js";
 
 export interface RouterOptions {
   repository?: AppRepository;
@@ -47,14 +48,23 @@ export class ApiRouter {
         return ok({ ok: true, service: "innerpause-backend" }, request.requestId);
       }
 
+      const tokenUser = await authenticate(request.headers, this.verifier);
+
       if (request.method === "POST" && path === "/analysis/quick") {
         const body = request.body as { text?: string } | undefined;
         const text = body?.text?.trim();
         if (!text) throw notFound("Reflection text");
-        return ok({ analysis: createQuickAnalysis(text) }, request.requestId);
+        return ok(
+          {
+            analysis: await createAiQuickAnalysis({
+              text,
+              requestId: request.requestId,
+              config: this.config,
+            }),
+          },
+          request.requestId,
+        );
       }
-
-      const tokenUser = await authenticate(request.headers, this.verifier);
 
       if (path === "/admin/overview" && request.method === "GET") {
         this.requireAdmin(tokenUser);
@@ -232,47 +242,112 @@ function queryFilters(path: string) {
   };
 }
 
-function createQuickAnalysis(text: string) {
-  const lower = text.toLowerCase();
-  const safetyFlag = ["suicide", "kill myself", "self harm", "end my life"].some((word) => lower.includes(word));
-  const emotion = lower.includes("angry")
-    ? "Frustration"
-    : lower.includes("sad") || lower.includes("lonely")
-      ? "Sadness"
-      : lower.includes("focus") || lower.includes("confused")
-        ? "Mental noise"
-        : "Overwhelm";
-  const chakra = emotion === "Frustration" ? "throat" : emotion === "Sadness" ? "heart" : emotion === "Mental noise" ? "third-eye" : "root";
+async function createAiQuickAnalysis(input: {
+  text: string;
+  requestId: string;
+  config: BackendConfig;
+}) {
+  if (input.config.aiMode !== "openai") {
+    throw new Error("OpenAI analysis is not enabled.");
+  }
+
+  const apiKey =
+    input.config.openAiApiKey ??
+    (input.config.openAiApiKeySecretArn && input.config.region
+      ? await readSecretString({
+          region: input.config.region,
+          secretArn: input.config.openAiApiKeySecretArn,
+          jsonKey: "OPENAI_API_KEY",
+        })
+      : undefined);
+
+  if (!apiKey) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    signal: AbortSignal.timeout(15_000),
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+      "x-client-request-id": input.requestId,
+    },
+    body: JSON.stringify({
+      model: input.config.openAiModel,
+      input: [
+        "You are The Inner Pause reflective wellness guide.",
+        "Analyse the user's exact reflection personally and specifically.",
+        "Avoid generic statements, diagnosis, medical claims, or invented facts.",
+        "Return only valid JSON with this exact shape:",
+        JSON.stringify({
+          summary: "2-3 specific sentences reflecting the user's situation",
+          originalEntrySummary: "brief factual summary of what the user shared",
+          understandingSummary: "empathetic interpretation grounded in their words",
+          keyIncidents: [{ id: "incident-1", text: "specific incident or concern" }],
+          emotions: [
+            {
+              name: "emotion",
+              intensity: 1,
+              level: "low|medium|high",
+              explanation: "why this emotion is indicated by the reflection",
+            },
+          ],
+          triggers: ["specific likely trigger grounded in the reflection"],
+          chakraAssociations: [
+            {
+              chakra: "root|sacral|solar-plexus|heart|throat|third-eye|crown",
+              emotionalTheme: "specific theme",
+              reason: "reason grounded in the user's reflection",
+              sessionSupport: "specific calming support",
+              confidence: 0.75,
+            },
+          ],
+          healingApproachSummary: "personalised, practical reset approach",
+          suggestedOutcome: "realistic emotional outcome",
+          recommendedDuration: 10,
+          safetyFlag: false,
+          analysisSource: "openai",
+        }),
+        "Intensity must be an integer from 1 to 10.",
+        "Use one to three emotions and one to three key incidents.",
+        `User reflection: ${input.text}`,
+      ].join("\\n\\n"),
+      text: {
+        format: {
+          type: "json_object",
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    console.error("OpenAI quick analysis failed", {
+      requestId: input.requestId,
+      status: response.status,
+      details: details.slice(0, 500),
+    });
+    throw new Error("OpenAI could not prepare the emotional insight.");
+  }
+
+  const payload = (await response.json()) as { output_text?: string };
+  if (!payload.output_text) {
+    throw new Error("OpenAI returned an empty emotional insight.");
+  }
+
+  const analysis = JSON.parse(payload.output_text) as Record<string, unknown>;
+  if (
+    typeof analysis.summary !== "string" ||
+    !Array.isArray(analysis.emotions) ||
+    typeof analysis.understandingSummary !== "string"
+  ) {
+    throw new Error("OpenAI returned an invalid emotional insight.");
+  }
 
   return {
-    summary: safetyFlag
-      ? "Your reflection may need immediate human support before a normal reset session."
-      : "Here is what we noticed in your reflection: your system may be asking for a slower, steadier reset.",
-    originalEntrySummary: text.length > 220 ? `${text.slice(0, 217)}...` : text,
-    understandingSummary: "Based on what you shared, this may be a moment to pause, breathe and let your body settle before deciding what comes next.",
-    keyIncidents: [{ id: crypto.randomUUID(), text: text.length > 180 ? `${text.slice(0, 177)}...` : text }],
-    emotions: [
-      {
-        name: emotion,
-        intensity: 7,
-        level: "medium",
-        explanation: "This emotion appeared from the words and tone in your reflection.",
-      },
-    ],
-    triggers: ["Emotional load"],
-    chakraAssociations: [
-      {
-        chakra,
-        emotionalTheme: "Supportive reset",
-        reason: "This theme may benefit from a calming sound and breath-based reset.",
-        sessionSupport: "The reset will use simple guidance and local Chakra audio to support reflection.",
-        confidence: 0.62,
-      },
-    ],
-    healingApproachSummary: "Start with grounding breath, continue with calming sound, and close with a simple reflection.",
-    suggestedOutcome: safetyFlag ? "Pause and seek immediate human support." : "Feel more settled and emotionally clear.",
-    recommendedDuration: safetyFlag ? 5 : 10,
-    safetyFlag,
-    analysisSource: "fallback",
+    ...analysis,
+    analysisSource: "openai",
   };
 }
+

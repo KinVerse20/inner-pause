@@ -326,6 +326,7 @@ export class InnerPauseAwsTestStack extends Stack {
     proxy.grantConnect(audioWorkerHandler, "innerpause_admin");
     proxy.grantConnect(notificationWorkerHandler, "innerpause_admin");
     proxy.grantConnect(scheduleHandler, "innerpause_admin");
+    openAiSecret.grantRead(apiHandler);
     openAiSecret.grantRead(analysisWorkerHandler);
     audioBucket.grantRead(apiHandler);
     audioBucket.grantPut(audioWorkerHandler);
@@ -404,7 +405,7 @@ export class InnerPauseAwsTestStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: allowedFrontendOrigins,
         allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowHeaders: ["content-type", "authorization", "idempotency-key", "x-request-id"],
+        allowHeaders: ["content-type", "authorization"],
         allowCredentials: true,
       },
     });
