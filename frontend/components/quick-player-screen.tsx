@@ -4,7 +4,6 @@ import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { ChakraVisual } from "@/components/chakra-visual";
 import { chakraMap, relaxMoodMap } from "@/data/chakras";
 import { usePlayer } from "@/components/player-provider";
 import { ChakraId, QuickPlayDuration, RelaxMoodId } from "@/lib/types";
@@ -153,13 +152,17 @@ export function QuickPlayerScreen() {
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
           <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center">
-            <ChakraVisual
-              chakra={chakra}
-              breathLabel={mood?.label ?? "Relax"}
-              reducedMotion={reducedMotion}
-              elapsedSeconds={elapsedSeconds}
-              motionPaused={!isPlaying}
-            />
+            <div className={`relative grid place-items-center ${!isPlaying || reducedMotion ? "chakra-scene--paused" : ""}`}>
+              <div className="mandala-reference" aria-hidden="true">
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <span key={index} className="lotus-petal" style={{ transform: `rotate(${index * 36}deg) translateY(-26%)` }} />
+                ))}
+              </div>
+              {Array.from({ length: 8 }).map((_, index) => (
+                <span key={`petal-${index}`} className="floating-petal" style={{ width: "0.42rem", height: "0.66rem", left: `${8 + index * 11}%`, top: `${10 + (index % 4) * 18}%`, animationDelay: `${index * 1.1}s` }} />
+              ))}
+              <p className="absolute bottom-4 rounded-full border border-[var(--gold-border-soft)] bg-white/72 px-4 py-2 text-sm text-[var(--ip-body)] backdrop-blur-xl">{mood?.label ?? "Breathe"}</p>
+            </div>
           </div>
 
           <div

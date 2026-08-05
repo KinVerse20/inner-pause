@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import type { CSSProperties } from "react";
 import { useState } from "react";
 
 import { ChakraBadge, ExpandableCard } from "@/components/chakra-path-ui";
@@ -50,19 +51,21 @@ export function AnalysisScreen() {
     <MvpShell>
       <div className="space-y-3.5">
         <SunriseScene>
-          <div className="grid min-h-[clamp(30rem,70dvh,36rem)] gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-center lg:p-7">
+          <div className="reference-phone-canvas grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-center lg:p-7">
             <div className="min-w-0 text-center lg:text-left">
               <button type="button" onClick={() => router.push("/journal")} className="mb-5 min-h-10 rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-4 text-sm text-[var(--ip-body)]">
                 ← Back to journal
               </button>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Frequency decoding</p>
-              <h1 className="mt-2 font-serif text-[clamp(2.4rem,8vw,5rem)] leading-[0.92] text-[var(--ip-ink)]">Aligning<br className="hidden sm:block" /> Frequencies...</h1>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[var(--ip-body)] lg:mx-0">
-                Decoding your emotional reflection into gentle resonance patterns.
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Decoding</p>
+              <h1 className="mt-2 font-serif text-[clamp(2.4rem,8vw,5rem)] leading-[0.92] text-[var(--ip-ink)]">Your energy decoded</h1>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[var(--ip-body)] lg:mx-0">A gentle map of what appeared in your reflection.</p>
 
               <div className="mx-auto my-5 grid place-items-center lg:mx-0">
-                <div className="pastel-frequency-orb" aria-hidden="true" />
+                <div className="energy-decoding-orb" aria-hidden="true">
+                  {["#f5b5d1", "#72cde9", "#58d3b5", "#f5b692", "#b18de2"].map((color, index) => (
+                    <span key={color} className="orbit-point" style={{ "--angle": `${index * 72}deg`, "--point-color": color } as CSSProperties} />
+                  ))}
+                </div>
               </div>
 
               <div className="grid gap-2 sm:grid-cols-3">
@@ -82,7 +85,7 @@ export function AnalysisScreen() {
                 <JourneyLine label="Key pattern" value={analysis.emotions[0]?.name ?? "Reflection"} />
               </div>
               <GoldButton className="mt-4 w-full" disabled={analysis.safetyFlag} onClick={beginReset}>
-                View Emotional Insight
+                See more
               </GoldButton>
             </BlushCard>
           </div>

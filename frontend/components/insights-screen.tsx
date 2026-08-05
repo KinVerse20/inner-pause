@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { BlushCard, InsightRing, SunriseScene } from "@/components/morning-blush-ui";
+import { BlushCard, SunriseScene } from "@/components/morning-blush-ui";
 import { MvpShell } from "@/components/mvp-shell";
 import { chakraMap } from "@/data/chakras";
 import { useMvpState } from "@/lib/use-mvp-state";
@@ -30,28 +30,31 @@ export function InsightsScreen() {
     <MvpShell>
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,1fr)] lg:items-start">
         <SunriseScene variant="lake">
-          <div className="flex min-h-[clamp(22rem,56dvh,30rem)] flex-col items-center justify-between px-5 py-5 text-center sm:py-6 lg:min-h-[30rem]">
-            <div>
-              <h1 className="font-serif text-3xl text-[#322d42]">Inner Balance</h1>
-              <p className="mt-1 text-sm text-[#6f687d]">This week</p>
+          <div className="reference-phone-canvas flex flex-col justify-between px-5 py-5 text-center sm:py-6">
+            <div className="mx-auto max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Insight</p>
+              <h1 className="mt-2 font-serif text-[clamp(2.45rem,8vw,4.6rem)] leading-tight text-[var(--ip-ink)]">Take a breath</h1>
+              <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{mainFeeling} is asking for gentler attention.</p>
             </div>
-            <InsightRing value={balanceScore} />
-            <div className="w-full rounded-[1.4rem] border border-white/70 bg-white/62 p-4 text-left backdrop-blur-xl">
-              <div className="grid grid-cols-2 gap-3">
-                <Mini label="Main feeling" value={mainFeeling} />
-                <Mini label="Focus" value={emotionalFocus} />
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#eca98f] via-[#d79bb8] to-[#a99ac8]" style={{ width: `${balanceScore}%` }} />
-              </div>
+            <div className="insight-flow-wave my-5" aria-hidden="true" />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniCard label="Feeling" value={mainFeeling} />
+              <MiniCard label="Focus" value={emotionalFocus} />
             </div>
+            <button type="button" onClick={() => setExploring((value) => !value)} className="mt-4 min-h-12 w-full rounded-full border border-white/70 bg-[linear-gradient(135deg,#b18de2,#f5b5d1)] px-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(177,141,226,0.18)]">
+              {exploring ? "Hide more" : "See more"}
+            </button>
           </div>
         </SunriseScene>
 
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5">
-          <button type="button" onClick={() => setExploring((value) => !value)} className="min-h-12 w-full rounded-full border border-white/70 bg-white/76 px-4 text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
-            {exploring ? "Hide patterns" : "Explore your patterns"}
-          </button>
+          <BlushCard className="p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--ip-muted)]">Balance</p>
+            <p className="mt-2 font-serif text-4xl text-[var(--ip-ink)]">{balanceScore}%</p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#58d3b5] via-[#b18de2] to-[#f5b5d1]" style={{ width: `${balanceScore}%` }} />
+            </div>
+          </BlushCard>
 
           {saved.length < 3 ? (
             <BlushCard className="p-4">
@@ -74,9 +77,9 @@ export function InsightsScreen() {
   );
 }
 
-function Mini({ label, value }: { label: string; value: string }) {
+function MiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="rounded-[1.25rem] border border-white/70 bg-white/66 p-4 text-left shadow-[0_12px_28px_rgba(169,139,221,0.1)]">
       <p className="text-xs text-[#90879d]">{label}</p>
       <p className="mt-1 truncate font-semibold text-[#322d42]">{value}</p>
     </div>

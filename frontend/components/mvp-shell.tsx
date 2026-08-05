@@ -11,7 +11,7 @@ const navItems = [
   { href: "/history", label: "Logs", icon: "☷" },
   { href: "/insights", label: "Insights", icon: "✧" },
   { href: "/healing", label: "Sessions", icon: "♬" },
-  { href: "/profile", label: "Profile", icon: "◎" },
+  { href: "/profile", label: "More", icon: "◎" },
 ];
 
 const desktopNavItems = [
@@ -138,7 +138,7 @@ function MvpTopMenu() {
               const active = pathname.startsWith(item.href);
               return (
                 <Link
-                  key={item.href}
+                  key={`${item.href}-${item.label}`}
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={`relative py-2 transition hover:text-[var(--gold-light)] ${

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
-import { ChakraStonePath, BlushCard } from "@/components/morning-blush-ui";
+import { BlushCard } from "@/components/morning-blush-ui";
 import { MvpShell } from "@/components/mvp-shell";
 import { chakras } from "@/data/chakras";
 import { getSessionKey, isChakraUnlocked, isSessionUnlocked } from "@/lib/progress";
@@ -52,26 +53,28 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
               <p className="font-serif text-2xl text-[var(--ip-ink)]">Energy body</p>
               <p className="text-xs text-[var(--ip-muted)]">Tap an open chakra to expand</p>
             </div>
-            <ChakraStonePath
-              stones={chakras.map((chakra) => {
+            <div className="chakra-body-silhouette">
+              <div className="chakra-body-line" />
+              {chakras.map((chakra, index) => {
                 const unlocked = isChakraUnlocked(progress, chakra.index);
                 const complete = chakra.sessions.every((session) => progress.completedSessionKeys.includes(getSessionKey(chakra.id, session.id)));
                 const current = chakra.id === currentChakraId(progress);
-                return {
-                  key: chakra.id,
-                  label: chakra.name,
-                  color: stoneColors[chakra.id],
-                  completed: complete,
-                  current,
-                  locked: !unlocked,
-                  onClick: () => {
+                return (
+                  <button
+                    key={chakra.id}
+                    type="button"
+                    onClick={() => {
                     if (!unlocked) return;
                     setSelectedChakraId(chakra.id);
                     setExpandedId((currentId) => (currentId === chakra.id ? null : chakra.id));
-                  },
-                };
+                    }}
+                    className={`chakra-node-ref ${chakra.id === selectedChakra.id || current ? "chakra-node-ref--active" : ""} ${!unlocked ? "opacity-35" : ""}`}
+                    style={{ "--node-color": stoneColors[chakra.id], top: `${12 + index * 12.7}%` } as CSSProperties}
+                    aria-label={`${chakra.name}${complete ? " complete" : current ? " current" : !unlocked ? " locked" : ""}`}
+                  />
+                );
               })}
-            />
+            </div>
           </BlushCard>
 
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5">

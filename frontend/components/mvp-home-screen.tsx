@@ -44,28 +44,40 @@ export function MvpHomeScreen() {
   return (
     <MvpShell>
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
-        <SunriseScene>
-          <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col items-center justify-between px-4 py-6 text-center sm:px-8 lg:min-h-[calc(100dvh-3rem)] lg:justify-center lg:py-6">
-            <div className="mx-auto max-w-3xl">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <SunriseScene>
+          <div className="reference-phone-canvas flex flex-col items-center justify-between px-4 py-5 text-center sm:px-8 lg:py-7">
+            <div className="mx-auto max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">{greeting()}, {firstName}</p>
-              <h1 className="mt-4 font-serif text-[clamp(3rem,10vw,7rem)] leading-[0.82] tracking-[-0.04em] text-[var(--ip-ink)] lg:text-[5.3rem]">
-                RESONA<br />NCE
-              </h1>
-              <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-[var(--ip-body)] sm:text-base">
-                Explore your inner cosmic frequencies. Map your feelings to the sacred architecture of your chakras.
-              </p>
+              <h1 className="mt-3 font-serif text-[clamp(2.35rem,8vw,4.8rem)] leading-[0.95] text-[var(--ip-ink)]">How are you today?</h1>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--ip-body)]">Choose one gentle way to begin.</p>
             </div>
 
-            <div className="my-4 grid place-items-center sm:my-5 lg:my-4">
-              <div className="sacred-orb" aria-hidden="true" />
+            <div className="relative my-4 grid place-items-center">
+              <div className="animated-lotus" aria-hidden="true">
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <span key={index} className="lotus-petal" style={{ transform: `rotate(${index * 36}deg) translateY(-24%)` }} />
+                ))}
+                {Array.from({ length: 7 }).map((_, index) => (
+                  <span key={`spark-${index}`} className="lotus-particle" style={{ width: "0.32rem", height: "0.32rem", left: `${16 + index * 11}%`, top: `${18 + (index % 3) * 18}%`, animationDelay: `${index * 1.4}s` }} />
+                ))}
+              </div>
             </div>
 
-            <div className="grid w-full max-w-3xl gap-3 rounded-[1.55rem] border border-white/70 bg-white/46 p-3 shadow-[0_22px_54px_rgba(169,139,221,0.12)] backdrop-blur-xl sm:grid-cols-2 sm:p-4">
-              <HomeAction title="Enter the Portal" copy="Begin guided healing" icon="✦" onClick={() => router.push("/journey")} />
-              <HomeAction title="Analyze Vibration" copy="Speak or write now" icon="♩" onClick={() => router.push("/journal?mode=speak")} />
+            <div className="grid w-full max-w-xl grid-cols-3 gap-3">
+              <CircleAction title="Speak" icon="♩" onClick={() => router.push("/journal?mode=speak")} />
+              <CircleAction title="Write" icon="✎" onClick={() => router.push("/journal?mode=write")} />
+              <CircleAction title="Reset" icon="♧" onClick={() => setPanelOpen(true)} />
             </div>
           </div>
-        </SunriseScene>
+          </SunriseScene>
+
+          <div className="hidden grid-rows-[auto_auto_auto] gap-4 lg:grid">
+            <SummaryCard title="Today’s flow" value="Soft start" copy="Speak, write or reset in under a minute." />
+            <SummaryCard title="Suggested session" value={recommended.name.replace(" Chakra", "")} copy={`${recommended.frequencyLabel} · 20 min`} />
+            <SummaryCard title="Progress" value={`${state.entries.length} logs`} copy="Your recent reflections shape future sessions." />
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-[var(--ip-muted)]">
           <button type="button" onClick={() => player.startQuickPlayback({ chakraId: recommended.id, duration: 20 })} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/70 px-5 font-semibold text-[var(--gold-light)]">
@@ -91,30 +103,35 @@ export function MvpHomeScreen() {
   );
 }
 
-function HomeAction({
+function CircleAction({
   title,
-  copy,
   icon,
   onClick,
-  className = "",
 }: {
   title: string;
-  copy: string;
   icon: string;
   onClick: () => void;
-  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group min-h-[5.35rem] rounded-[1.15rem] border border-[var(--gold-border-soft)] bg-white/72 p-2.5 text-center text-[var(--ip-ink)] shadow-[0_18px_44px_rgba(169,139,221,0.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[var(--gold-border)] hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] sm:min-h-28 sm:p-4 ${className}`}
+      className="group grid min-h-[6rem] place-items-center rounded-[1.4rem] border border-[var(--gold-border-soft)] bg-white/72 p-2 text-center text-[var(--ip-ink)] shadow-[0_18px_44px_rgba(169,139,221,0.13)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[var(--gold-border)] hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] sm:min-h-32"
     >
-      <span className="mx-auto grid h-9 w-9 place-items-center rounded-2xl border border-[var(--gold-border-soft)] bg-[var(--ip-lavender)] text-xl text-[var(--gold-light)] shadow-[0_0_24px_rgba(169,139,221,0.12)] sm:h-12 sm:w-12 sm:text-3xl">
+      <span className="grid h-14 w-14 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-[var(--ip-lavender)] text-2xl text-[var(--gold-light)] shadow-[0_0_24px_rgba(169,139,221,0.16)] sm:h-16 sm:w-16 sm:text-3xl">
         {icon}
       </span>
-      <span className="mt-1.5 block font-serif text-lg sm:mt-3 sm:text-2xl">{title}</span>
-      <span className="mt-0.5 block text-[0.7rem] leading-4 text-[var(--ip-muted)] sm:mt-1 sm:text-sm">{copy}</span>
+      <span className="block font-serif text-lg sm:text-2xl">{title}</span>
     </button>
+  );
+}
+
+function SummaryCard({ title, value, copy }: { title: string; value: string; copy: string }) {
+  return (
+    <section className="rounded-[1.45rem] border border-[var(--gold-border-soft)] bg-white/70 p-4 shadow-[0_18px_44px_rgba(169,139,221,0.12)] backdrop-blur-xl">
+      <p className="text-xs uppercase tracking-[0.18em] text-[var(--ip-muted)]">{title}</p>
+      <p className="mt-2 font-serif text-2xl text-[var(--ip-ink)]">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{copy}</p>
+    </section>
   );
 }

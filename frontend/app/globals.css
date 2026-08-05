@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fff9fc;
+  --background: #fff8fc;
   --foreground: #49316f;
   --background-primary: #fff9fc;
   --background-secondary: #f4f0ff;
   --background-card: rgba(255, 255, 255, 0.78);
   --background-card-soft: rgba(231, 221, 248, 0.56);
   --cream: #49316f;
-  --gold-primary: #a98bdd;
-  --gold-light: #8d6ac8;
+  --gold-primary: #b18de2;
+  --gold-light: #6f3aa7;
   --gold-muted: #9b91aa;
   --gold-border: rgba(169, 139, 221, 0.42);
   --gold-border-soft: rgba(169, 139, 221, 0.2);
@@ -19,7 +19,7 @@
   --ip-bg: #fff9fc;
   --ip-bg-soft: #f4f0ff;
   --ip-card: rgba(255, 255, 255, 0.78);
-  --ip-purple: #8d6ac8;
+  --ip-purple: #6f3aa7;
   --ip-purple-2: #f4b8cd;
   --ip-ink: #49316f;
   --ip-body: #6e568f;
@@ -60,6 +60,238 @@ body {
     linear-gradient(145deg, #fff9fc 0%, #fdf2f8 35%, #eef8ff 72%, #fff3e9 100%);
   position: relative;
   isolation: isolate;
+}
+
+.reference-phone-canvas {
+  min-height: calc(100dvh - 7.8rem);
+}
+
+@media (min-width: 1024px) {
+  .reference-phone-canvas {
+    min-height: calc(100dvh - 2.5rem);
+  }
+}
+
+.animated-lotus {
+  position: relative;
+  width: min(58vw, 18rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 28px 54px rgba(177, 141, 226, 0.24));
+  animation: lotus-breathe 7s ease-in-out infinite;
+}
+
+.animated-lotus::before,
+.animated-lotus::after {
+  position: absolute;
+  content: "";
+  border-radius: 999px;
+  inset: 18%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.9), transparent 18%),
+    conic-gradient(from 0deg, rgba(111,58,167,0.08), rgba(245,181,209,0.34), rgba(114,205,233,0.22), rgba(168,232,216,0.26), rgba(111,58,167,0.08));
+  box-shadow: 0 0 54px rgba(245,181,209,0.32);
+}
+
+.animated-lotus::after {
+  inset: 0;
+  border: 1px solid rgba(177, 141, 226, 0.2);
+  background: repeating-conic-gradient(from 0deg, transparent 0deg 18deg, rgba(255,255,255,0.62) 19deg 20deg, transparent 21deg 36deg);
+  mask: radial-gradient(circle, transparent 0 48%, black 49% 51%, transparent 52%);
+  animation: sacred-spin 46s linear infinite;
+}
+
+.lotus-petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22%;
+  height: 42%;
+  margin-left: -11%;
+  margin-top: -41%;
+  border-radius: 100% 100% 28% 28%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(245,181,209,0.52), rgba(177,141,226,0.28));
+  border: 1px solid rgba(255,255,255,0.66);
+  transform-origin: 50% 96%;
+  animation: lotus-open 8s ease-in-out infinite;
+}
+
+.lotus-particle,
+.floating-petal {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  background: rgba(245,181,209,0.7);
+  box-shadow: 0 0 16px rgba(245,181,209,0.38);
+  animation: petal-drift 13s ease-in-out infinite;
+}
+
+.energy-decoding-orb {
+  position: relative;
+  width: min(66vw, 22rem);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0 8%, rgba(177,141,226,0.34) 9% 24%, rgba(114,205,233,0.22) 25% 44%, transparent 55%),
+    repeating-radial-gradient(circle, transparent 0 2.4rem, rgba(111,58,167,0.18) 2.48rem 2.55rem, transparent 2.62rem 3.3rem);
+  box-shadow: 0 0 64px rgba(177,141,226,0.22);
+  animation: lotus-breathe 8s ease-in-out infinite;
+}
+
+.energy-decoding-orb::before {
+  position: absolute;
+  inset: 26%;
+  content: "";
+  border-radius: 38%;
+  background: conic-gradient(from 0deg, #f5b5d1, #9ddff2, #a8e8d8, #fbd5c1, #d4bff4, #f5b5d1);
+  filter: blur(0.2px);
+  animation: sacred-spin 28s linear infinite;
+}
+
+.orbit-point {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin: -0.35rem;
+  border-radius: 999px;
+  background: var(--point-color, #b18de2);
+  box-shadow: 0 0 16px var(--point-color, #b18de2);
+  transform: rotate(var(--angle)) translateX(min(30vw, 10rem));
+  animation: orbit-drift 18s linear infinite;
+}
+
+.insight-flow-wave {
+  height: clamp(10rem, 28dvh, 17rem);
+  border-radius: 1.6rem;
+  border: 1px solid rgba(177,141,226,0.22);
+  background:
+    radial-gradient(circle at 24% 34%, rgba(245,181,209,0.46), transparent 32%),
+    radial-gradient(circle at 78% 58%, rgba(157,223,242,0.46), transparent 36%),
+    rgba(255,255,255,0.64);
+  position: relative;
+  overflow: hidden;
+}
+
+.insight-flow-wave::before,
+.insight-flow-wave::after {
+  position: absolute;
+  inset: 16% -18%;
+  content: "";
+  border-radius: 50%;
+  border: 1.5px solid rgba(111,58,167,0.23);
+  animation: pastel-wave 12s ease-in-out infinite alternate;
+}
+
+.insight-flow-wave::after {
+  border-color: rgba(88,211,181,0.24);
+  animation-delay: -4s;
+}
+
+.chakra-body-silhouette {
+  position: relative;
+  min-height: clamp(24rem, 58dvh, 34rem);
+  display: grid;
+  place-items: center;
+}
+
+.chakra-body-silhouette::before {
+  position: absolute;
+  content: "";
+  width: min(46vw, 14rem);
+  height: 82%;
+  border-radius: 50% 50% 42% 42%;
+  background:
+    radial-gradient(circle at 50% 13%, rgba(255,255,255,0.74) 0 8%, transparent 9%),
+    linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0.12));
+  filter: blur(0.2px);
+  opacity: 0.7;
+}
+
+.chakra-body-line {
+  position: absolute;
+  top: 11%;
+  bottom: 11%;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(177,141,226,0.54), transparent);
+}
+
+.chakra-node-ref {
+  position: absolute;
+  left: 50%;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: var(--node-color);
+  box-shadow: 0 0 22px var(--node-color);
+  border: 2px solid rgba(255,255,255,0.86);
+  animation: chakra-node-pulse 5s ease-in-out infinite;
+}
+
+.chakra-node-ref--active {
+  width: 2rem;
+  height: 2rem;
+  animation-duration: 3s;
+}
+
+.chakra-node-ref--active::after {
+  position: absolute;
+  inset: -0.8rem;
+  content: "";
+  border-radius: inherit;
+  border: 1px solid var(--node-color);
+  opacity: 0.5;
+  animation: chakra-ripple 3s ease-out infinite;
+}
+
+.mandala-reference {
+  width: min(70vw, 24rem);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.95) 0 8%, rgba(168,232,216,0.52) 9% 22%, rgba(255,255,255,0.18) 23% 40%, transparent 54%),
+    repeating-conic-gradient(from 0deg, rgba(88,211,181,0.18) 0deg 12deg, rgba(255,255,255,0.4) 13deg 14deg, transparent 15deg 24deg);
+  box-shadow: 0 0 70px rgba(88,211,181,0.28);
+  animation: sacred-spin 72s linear infinite, lotus-breathe 8s ease-in-out infinite;
+}
+
+@keyframes lotus-breathe {
+  0%, 100% { transform: scale(0.97); opacity: 0.94; }
+  50% { transform: scale(1.035); opacity: 1; }
+}
+
+@keyframes lotus-open {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 0.96; }
+}
+
+@keyframes petal-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0.2; }
+  45% { transform: translate3d(1.2rem, -1.6rem, 0) rotate(18deg); opacity: 0.72; }
+}
+
+@keyframes orbit-drift {
+  to { transform: rotate(calc(var(--angle) + 360deg)) translateX(min(30vw, 10rem)); }
+}
+
+@keyframes chakra-node-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.94); }
+  50% { transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes chakra-ripple {
+  from { opacity: 0.45; transform: scale(0.78); }
+  to { opacity: 0; transform: scale(1.8); }
 }
 
 .mvp-bg::before {

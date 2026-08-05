@@ -195,24 +195,24 @@ export function ExpressionPanel({
     <section className="space-y-3.5">
       {!panelOpen ? (
         <SunriseScene variant="lake">
-          <div className="grid min-h-[clamp(25rem,62dvh,32rem)] gap-5 px-5 py-6 text-center lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center lg:text-left">
+          <div className="reference-phone-canvas grid gap-5 px-5 py-6 text-center lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center lg:text-left">
             <div className="mx-auto flex max-w-xl flex-col items-center lg:items-start">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Vibrational query</p>
-              <h2 className="mt-3 font-serif text-[clamp(2.2rem,7vw,4.4rem)] leading-[0.95] text-[var(--ip-ink)]">How does your soul echo today?</h2>
-              <p className="mt-3 text-sm text-[var(--ip-body)]">Speak freely. The Inner Pause will reflect it back gently.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Express</p>
+              <h2 className="mt-3 font-serif text-[clamp(2.4rem,8vw,4.6rem)] leading-[0.95] text-[var(--ip-ink)]">Speak freely</h2>
+              <p className="mt-3 text-sm text-[var(--ip-body)]">Let your voice become a reflection.</p>
               <div className="relative mt-9 grid place-items-center">
                 <div className={`voice-halo ${listening ? "voice-halo--active" : ""}`} />
                 <CircularActionButton label="Start speaking" onClick={startVoice} pressed={listening} className="h-28 w-28 text-5xl">
                   ♩
                 </CircularActionButton>
               </div>
+              <p className="mt-5 font-mono text-sm text-[var(--ip-muted)]">{listening ? "00:12 listening" : paused ? "Paused" : "Tap to begin"}</p>
               <div className="dawn-wave mt-8 h-10 w-full max-w-sm" aria-hidden="true" />
-              <button type="button" onClick={startVoice} className="mt-5 min-h-11 rounded-full border border-[var(--gold-border)] bg-white/72 px-7 text-sm font-semibold text-[var(--gold-light)] shadow-[0_0_24px_rgba(169,139,221,0.14)]">
-                Start speaking
-              </button>
-              <button type="button" onClick={() => setPanelOpen(true)} className="mt-3 min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/58 px-6 text-sm font-semibold text-[var(--ip-body)]">
-                Write instead
-              </button>
+              <div className="mt-5 grid w-full max-w-sm grid-cols-3 gap-2">
+                <button type="button" onClick={() => setPanelOpen(true)} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/58 text-sm font-semibold text-[var(--ip-body)]">Cancel</button>
+                <button type="button" onClick={listening ? stopVoice : startVoice} className="min-h-11 rounded-full border border-[var(--gold-border)] bg-white/72 text-sm font-semibold text-[var(--gold-light)]">{listening ? "Stop" : "Start"}</button>
+                <button type="button" disabled={!text.trim()} onClick={() => submit()} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-[var(--ip-lavender)] text-sm font-semibold text-[var(--gold-light)] disabled:opacity-50">Confirm</button>
+              </div>
             </div>
 
             <BlushCard className="hidden p-4 text-left lg:block">
@@ -243,8 +243,8 @@ export function ExpressionPanel({
               {!embedded ? (
                 <div className="mb-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Vibrational query</p>
-                  <h2 className="mt-2 font-serif text-[clamp(2rem,7vw,3.6rem)] leading-tight text-[var(--ip-ink)]">{compact ? "What is weighing on you?" : "How does your soul echo today?"}</h2>
-                  <p className="mt-1 text-sm text-[var(--ip-body)]">Let your thoughts find clarity.</p>
+                  <h2 className="mt-2 font-serif text-[clamp(2rem,7vw,3.6rem)] leading-tight text-[var(--ip-ink)]">{compact ? "Write softly" : "Write freely"}</h2>
+                  <p className="mt-1 text-sm text-[var(--ip-body)]">One honest line is enough.</p>
                 </div>
               ) : null}
 
