@@ -34,7 +34,7 @@ export function MvpShell({ children, hideNav = false }: { children: ReactNode; h
       {!hideNav ? <PastelSidebar /> : null}
       {!hideNav ? <MvpTopMenu open={mobileMenuOpen} setOpen={setMobileMenuOpen} /> : null}
       <main
-        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[15.75rem] lg:max-w-none lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))]"
+          className="app-main-shell mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[15.25rem] lg:w-[calc(100%-15.25rem)] lg:max-w-none lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))]"
         style={hideNav ? { paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } : undefined}
       >
         {children}

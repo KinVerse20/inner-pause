@@ -42,11 +42,11 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
       <div className="space-y-4 lg:space-y-5">
         <header className="text-center">
           <p className="minimal-label text-xs">Chakra</p>
-          <h1 className="mt-2 text-[clamp(2.4rem,7vw,4.6rem)] font-medium leading-tight text-[var(--ip-ink)]">Topology</h1>
-          <p className="mx-auto mt-2 max-w-xl text-base text-[var(--ip-body)]">Browse all seven centres. Journey locks remain separate from this map.</p>
+          <h1 className="mt-1 text-[clamp(2.05rem,7vw,4.6rem)] font-medium leading-tight text-[var(--ip-ink)] sm:mt-2">Topology</h1>
+          <p className="mx-auto mt-2 hidden max-w-xl text-base text-[var(--ip-body)] sm:block">Browse all seven centres. Journey locks remain separate from this map.</p>
         </header>
 
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(22rem,0.9fr)_minmax(25rem,1.1fr)] lg:items-start">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,0.9fr)_minmax(0,1.1fr)] lg:items-start">
           <section className="relative min-w-0 overflow-hidden border-y border-white/10 bg-white/[0.018] p-3 sm:rounded-[1.1rem] sm:border sm:p-4 lg:min-h-[calc(100dvh-11rem)] lg:border-y lg:bg-transparent">
             <div className="mb-3 text-center">
               <p className="minimal-label text-xs">Energy body</p>
@@ -71,9 +71,10 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
                   </button>
                 );
               })}
-              <MobileChakraPanel chakra={selectedChakra} completedCount={completedCount} selectedUnlockedForJourney={selectedUnlockedForJourney} />
             </div>
           </section>
+
+          <MobileChakraPanel chakra={selectedChakra} completedCount={completedCount} selectedUnlockedForJourney={selectedUnlockedForJourney} />
 
           <div className="grid min-w-0 gap-3.5">
             <DesktopChakraPanel chakra={selectedChakra} completedCount={completedCount} selectedUnlockedForJourney={selectedUnlockedForJourney} />
@@ -100,7 +101,7 @@ function MobileChakraPanel({
   selectedUnlockedForJourney: boolean;
 }) {
   return (
-    <div className="absolute inset-x-3 bottom-[calc(var(--bottom-nav-height)+0.85rem)] z-20 rounded-[1.15rem] border border-[rgba(255,138,42,0.24)] bg-[#202326]/92 p-3 shadow-[0_-18px_48px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:hidden">
+    <section className="min-w-0 max-w-full rounded-[1.15rem] border border-[rgba(255,138,42,0.24)] bg-[#202326]/82 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:hidden">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="minimal-label text-[0.58rem]">{sanskrit[chakra.id]}</p>
@@ -116,7 +117,7 @@ function MobileChakraPanel({
           Open Session
         </Link>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -187,6 +188,6 @@ function JourneySessionCard({
     </div>
   );
 
-  if (!unlocked) return <div>{content}</div>;
-  return <Link href={`/session/${chakra.id}/${session.id}/setup`}>{content}</Link>;
+  if (!unlocked) return <div className="min-w-0 max-w-full">{content}</div>;
+  return <Link href={`/session/${chakra.id}/${session.id}/setup`} className="block min-w-0 max-w-full">{content}</Link>;
 }
