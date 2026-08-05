@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ChakraProcessingScreen } from "@/components/chakra-processing-screen";
-import { ChakraPath } from "@/components/chakra-path-ui";
 import { HelpTooltip } from "@/components/help-tooltip";
+import { CircularActionButton, SunriseScene } from "@/components/morning-blush-ui";
 import { GoldButton } from "@/components/mvp-shell";
 import { createFrontendApiClient } from "@/lib/auth/session";
 import { createJournalEntry, saveAnalysis, savePlan } from "@/lib/mvp-storage";
@@ -39,6 +39,7 @@ const emotionChips = ["Anxious", "Angry", "Sad", "Overwhelmed", "Hurt", "Confuse
 export function ExpressionPanel({ compact = false, embedded = false }: { compact?: boolean; embedded?: boolean }) {
   const router = useRouter();
   const [text, setText] = useState("");
+  const [panelOpen, setPanelOpen] = useState(false);
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [listening, setListening] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -66,6 +67,7 @@ export function ExpressionPanel({ compact = false, embedded = false }: { compact
   }, [SpeechRecognition]);
 
   const startVoice = () => {
+    setPanelOpen(true);
     setVoiceError("");
     if (!SpeechRecognition) {
       setVoiceUnsupported(true);
@@ -173,121 +175,124 @@ export function ExpressionPanel({ compact = false, embedded = false }: { compact
   if (loading) return <ChakraProcessingScreen />;
 
   return (
-    <section className="rounded-[1.5rem] border border-[var(--ip-border)] bg-white/82 p-4 shadow-[0_14px_34px_rgba(108,62,244,0.1)] backdrop-blur-xl">
-      {!embedded ? (
-        <div className="mb-3 rounded-[1.25rem] bg-[linear-gradient(180deg,rgba(237,232,255,0.82),rgba(255,255,255,0.62))] py-3">
-          <ChakraPath compact />
-        </div>
-      ) : null}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-serif text-2xl text-[var(--ip-ink)]">{compact ? "What is weighing on you right now?" : "Speak or type what’s on your mind."}</h2>
-          <p className="mt-1 text-sm text-[var(--ip-body)]">{compact ? "Share freely. This is your space." : "Your words stay editable before you continue."}</p>
-        </div>
-        <HelpTooltip label="Microphone information">Speak your thoughts and review the text before continuing. Your voice is converted into text so you can review it before continuing.</HelpTooltip>
-      </div>
+    <section className="space-y-3.5">
+      {!panelOpen ? (
+        <SunriseScene variant="lake">
+          <div className="flex min-h-[31rem] flex-col items-center justify-between px-5 py-7 text-center">
+            <div>
+              <h2 className="font-serif text-3xl leading-tight text-[#322d42]">Let it<br />flow out</h2>
+              <p className="mt-2 text-sm text-[#6f687d]">Speak softly or write one thought.</p>
+            </div>
+            <div className="grid place-items-center gap-3">
+              <CircularActionButton label="Begin voice journal" onClick={startVoice} pressed={listening}>🎙</CircularActionButton>
+              <button
+                type="button"
+                onClick={() => setPanelOpen(true)}
+                className="rounded-full border border-white/70 bg-white/76 px-5 py-3 text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]"
+              >
+                Write instead
+              </button>
+            </div>
+          </div>
+        </SunriseScene>
+      ) : (
+        <div className="rounded-[1.5rem] border border-white/70 bg-white/76 p-4 shadow-[0_16px_42px_rgba(152,117,139,0.13)] backdrop-blur-2xl">
+          {!embedded ? (
+            <div className="mb-3 rounded-[1.25rem] bg-[linear-gradient(180deg,rgba(251,237,232,0.82),rgba(255,255,255,0.62))] p-4 text-center">
+              <p className="font-serif text-2xl text-[#322d42]">What wants to be released first?</p>
+              <p className="mt-1 text-sm text-[#6f687d]">One honest sentence is enough.</p>
+              {listening ? <div className="mx-auto mt-4 h-16 w-36 rounded-[50%] border border-[#98b6d3]/50 animate-ping" /> : null}
+            </div>
+          ) : null}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-2xl text-[#322d42]">{compact ? "What is weighing on you right now?" : "Share what’s here."}</h2>
+              <p className="mt-1 text-sm text-[#6f687d]">{compact ? "Share freely. This is your space." : "Review your words before continuing."}</p>
+            </div>
+            <HelpTooltip label="Microphone information">Speak your thoughts and review the text before continuing. Your voice is converted into text so you can review it before continuing.</HelpTooltip>
+          </div>
 
-      <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-purple-200 bg-white/70">
-        <div className="flex items-start gap-3 p-3">
-          <button
-            type="button"
-            onClick={listening ? stopVoice : paused ? startVoice : startVoice}
-            className={`grid min-h-11 min-w-11 place-items-center rounded-full border text-lg transition focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] ${
-              listening ? "border-purple-400 bg-purple-100 text-[#6d28d9]" : "border-purple-200 bg-white text-[#7c3aed]"
-            }`}
-            aria-label="Speak your thoughts"
-            aria-pressed={listening}
-          >
-            🎙
-          </button>
-          <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="What is weighing on you right now?"
-            className="min-h-32 w-full resize-y bg-transparent p-1 text-base leading-6 text-[#130b4f] outline-none placeholder:text-[#8f81c2]"
-          />
-        </div>
-      </div>
+          <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-[#f1d6d0] bg-white/72">
+            <div className="flex items-start gap-3 p-3">
+              <button
+                type="button"
+                onClick={listening ? stopVoice : paused ? startVoice : startVoice}
+                className={`grid min-h-11 min-w-11 place-items-center rounded-full border text-lg transition focus:outline-none focus:ring-2 focus:ring-[#d79bb8] ${
+                  listening ? "border-[#d79bb8] bg-[#fbedee] text-[#d58e93]" : "border-[#f1d6d0] bg-white text-[#d58e93]"
+                }`}
+                aria-label="Speak your thoughts"
+                aria-pressed={listening}
+              >
+                🎙
+              </button>
+              <textarea
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                placeholder="Write what happened, what you feel, or what you need."
+                className="min-h-32 w-full resize-y bg-transparent p-1 text-base leading-6 text-[#322d42] outline-none placeholder:text-[#a99ba9]"
+              />
+            </div>
+          </div>
 
-      {listening || paused ? (
-        <div className="mt-3 rounded-2xl border border-purple-200 bg-purple-50/80 p-3">
-          <p className="font-medium text-[#26156f]">{listening ? "Listening…" : "Paused"}</p>
-          <p className="mt-1 text-sm text-[#6d5ea8]">Speak naturally. Your words will appear here.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {listening ? <button type="button" onClick={pauseVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Pause</button> : null}
-            {paused ? <button type="button" onClick={startVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Continue</button> : null}
-            <button type="button" onClick={stopVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Stop</button>
+          {listening || paused ? (
+            <div className="mt-3 rounded-2xl border border-[#f1d6d0] bg-[#fff8f4]/80 p-3">
+              <p className="font-medium text-[#322d42]">{listening ? "Listening…" : "Paused"}</p>
+              <p className="mt-1 text-sm text-[#6f687d]">Speak naturally. Your words will appear here.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {listening ? <button type="button" onClick={pauseVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Pause</button> : null}
+                {paused ? <button type="button" onClick={startVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Continue</button> : null}
+                <button type="button" onClick={stopVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Stop</button>
+              </div>
+            </div>
+          ) : null}
+
+          {voiceUnsupported || voiceError ? <p className="mt-3 rounded-2xl border border-[#f1d6d0] bg-white/72 p-3 text-sm text-[#6f687d]">{voiceError || "Voice input is not available in this browser. You can still type your thoughts."}</p> : null}
+
+          <div className="mt-4">
+            <p className="text-sm font-medium text-[#322d42]">What emotion are you experiencing?</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {emotionChips.map((emotion) => (
+                <button
+                  key={emotion}
+                  type="button"
+                  onClick={() => toggleEmotion(emotion)}
+                  className={`min-h-10 rounded-full border px-3 text-sm transition ${
+                    selectedEmotions.includes(emotion) ? "border-[#d79bb8] bg-[#fbedee] text-[#a77d97]" : "border-[#f1d6d0] bg-white/70 text-[#6f687d]"
+                  }`}
+                >
+                  {emotion}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error ? <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <GoldButton className="flex-1" disabled={!text.trim()} onClick={() => submit()}>Continue</GoldButton>
+            <button
+              type="button"
+              onClick={() => {
+                void submit("I just want a quick reset.");
+              }}
+              className="min-h-11 rounded-full border border-[#f1d6d0] bg-white px-4 py-2.5 font-semibold text-[#a77d97]"
+            >
+              Quick reset
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (text && window.confirm("Remove the words currently written on this screen? Saved reflections will remain safe.")) setText("");
+                if (!text) setPanelOpen(false);
+              }}
+              className="min-h-11 rounded-full border border-[#f1d6d0] bg-white px-4 py-2.5 font-semibold text-[#a77d97]"
+              aria-label="Clear Entry"
+            >
+              Clear
+            </button>
           </div>
         </div>
-      ) : null}
-
-      {voiceUnsupported || voiceError ? <p className="mt-3 rounded-2xl border border-purple-200 bg-white/72 p-3 text-sm text-[#4b3f86]">{voiceError || "Voice input is not available in this browser. You can still type your thoughts."}</p> : null}
-
-      <div className="mt-2 flex items-center justify-between text-xs text-[var(--ip-muted)]">
-        <span>{text.length} characters</span>
-        <span>or type above</span>
-      </div>
-
-      <div className="mt-4 grid place-items-center text-center">
-        <button
-          type="button"
-          onClick={listening ? stopVoice : paused ? startVoice : startVoice}
-          className={`relative grid h-20 w-20 place-items-center rounded-full border text-2xl transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
-            listening ? "border-[var(--ip-purple)] bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "border-[var(--ip-border-strong)] bg-white text-[var(--ip-purple)]"
-          }`}
-          aria-label="Tap to Speak"
-          aria-pressed={listening}
-        >
-          {listening ? <span className="absolute inset-[-0.45rem] animate-ping rounded-full border border-[var(--ip-purple)] opacity-20" /> : null}
-          🎙
-        </button>
-        <p className="mt-2 text-sm font-semibold text-[var(--ip-ink)]">Tap to Speak</p>
-        <p className="text-xs text-[var(--ip-muted)]">or type above</p>
-      </div>
-
-      <div className="mt-4">
-        <p className="text-sm font-medium text-[#26156f]">What emotion are you experiencing?</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {emotionChips.map((emotion) => (
-            <button
-              key={emotion}
-              type="button"
-              onClick={() => toggleEmotion(emotion)}
-              className={`min-h-10 rounded-full border px-3 text-sm transition ${
-                selectedEmotions.includes(emotion) ? "border-purple-400 bg-purple-100 text-[#6d28d9]" : "border-purple-200 bg-white/70 text-[#4b3f86]"
-              }`}
-            >
-              {emotion}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error ? <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <GoldButton className="flex-1" disabled={!text.trim()} onClick={() => submit()}>Continue</GoldButton>
-        <button
-          type="button"
-          onClick={() => {
-            void submit("I just want a quick reset.");
-          }}
-          className="min-h-11 rounded-full border border-[var(--ip-border)] bg-white px-4 py-2.5 font-semibold text-[var(--ip-purple)]"
-        >
-          I just want a quick reset
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (text && window.confirm("Remove the words currently written on this screen? Saved reflections will remain safe.")) setText("");
-          }}
-          className="min-h-11 rounded-full border border-purple-200 bg-white px-4 py-2.5 font-semibold text-[#6d28d9]"
-          aria-label="Clear Entry"
-          title="Remove the words currently written on this screen. Saved reflections will remain safe."
-        >
-          Clear Entry
-        </button>
-      </div>
+      )}
     </section>
   );
 }

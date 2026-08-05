@@ -1,61 +1,114 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
-import { AppPageHeader, ChakraPath } from "@/components/chakra-path-ui";
-import { GlassCard, MvpShell } from "@/components/mvp-shell";
+import { BlushCard, BlushChoicePanel, CircularActionButton, SunriseScene } from "@/components/morning-blush-ui";
+import { MvpShell } from "@/components/mvp-shell";
+import { usePlayer } from "@/components/player-provider";
+import { chakraMap } from "@/data/chakras";
 import { useMvpState } from "@/lib/use-mvp-state";
+import type { ChakraId, RelaxMoodId } from "@/lib/types";
 
-const pathSteps = [
-  { title: "Express", copy: "Release what’s within" },
-  { title: "Relief", copy: "Reset and restore" },
-  { title: "Growth", copy: "Evolve with awareness" },
+const intentionChoices: Array<{ label: string; moodId: RelaxMoodId; chakraId: ChakraId }> = [
+  { label: "Release stress", moodId: "calm", chakraId: "heart" },
+  { label: "Find clarity", moodId: "focus", chakraId: "third-eye" },
+  { label: "Emotional balance", moodId: "emotionally-lighter", chakraId: "sacral" },
+  { label: "Better sleep", moodId: "sleep", chakraId: "crown" },
+  { label: "Self-love", moodId: "positive", chakraId: "solar-plexus" },
 ];
+
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export function MvpHomeScreen() {
   const state = useMvpState();
+  const player = usePlayer();
+  const [panelOpen, setPanelOpen] = useState(false);
   const firstName = state.profile.fullName?.split(" ")[0] || "Sahil";
-  const latest = state.entries.find((entry) => entry.analysis);
-  const activeChakras = latest?.analysis?.chakraAssociations.map((item) => item.chakra) ?? [];
+  const savedEntries = state.entries.filter((entry) => !entry.isTemporary);
+  const completedPlans = state.entries.filter((entry) => entry.plan?.status === "completed").length;
+  const latestPlan = state.entries.find((entry) => entry.plan)?.plan;
+  const recommended = useMemo(() => {
+    const latestChakra = state.entries.find((entry) => entry.analysis)?.analysis?.chakraAssociations[0]?.chakra as ChakraId | undefined;
+    return latestChakra ? chakraMap[latestChakra] : chakraMap.heart;
+  }, [state.entries]);
+
+  const playChoice = (choice: (typeof intentionChoices)[number]) => {
+    player.startQuickPlayback({ chakraId: choice.chakraId, moodId: choice.moodId, duration: 20 });
+    setPanelOpen(false);
+  };
 
   return (
     <MvpShell>
       <div className="space-y-3.5">
-        <AppPageHeader />
+        <SunriseScene>
+          <div className="flex min-h-[31rem] flex-col items-center justify-between px-5 py-6 text-center">
+            <div>
+              <p className="text-sm font-medium text-[#6f687d]">{greeting()}, {firstName}</p>
+              <h1 className="mt-4 font-serif text-4xl leading-tight text-[#322d42]">Find your<br />inner pause</h1>
+            </div>
 
-        <section className="rounded-[1.75rem] border border-[var(--ip-border)] bg-white/72 px-5 py-4 text-center shadow-[0_18px_44px_rgba(108,62,244,0.1)]">
-          <p className="font-serif text-2xl leading-tight text-[var(--ip-ink)]">Good morning, {firstName}</p>
-          <p className="mt-1 text-sm text-[var(--ip-body)]">Take a breath. You’re in the right place.</p>
-          <div className="mt-3">
-            <ChakraPath active={activeChakras} compact />
+            <div className="grid place-items-center">
+              <CircularActionButton label="Tell us how you feel" onClick={() => setPanelOpen(true)}>
+                🎙
+              </CircularActionButton>
+              <p className="mt-3 text-sm font-medium text-[#6f687d]">Tell us how you feel</p>
+            </div>
           </div>
-        </section>
+        </SunriseScene>
 
-        <GlassCard className="p-4">
-          <h1 className="font-serif text-2xl leading-tight text-[var(--ip-ink)]">What is weighing on you right now?</h1>
-          <p className="mt-1 text-sm leading-5 text-[var(--ip-body)]">Share freely. This is your space.</p>
-          <Link href="/journal" className="mt-4 flex min-h-11 w-full items-center justify-center rounded-full border border-purple-400/30 bg-[linear-gradient(135deg,var(--ip-purple-2),var(--ip-purple))] px-4 py-2.5 font-semibold text-white shadow-[0_12px_24px_rgba(108,62,244,0.22)]">
-            Start Expressing <span aria-hidden="true" className="ml-1">→</span>
-          </Link>
-        </GlassCard>
+        <BlushCard className="p-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#fbedee] text-xl text-[#d58e93]">✦</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-[#90879d]">Today’s recommended reset</p>
+              <p className="truncate font-serif text-xl text-[#322d42]">{recommended.name.replace(" Chakra", "")} music</p>
+              <p className="text-sm text-[#6f687d]">{recommended.meaning}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => player.startQuickPlayback({ chakraId: recommended.id, duration: 20 })}
+              className="grid h-11 w-11 place-items-center rounded-full bg-[#eca98f] text-white shadow-[0_12px_28px_rgba(236,169,143,0.28)]"
+              aria-label="Play recommended reset"
+            >
+              ▶
+            </button>
+          </div>
+        </BlushCard>
 
-        <GlassCard className="p-4">
-          <div className="flex items-center justify-between">
-            <p className="font-serif text-xl text-[var(--ip-ink)]">Your Path</p>
-            <p className="text-xs text-[var(--ip-muted)]">Immediate relief. Lasting emotional growth.</p>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {pathSteps.map((step, index) => (
-              <div key={step.title} className="relative rounded-2xl border border-[var(--ip-border)] bg-white/74 p-3 text-center">
-                {index < pathSteps.length - 1 ? <span className="absolute -right-2 top-1/2 z-10 -translate-y-1/2 text-[var(--ip-purple)]">→</span> : null}
-                <span className="mx-auto grid h-8 w-8 place-items-center rounded-full bg-[var(--ip-lavender)] text-sm font-semibold text-[var(--ip-purple)]">{index + 1}</span>
-                <p className="mt-2 text-sm font-semibold text-[var(--ip-ink)]">{step.title}</p>
-                <p className="mt-1 text-[0.72rem] leading-4 text-[var(--ip-muted)]">{step.copy}</p>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
+        <div className="grid grid-cols-2 gap-3">
+          <BlushCard className="p-4">
+            <p className="text-xs text-[#90879d]">Current streak</p>
+            <p className="mt-1 font-serif text-3xl text-[#322d42]">{Math.max(0, completedPlans)}</p>
+            <p className="text-sm text-[#6f687d]">completed resets</p>
+          </BlushCard>
+          <BlushCard className="p-4">
+            <p className="text-xs text-[#90879d]">Journey progress</p>
+            <p className="mt-1 font-serif text-3xl text-[#322d42]">{savedEntries.length}</p>
+            <p className="text-sm text-[#6f687d]">saved reflections</p>
+          </BlushCard>
+        </div>
+
+        <Link href={latestPlan ? `/healing?entry=${state.entries.find((entry) => entry.plan?.id === latestPlan.id)?.id}` : "/healing"} className="block rounded-full border border-white/70 bg-white/70 px-5 py-3 text-center text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
+          Open Healing Plan
+        </Link>
       </div>
+
+      {panelOpen ? (
+        <BlushChoicePanel
+          title="What do you need right now?"
+          onClose={() => setPanelOpen(false)}
+          choices={intentionChoices.map((choice) => ({
+            label: choice.label,
+            onClick: () => playChoice(choice),
+          }))}
+        />
+      ) : null}
     </MvpShell>
   );
 }

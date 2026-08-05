@@ -8,10 +8,10 @@ import { useAuth } from "@/lib/auth/auth-provider";
 
 const navItems = [
   { href: "/", label: "Home", icon: "⌂" },
-  { href: "/journal", label: "Express", icon: "✎" },
-  { href: "/history", label: "Journey", icon: "♧" },
+  { href: "/journey", label: "Journey", icon: "♧" },
+  { href: "/journal", label: "Journal", icon: "✎" },
   { href: "/insights", label: "Insights", icon: "▥" },
-  { href: "/profile", label: "You", icon: "♙" },
+  { href: "/healing", label: "Healing", icon: "✦" },
 ];
 
 export function MvpShell({ children, hideNav = false }: { children: ReactNode; hideNav?: boolean }) {
@@ -19,7 +19,7 @@ export function MvpShell({ children, hideNav = false }: { children: ReactNode; h
     <div className="mvp-bg min-h-dvh overflow-x-hidden text-[var(--cream)]">
       {!hideNav ? <MvpTopMenu /> : null}
       <main
-        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(4.2rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem]"
+        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(4.2rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[34rem] lg:max-w-[43rem]"
         style={{ paddingBottom: hideNav ? "calc(1rem + env(safe-area-inset-bottom))" : "var(--page-bottom-padding)" }}
       >
         {children}
@@ -59,7 +59,7 @@ function MvpTopMenu() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--ip-border)] bg-white/88 pt-[env(safe-area-inset-top)] shadow-[0_8px_28px_rgba(108,62,244,0.08)] backdrop-blur-2xl">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/60 bg-white/66 pt-[env(safe-area-inset-top)] shadow-[0_8px_28px_rgba(213,142,147,0.1)] backdrop-blur-2xl">
         <div className="mx-auto flex h-14 max-w-[28rem] items-center justify-between px-3.5 sm:px-5 md:max-w-[44rem]">
           <button
             type="button"
@@ -67,7 +67,7 @@ function MvpTopMenu() {
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls="innerpause-top-menu"
-            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--ip-border)] bg-white text-xl text-[var(--ip-purple)] shadow-sm transition hover:bg-[var(--ip-lavender)] focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)]"
+            className="grid h-11 w-11 place-items-center rounded-full border border-white/70 bg-white/74 text-xl text-[#a99ac8] shadow-sm transition hover:bg-[#fff8f4] focus:outline-none focus:ring-2 focus:ring-[#d79bb8]"
           >
             {open ? "×" : "☰"}
           </button>
@@ -152,16 +152,10 @@ export function BrandLogo({
 
 function MvpBottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
-  const auth = useAuth();
-  const signOut = () => {
-    auth.signOut();
-    router.replace("/auth");
-  };
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--ip-border)] bg-white/90 shadow-[0_-14px_36px_rgba(108,62,244,0.12)] backdrop-blur-2xl">
-      <div className="mx-auto grid max-w-[28rem] grid-cols-6 gap-1 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[44rem]">
+      <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 rounded-t-[1.55rem] border border-white/70 bg-white/82 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-14px_42px_rgba(152,117,139,0.16)] backdrop-blur-2xl md:max-w-[34rem]">
         {navItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
@@ -169,27 +163,16 @@ function MvpBottomNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
-                active ? "bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "text-[var(--ip-muted)] hover:text-[var(--ip-ink)]"
+              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[#d79bb8] ${
+                active ? "bg-[#f2eaf5] text-[#a99ac8]" : "text-[#90879d] hover:text-[#322d42]"
               }`}
             >
               <span className="text-lg leading-none">{item.icon}</span>
               <span>{item.label}</span>
-              <span className={`h-0.5 w-5 rounded-full ${active ? "bg-[var(--ip-purple)] shadow-[0_0_12px_rgba(108,62,244,0.28)]" : "bg-transparent"}`} />
+              <span className={`h-0.5 w-5 rounded-full ${active ? "bg-[#d79bb8] shadow-[0_0_12px_rgba(215,155,184,0.32)]" : "bg-transparent"}`} />
             </Link>
           );
         })}
-        {auth.profile ? (
-          <button
-            type="button"
-            onClick={signOut}
-            className="grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] text-[var(--ip-muted)] transition hover:text-[var(--ip-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)]"
-          >
-            <span className="text-lg leading-none">↩</span>
-            <span>Logout</span>
-            <span className="h-0.5 w-5 rounded-full bg-transparent" />
-          </button>
-        ) : null}
       </div>
     </nav>
   );

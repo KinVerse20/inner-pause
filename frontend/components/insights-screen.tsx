@@ -1,7 +1,9 @@
 "use client";
 
-import { AppPageHeader, InsightProgressBar } from "@/components/chakra-path-ui";
-import { GlassCard, MvpShell } from "@/components/mvp-shell";
+import { useState } from "react";
+
+import { BlushCard, InsightRing, SunriseScene } from "@/components/morning-blush-ui";
+import { MvpShell } from "@/components/mvp-shell";
 import { chakraMap } from "@/data/chakras";
 import { useMvpState } from "@/lib/use-mvp-state";
 
@@ -12,63 +14,82 @@ function countItems(items: string[]) {
   }, {})).sort((a, b) => b[1] - a[1]);
 }
 
-const helpCopy: Record<string, string> = {
-  Breathwork: "Calms your mind",
-  "Guided Arrival": "Helps you settle",
-  "Ground & Release": "Brings stability",
-  "Calm & Integrate": "Restores balance",
-  "Gentle Cue": "Returns your focus",
-};
-
 export function InsightsScreen() {
   const state = useMvpState();
+  const [exploring, setExploring] = useState(false);
   const saved = state.entries.filter((entry) => !entry.isTemporary && entry.analysis);
+  const latest = saved[0]?.analysis;
   const chakraCounts = countItems(saved.flatMap((entry) => entry.analysis?.chakraAssociations.map((item) => item.chakra) ?? []));
-  const totalChakraMentions = chakraCounts.reduce((sum, [, count]) => sum + count, 0);
-  const helpful = countItems(saved.filter((entry) => entry.feedback).map((entry) => entry.feedback?.helpfulSection ?? "").filter(Boolean));
+  const triggerCounts = countItems(saved.flatMap((entry) => entry.analysis?.triggers ?? []));
+  const mainFeeling = latest?.emotions[0]?.name ?? "Peaceful";
+  const emotionalFocus = latest?.chakraAssociations[0]?.chakra ? chakraMap[latest.chakraAssociations[0].chakra].name.replace(" Chakra", "") : "Consistency";
+  const averageIntensity = saved.length ? saved.reduce((sum, entry) => sum + (entry.emotionalIntensityBefore ?? 6), 0) / saved.length : 6;
+  const balanceScore = saved.length ? Math.max(42, Math.min(92, Math.round(100 - averageIntensity * 5))) : 70;
 
   return (
     <MvpShell>
       <div className="space-y-3.5">
-        <AppPageHeader title="Insights" copy="Patterns. Progress. Possibilities." backHref="/" />
+        <SunriseScene variant="lake">
+          <div className="flex min-h-[30rem] flex-col items-center justify-between px-5 py-6 text-center">
+            <div>
+              <h1 className="font-serif text-3xl text-[#322d42]">Inner Balance</h1>
+              <p className="mt-1 text-sm text-[#6f687d]">This week</p>
+            </div>
+            <InsightRing value={balanceScore} />
+            <div className="w-full rounded-[1.4rem] border border-white/70 bg-white/62 p-4 text-left backdrop-blur-xl">
+              <div className="grid grid-cols-2 gap-3">
+                <Mini label="Main feeling" value={mainFeeling} />
+                <Mini label="Focus" value={emotionalFocus} />
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#eca98f] via-[#d79bb8] to-[#a99ac8]" style={{ width: `${balanceScore}%` }} />
+              </div>
+            </div>
+          </div>
+        </SunriseScene>
+
+        <button type="button" onClick={() => setExploring((value) => !value)} className="min-h-12 w-full rounded-full border border-white/70 bg-white/76 px-4 text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
+          {exploring ? "Hide patterns" : "Explore your patterns"}
+        </button>
 
         {saved.length < 3 ? (
-          <GlassCard className="p-4">
-            <p className="font-serif text-xl text-[var(--ip-ink)]">Your patterns will appear here as you save more reflections and complete more resets.</p>
-            <p className="mt-2 text-sm text-[var(--ip-body)]">No fake metrics are shown. Your insights are built only from your saved journey.</p>
-          </GlassCard>
-        ) : (
-          <>
-            <GlassCard className="p-4">
-              <p className="font-serif text-xl text-[var(--ip-ink)]">Recurring Chakra Themes</p>
-              <div className="mt-4 space-y-3">
-                {chakraCounts.slice(0, 5).map(([chakraId, count]) => {
-                  const chakra = chakraMap[chakraId as keyof typeof chakraMap];
-                  const percent = totalChakraMentions ? Math.round((count / totalChakraMentions) * 100) : 0;
-                  return <InsightProgressBar key={chakraId} label={chakra.name.replace(" Chakra", "")} value={percent} color={chakra.color} />;
-                })}
-              </div>
-            </GlassCard>
+          <BlushCard className="p-4">
+            <p className="font-serif text-xl text-[#322d42]">Your patterns will appear as you save more reflections.</p>
+            <p className="mt-2 text-sm leading-6 text-[#6f687d]">No fake metrics are shown. Insights are built from your saved journey.</p>
+          </BlushCard>
+        ) : null}
 
-            <GlassCard className="p-4">
-              <p className="font-serif text-xl text-[var(--ip-ink)]">What Helps You Most</p>
-              <div className="mt-3 space-y-2">
-                {helpful.length ? helpful.slice(0, 4).map(([item]) => (
-                  <div key={item} className="flex items-center gap-3 rounded-2xl border border-[var(--ip-border)] bg-white/72 p-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--ip-lavender)] text-[var(--ip-purple)]">✦</span>
-                    <div>
-                      <p className="font-semibold text-[var(--ip-ink)]">{item}</p>
-                      <p className="text-sm text-[var(--ip-muted)]">{helpCopy[item] ?? "Supports your reset"}</p>
-                    </div>
-                  </div>
-                )) : (
-                  <p className="text-sm text-[var(--ip-body)]">Complete a few resets to see what helps you most.</p>
-                )}
-              </div>
-            </GlassCard>
-          </>
-        )}
+        {exploring ? (
+          <div className="grid gap-3">
+            <InsightCard title="Emotional patterns" items={countItems(saved.map((entry) => entry.analysis?.emotions[0]?.name ?? "").filter(Boolean)).slice(0, 3).map(([item]) => item)} />
+            <InsightCard title="Common triggers" items={triggerCounts.slice(0, 3).map(([item]) => item)} />
+            <InsightCard title="Improvement areas" items={chakraCounts.slice(0, 3).map(([chakraId]) => chakraMap[chakraId as keyof typeof chakraMap]?.meaning ?? chakraId)} />
+            <InsightCard title="Helpful practices" items={["Breath Flow", "Healing Music", "Journal Thought"]} />
+          </div>
+        ) : null}
       </div>
     </MvpShell>
+  );
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-[#90879d]">{label}</p>
+      <p className="mt-1 truncate font-semibold text-[#322d42]">{value}</p>
+    </div>
+  );
+}
+
+function InsightCard({ title, items }: { title: string; items: string[] }) {
+  return (
+    <details className="rounded-[1.45rem] border border-white/70 bg-white/72 p-4 shadow-[0_14px_34px_rgba(152,117,139,0.12)] backdrop-blur-xl">
+      <summary className="cursor-pointer font-serif text-xl text-[#322d42]">{title}</summary>
+      <div className="mt-3 grid gap-2">
+        {items.length ? items.map((item) => (
+          <div key={item} className="rounded-2xl bg-[#fff8f4]/74 px-3 py-2 text-sm text-[#6f687d]">{item}</div>
+        )) : <p className="text-sm text-[#6f687d]">No data yet.</p>}
+      </div>
+    </details>
   );
 }

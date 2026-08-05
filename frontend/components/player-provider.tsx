@@ -303,35 +303,35 @@ function MiniPlayer() {
       className="fixed inset-x-0 z-30 px-4"
       style={{ bottom: "calc(4.9rem + env(safe-area-inset-bottom))" }}
     >
-      <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-[1.5rem] border border-white/10 bg-slate-950/92 px-4 py-3 shadow-[0_18px_60px_rgba(15,23,42,0.55)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-[1.5rem] border border-white/70 bg-white/86 px-4 py-3 shadow-[0_18px_54px_rgba(152,117,139,0.18)] backdrop-blur-xl">
         <button
           type="button"
           onClick={() => router.push(player.activePlayback?.route ?? "/player")}
           className="flex-1 text-left"
         >
-          <p className="text-sm font-medium text-white">{player.activePlayback.chakraName}</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-sm font-medium text-[#322d42]">{player.activePlayback.chakraName}</p>
+          <p className="text-xs text-[#6f687d]">
             {player.activePlayback.moodLabel ?? player.activePlayback.frequencyLabel}
           </p>
         </button>
         <button
           type="button"
           onClick={player.togglePlayback}
-          className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-white"
+          className="rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-4 py-2 text-sm text-[#a77d97]"
         >
           {player.isPlaying ? "Pause" : "Play"}
         </button>
         <button
           type="button"
           onClick={() => router.push(player.activePlayback?.route ?? "/player")}
-          className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-white"
+          className="rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-4 py-2 text-sm text-[#a77d97]"
         >
           Open
         </button>
         <button
           type="button"
           onClick={() => player.stopPlayback()}
-          className="rounded-full border border-red-300/15 bg-red-500/10 px-4 py-2 text-sm text-red-100"
+          className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700"
         >
           Stop
         </button>

@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f4ff;
-  --foreground: #120b4f;
-  --background-primary: #fbf8ff;
-  --background-secondary: #f0e8ff;
-  --background-card: rgba(255, 255, 255, 0.82);
-  --background-card-soft: rgba(255, 255, 255, 0.64);
-  --cream: #130b4f;
-  --gold-primary: #7c3aed;
-  --gold-light: #26156f;
-  --gold-muted: #6d5ea8;
-  --gold-border: rgba(124, 58, 237, 0.46);
-  --gold-border-soft: rgba(124, 58, 237, 0.18);
-  --purple-primary: #7c3aed;
-  --purple-glow: #a78bfa;
-  --blue-primary: #6d5dfc;
-  --ip-bg: #f8f7ff;
-  --ip-bg-soft: #f3f0ff;
-  --ip-card: rgba(255, 255, 255, 0.86);
-  --ip-purple: #6c3ef4;
-  --ip-purple-2: #7b4dff;
-  --ip-ink: #1e245a;
-  --ip-body: #37406f;
-  --ip-muted: #6d6996;
-  --ip-lavender: #ede8ff;
-  --ip-border: rgba(108, 62, 244, 0.12);
-  --ip-border-strong: rgba(108, 62, 244, 0.24);
+  --background: #fff8f4;
+  --foreground: #322d42;
+  --background-primary: #fff8f4;
+  --background-secondary: #f2eaf5;
+  --background-card: rgba(255, 255, 255, 0.76);
+  --background-card-soft: rgba(255, 255, 255, 0.58);
+  --cream: #322d42;
+  --gold-primary: #eca98f;
+  --gold-light: #322d42;
+  --gold-muted: #8d7890;
+  --gold-border: rgba(236, 169, 143, 0.42);
+  --gold-border-soft: rgba(236, 169, 143, 0.18);
+  --purple-primary: #a99ac8;
+  --purple-glow: #d79bb8;
+  --blue-primary: #98b6d3;
+  --ip-bg: #fff8f4;
+  --ip-bg-soft: #fbedee;
+  --ip-card: rgba(255, 255, 255, 0.72);
+  --ip-purple: #a99ac8;
+  --ip-purple-2: #d79bb8;
+  --ip-ink: #322d42;
+  --ip-body: #6f687d;
+  --ip-muted: #90879d;
+  --ip-lavender: #f2eaf5;
+  --ip-border: rgba(215, 155, 184, 0.2);
+  --ip-border-strong: rgba(215, 155, 184, 0.34);
   --bottom-nav-height: 4.25rem;
   --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.75rem);
 }
@@ -53,9 +53,10 @@ body {
 
 .mvp-bg {
   background:
-    radial-gradient(circle at 50% -8%, rgba(123, 77, 255, 0.2), transparent 19rem),
-    radial-gradient(circle at 88% 9%, rgba(251, 207, 232, 0.36), transparent 18rem),
-    linear-gradient(180deg, #fcfbff, #f8f7ff 58%, #f3f0ff);
+    radial-gradient(circle at 48% -4%, rgba(255, 194, 162, 0.36), transparent 19rem),
+    radial-gradient(circle at 88% 9%, rgba(215, 155, 184, 0.28), transparent 18rem),
+    radial-gradient(circle at 12% 18%, rgba(152, 182, 211, 0.2), transparent 20rem),
+    linear-gradient(180deg, #fffaf6, #fff3ef 52%, #f4eef8);
   position: relative;
   isolation: isolate;
 }
@@ -66,12 +67,152 @@ body {
   pointer-events: none;
   content: "";
   background-image:
-    radial-gradient(circle, rgba(124, 58, 237, 0.12) 0 1px, transparent 1.5px),
-    radial-gradient(circle, rgba(167, 139, 250, 0.14) 0 1px, transparent 1.5px);
+    radial-gradient(circle, rgba(236, 169, 143, 0.13) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(169, 154, 200, 0.12) 0 1px, transparent 1.5px);
   background-position: 0 0, 38px 58px;
   background-size: 120px 140px, 160px 190px;
   opacity: 0.32;
   z-index: -1;
+}
+
+.blush-scene {
+  min-height: 21rem;
+  background:
+    linear-gradient(180deg, rgba(255, 242, 234, 0.96), rgba(251, 237, 232, 0.9) 42%, rgba(242, 234, 245, 0.86));
+}
+
+.blush-scene-lake {
+  background:
+    linear-gradient(180deg, rgba(242, 234, 245, 0.85), rgba(251, 237, 232, 0.72) 44%, rgba(152, 182, 211, 0.38));
+}
+
+.blush-scene-plan {
+  min-height: 14rem;
+  background:
+    radial-gradient(circle at 82% 20%, rgba(236, 169, 143, 0.32), transparent 9rem),
+    linear-gradient(135deg, rgba(255,248,244,0.92), rgba(251,237,232,0.9));
+}
+
+.blush-sun {
+  position: absolute;
+  right: 16%;
+  top: 13%;
+  width: 5.25rem;
+  height: 5.25rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 195, 158, 0.9), rgba(236, 169, 143, 0.18) 64%, transparent 72%);
+  filter: blur(0.5px);
+  animation: blush-glow 9s ease-in-out infinite;
+}
+
+.blush-mist {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  height: 5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.58), transparent);
+  filter: blur(18px);
+  animation: blush-drift 18s ease-in-out infinite alternate;
+}
+
+.blush-mist-one { top: 37%; }
+.blush-mist-two { top: 53%; animation-delay: -5s; opacity: 0.72; }
+
+.blush-mountains {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  bottom: 30%;
+  height: 42%;
+  clip-path: polygon(0 84%, 12% 54%, 24% 70%, 38% 34%, 52% 66%, 68% 28%, 82% 62%, 100% 38%, 100% 100%, 0 100%);
+}
+
+.blush-mountains-back {
+  background: linear-gradient(180deg, rgba(169,154,200,0.24), rgba(152,182,211,0.28));
+}
+
+.blush-mountains-front {
+  bottom: 23%;
+  opacity: 0.76;
+  background: linear-gradient(180deg, rgba(236,169,143,0.22), rgba(152,182,211,0.32));
+  transform: scaleX(1.08);
+}
+
+.blush-lake {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 39%;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.28), rgba(152,182,211,0.38)),
+    repeating-radial-gradient(ellipse at 50% 18%, rgba(255,255,255,0.34) 0 1px, transparent 2px 18px);
+}
+
+.blush-ripple {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  width: 3rem;
+  height: 1rem;
+  border: 1px solid rgba(255,255,255,0.64);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: blush-ripple 4.8s ease-out infinite;
+}
+
+.blush-ripple-two { animation-delay: 1.7s; }
+
+.blush-action-button::after {
+  content: "";
+  position: absolute;
+  inset: -0.85rem;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(236,169,143,0.2), transparent 65%);
+  z-index: 0;
+  animation: blush-pulse 4.5s ease-in-out infinite;
+}
+
+.blush-stone {
+  border-radius: 50% / 42%;
+}
+
+.blush-stone-current {
+  animation: blush-stone-pulse 3.8s ease-in-out infinite;
+}
+
+.blush-stone-complete::after {
+  content: "";
+  position: absolute;
+  inset: -0.24rem;
+  border-radius: inherit;
+  border: 1px solid rgba(255,255,255,0.52);
+}
+
+@keyframes blush-glow {
+  0%, 100% { transform: scale(0.96); opacity: 0.82; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes blush-drift {
+  from { transform: translateX(-4%); }
+  to { transform: translateX(5%); }
+}
+
+@keyframes blush-ripple {
+  from { opacity: 0.62; transform: translate(-50%, -50%) scale(0.45); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(4.2); }
+}
+
+@keyframes blush-pulse {
+  0%, 100% { opacity: 0.42; transform: scale(0.96); }
+  50% { opacity: 0.78; transform: scale(1.08); }
+}
+
+@keyframes blush-stone-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
 }
 
 .mvp-orb {
@@ -119,7 +260,12 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .chakra-activation-dot,
   .mvp-orb,
-  .mvp-energy-wave {
+  .mvp-energy-wave,
+  .blush-sun,
+  .blush-mist,
+  .blush-ripple,
+  .blush-action-button::after,
+  .blush-stone-current {
     animation: none !important;
   }
 }
