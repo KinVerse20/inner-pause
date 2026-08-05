@@ -107,6 +107,12 @@ export function MvpHomeScreen() {
                   } as CSSProperties
                 }
               >
+                <span className="radar-sweep" />
+                <span className="frequency-scan" />
+                <span className="frequency-ring" />
+                <span className="frequency-ring" />
+                <span className="frequency-ring" />
+                <span className="sphere-core-pulse" />
                 <span className="orbital-track" />
                 <span className="orbital-track" />
                 <span className="orbital-track" />

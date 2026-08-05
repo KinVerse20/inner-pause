@@ -100,12 +100,12 @@ export function InsightRing({ value }: { value: number }) {
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          background: `conic-gradient(from -40deg, #a98bdd ${clamped * 3.6}deg, rgba(231,221,248,0.72) 0deg)`,
+          background: `conic-gradient(from -40deg, #F47A22 ${clamped * 3.6}deg, rgba(255,255,255,0.1) 0deg)`,
           mask: "radial-gradient(circle, transparent 54%, black 56%)",
           WebkitMask: "radial-gradient(circle, transparent 54%, black 56%)",
         }}
       />
-      <div className="absolute inset-4 rounded-full border border-[var(--gold-border-soft)] bg-white/74 shadow-inner" />
+      <div className="absolute inset-4 rounded-full border border-[var(--gold-border-soft)] bg-black/25 shadow-inner" />
       <div className="relative text-center">
         <p className="font-serif text-[clamp(2.15rem,8vw,3rem)] text-[var(--gold-light)]">{clamped}%</p>
         <p className="mt-1 text-xs text-[var(--ip-muted)]">Calm score</p>
@@ -124,14 +124,14 @@ export function BlushChoicePanel({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-[#49316f]/20 px-3 pb-3 backdrop-blur-[3px] sm:items-center sm:justify-center">
+    <div className="fixed inset-0 z-50 flex items-end bg-black/55 px-3 pb-3 backdrop-blur-[3px] sm:items-center sm:justify-center">
       <button type="button" className="absolute inset-0" aria-label="Close choices" onClick={onClose} />
-      <section className="relative z-10 max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-[1.8rem] border border-[var(--gold-border-soft)] bg-white/90 p-4 shadow-[0_24px_70px_rgba(169,139,221,0.24)] backdrop-blur-2xl">
-        <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-[var(--gold-primary)]/42" />
-        <h2 className="text-center font-serif text-2xl text-[var(--ip-ink)]">{title}</h2>
+      <section className="obsidian-panel relative z-10 max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-[1.8rem] p-4">
+        <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-[var(--gold-primary)]/70 shadow-[0_0_14px_rgba(255,138,42,0.45)]" />
+        <h2 className="text-center text-2xl text-[var(--ip-ink)]">{title}</h2>
         <div className="mt-4 grid gap-2">
           {choices.map((choice) => (
-            <button key={choice.label} type="button" onClick={choice.onClick} className="min-h-12 rounded-full border border-[var(--gold-border-soft)] bg-white/70 px-4 text-sm font-semibold text-[var(--ip-ink)] shadow-sm transition hover:bg-white/90">
+            <button key={choice.label} type="button" onClick={choice.onClick} className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-4 text-sm font-semibold uppercase tracking-[0.14em] text-[var(--ip-body)] shadow-sm transition hover:border-[rgba(255,138,42,0.45)] hover:text-[var(--gold-light)]">
               {choice.label}
             </button>
           ))}

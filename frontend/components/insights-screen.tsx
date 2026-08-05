@@ -41,7 +41,7 @@ export function InsightsScreen() {
               <MiniCard label="Feeling" value={mainFeeling} />
               <MiniCard label="Focus" value={emotionalFocus} />
             </div>
-            <button type="button" onClick={() => setExploring((value) => !value)} className="mt-4 min-h-12 w-full rounded-full border border-white/70 bg-[linear-gradient(135deg,#b18de2,#f5b5d1)] px-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(177,141,226,0.18)]">
+            <button type="button" onClick={() => setExploring((value) => !value)} className="mt-4 min-h-12 w-full rounded-full border border-[rgba(255,138,42,0.55)] bg-[rgba(244,122,34,0.12)] px-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)] shadow-[0_0_26px_rgba(244,122,34,0.12)]">
               {exploring ? "Hide more" : "See more"}
             </button>
           </div>
@@ -51,15 +51,15 @@ export function InsightsScreen() {
           <BlushCard className="p-4">
             <p className="text-xs uppercase tracking-[0.18em] text-[var(--ip-muted)]">Balance</p>
             <p className="mt-2 font-serif text-4xl text-[var(--ip-ink)]">{balanceScore}%</p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/70">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#58d3b5] via-[#b18de2] to-[#f5b5d1]" style={{ width: `${balanceScore}%` }} />
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-[var(--gold-primary)] shadow-[0_0_14px_rgba(255,138,42,0.7)]" style={{ width: `${balanceScore}%` }} />
             </div>
           </BlushCard>
 
           {saved.length < 3 ? (
             <BlushCard className="p-4">
-              <p className="font-serif text-xl text-[#322d42]">Your patterns will appear as you save more reflections.</p>
-              <p className="mt-2 text-sm leading-6 text-[#6f687d]">No fake metrics are shown. Insights are built from your saved journey.</p>
+              <p className="text-xl text-[var(--ip-ink)]">Your patterns will appear as you save more reflections.</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">No fake metrics are shown. Insights are built from your saved journey.</p>
             </BlushCard>
           ) : null}
 
@@ -79,21 +79,21 @@ export function InsightsScreen() {
 
 function MiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.25rem] border border-white/70 bg-white/66 p-4 text-left shadow-[0_12px_28px_rgba(169,139,221,0.1)]">
-      <p className="text-xs text-[#90879d]">{label}</p>
-      <p className="mt-1 truncate font-semibold text-[#322d42]">{value}</p>
+    <div className="rounded-[1.25rem] border border-white/10 bg-white/[0.035] p-4 text-left shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+      <p className="minimal-label text-[0.65rem]">{label}</p>
+      <p className="mt-1 truncate text-xl font-semibold text-[var(--ip-ink)]">{value}</p>
     </div>
   );
 }
 
 function InsightCard({ title, items }: { title: string; items: string[] }) {
   return (
-    <details className="rounded-[1.45rem] border border-white/70 bg-white/72 p-4 shadow-[0_14px_34px_rgba(152,117,139,0.12)] backdrop-blur-xl">
-      <summary className="cursor-pointer font-serif text-xl text-[#322d42]">{title}</summary>
+    <details className="rounded-[1.45rem] border border-white/10 bg-white/[0.035] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+      <summary className="cursor-pointer text-xl text-[var(--ip-ink)]">{title}</summary>
       <div className="mt-3 grid gap-2">
         {items.length ? items.map((item) => (
-          <div key={item} className="rounded-2xl bg-[#fff8f4]/74 px-3 py-2 text-sm text-[#6f687d]">{item}</div>
-        )) : <p className="text-sm text-[#6f687d]">No data yet.</p>}
+          <div key={item} className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-[var(--ip-body)]">{item}</div>
+        )) : <p className="text-sm text-[var(--ip-body)]">No data yet.</p>}
       </div>
     </details>
   );

@@ -67,7 +67,7 @@ export function ProfileScreen() {
         <SectionTitle title="Profile" copy="Preferences, privacy controls and gentle guidance." />
 
         <GlassCard className="space-y-3 p-3.5">
-          <div className="grid h-16 w-16 place-items-center rounded-full border border-purple-200 bg-purple-100 text-2xl text-[#6d28d9]">☾</div>
+          <div className="grid h-16 w-16 place-items-center rounded-full border border-[rgba(255,138,42,0.45)] bg-[rgba(244,122,34,0.1)] text-2xl text-[var(--gold-light)]">☾</div>
           <Input label="Name" value={name} onChange={setName} />
           <Input label="Email" value={email} onChange={setEmail} />
           <Input label="Phone" value={phone} onChange={setPhone} />
@@ -83,7 +83,7 @@ export function ProfileScreen() {
             type="button"
             onClick={handleSignOut}
             disabled={signingOut}
-            className="min-h-11 w-full rounded-full border border-purple-200 bg-white px-4 py-2.5 text-[#6d28d9] disabled:opacity-50"
+            className="min-h-11 w-full rounded-full border border-[rgba(255,138,42,0.45)] bg-[rgba(244,122,34,0.1)] px-4 py-2.5 text-[var(--gold-light)] disabled:opacity-50"
           >
             {signingOut ? "Signing out..." : "Sign out"}
           </button>
@@ -100,7 +100,7 @@ export function ProfileScreen() {
         </GlassCard>
 
         <details className="rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[var(--background-card)] p-3.5">
-          <summary className="cursor-pointer font-serif text-xl text-[#130b4f]">Healing preferences</summary>
+          <summary className="cursor-pointer text-xl text-[var(--ip-ink)]">Healing preferences</summary>
           <Preference label="Preferred session duration" value={`${state.profile.preferredSessionDuration} min`} />
           <Preference label="Preferred guide voice" value={state.profile.preferredVoice} />
           <Preference label="Music style" value={state.profile.preferredMusicStyle} />
@@ -110,22 +110,22 @@ export function ProfileScreen() {
         </details>
 
         <GlassCard className="p-3.5">
-          <h2 className="font-serif text-xl text-[#130b4f]">Pattern memory</h2>
-          <p className="mt-2 text-sm leading-5 text-[#4b3f86]">
+          <h2 className="text-xl text-[var(--ip-ink)]">Pattern memory</h2>
+          <p className="mt-2 text-sm leading-5 text-[var(--ip-body)]">
             Long-term pattern memory is {state.profile.aiMemoryEnabled ? "enabled" : "disabled"}. You can correct or delete patterns from Insights as The Inner Pause learns more.
           </p>
           <button
             type="button"
             onClick={() => upsertProfile({ aiMemoryEnabled: !state.profile.aiMemoryEnabled })}
-            className="mt-3 min-h-10 rounded-full border border-purple-200 bg-white px-4 py-2 text-sm text-[#6d28d9]"
+            className="mt-3 min-h-10 rounded-full border border-[rgba(255,138,42,0.45)] bg-[rgba(244,122,34,0.1)] px-4 py-2 text-sm text-[var(--gold-light)]"
           >
             {state.profile.aiMemoryEnabled ? "Disable memory" : "Enable memory"}
           </button>
         </GlassCard>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Link href="/guidance" className="rounded-2xl border border-purple-100 bg-white/70 p-3 text-[#26156f]">WhatsApp preferences</Link>
-          <Link href="/about" className="rounded-2xl border border-purple-100 bg-white/70 p-3 text-[#26156f]">About Us</Link>
+          <Link href="/guidance" className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-[var(--ip-body)]">WhatsApp preferences</Link>
+          <Link href="/about" className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-[var(--ip-body)]">About Us</Link>
         </div>
       </div>
     </MvpShell>
@@ -135,17 +135,17 @@ export function ProfileScreen() {
 function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <label className="block">
-      <span className="text-sm text-[#4b3f86]">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="soft-input mt-1 w-full rounded-2xl p-2.5 outline-none" />
+      <span className="text-sm text-[var(--ip-body)]">{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 p-2.5 text-[var(--ip-ink)] outline-none focus:border-[rgba(255,138,42,0.55)]" />
     </label>
   );
 }
 
 function Preference({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mt-4 flex items-center justify-between gap-4 border-t border-purple-100 pt-4 text-sm">
-      <span className="text-[#6d5ea8]">{label}</span>
-      <span className="text-[#26156f]">{value}</span>
+    <div className="mt-4 flex items-center justify-between gap-4 border-t border-white/10 pt-4 text-sm">
+      <span className="text-[var(--ip-body)]">{label}</span>
+      <span className="text-[var(--gold-light)]">{value}</span>
     </div>
   );
 }

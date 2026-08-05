@@ -27,8 +27,8 @@
   --ip-lavender: rgba(244, 122, 34, 0.12);
   --ip-border: rgba(255, 255, 255, 0.1);
   --ip-border-strong: rgba(255, 255, 255, 0.16);
-  --bottom-nav-height: 4.25rem;
-  --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.75rem);
+  --bottom-nav-height: 5.25rem;
+  --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 1.25rem);
 }
 
 @theme inline {
@@ -168,6 +168,135 @@ body {
   transform: perspective(18rem) rotateX(72deg);
 }
 
+.time-orbit-sphere .frequency-scan {
+  position: absolute;
+  inset: 6%;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.time-orbit-sphere .frequency-scan::before {
+  position: absolute;
+  inset: -20% 44%;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(255,138,42,0.32), transparent);
+  filter: blur(8px);
+  transform: rotate(24deg) translateX(-8rem);
+  animation: frequency-scan-pass 7s ease-in-out infinite;
+}
+
+.time-orbit-sphere .radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, rgba(255,138,42,0.22), transparent 34deg, transparent 360deg);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: radar-sweep 12s linear infinite;
+}
+
+.frequency-ring {
+  position: absolute;
+  inset: 24%;
+  border-radius: 999px;
+  border: 1px solid rgba(255,138,42,0.34);
+  opacity: 0;
+  animation: frequency-ring-expand 5.6s ease-out infinite;
+}
+
+.frequency-ring:nth-of-type(2) {
+  animation-delay: 1.7s;
+}
+
+.frequency-ring:nth-of-type(3) {
+  animation-delay: 3.3s;
+}
+
+.sphere-core-pulse {
+  position: absolute;
+  left: var(--light-x);
+  top: var(--light-y);
+  width: 0.8rem;
+  height: 0.8rem;
+  margin: -0.4rem;
+  border-radius: 999px;
+  background: #ff9a4a;
+  box-shadow: 0 0 24px rgba(255,138,42,0.95);
+  animation: core-pulse 3.8s ease-in-out infinite;
+}
+
+.obsidian-chakra-body {
+  position: relative;
+  min-height: clamp(28rem, 66dvh, 40rem);
+  display: grid;
+  place-items: center;
+}
+
+.obsidian-chakra-body::before {
+  position: absolute;
+  content: "";
+  width: min(42vw, 13rem);
+  height: 84%;
+  border-radius: 48% 48% 42% 42%;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(241,236,230,0.12), transparent 9%),
+    linear-gradient(180deg, rgba(241,236,230,0.08), rgba(241,236,230,0.018));
+  border: 1px solid rgba(255,255,255,0.055);
+  filter: blur(0.2px);
+}
+
+.obsidian-chakra-line {
+  position: absolute;
+  top: 9%;
+  bottom: 9%;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(244,122,34,0.18), rgba(244,122,34,0.52), rgba(244,122,34,0.18), transparent);
+  box-shadow: 0 0 24px rgba(244,122,34,0.2);
+}
+
+.obsidian-chakra-node {
+  position: absolute;
+  left: 50%;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.11);
+  background: #232629;
+  color: var(--ip-body);
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 14px 32px rgba(0,0,0,0.26);
+}
+
+.obsidian-chakra-node::before {
+  position: absolute;
+  inset: 38%;
+  content: "";
+  border-radius: inherit;
+  background: rgba(255,138,42,0.65);
+  box-shadow: 0 0 14px rgba(255,138,42,0.46);
+}
+
+.obsidian-chakra-node--active {
+  border-color: rgba(244,122,34,0.72);
+  color: var(--gold-light);
+  box-shadow: 0 0 32px rgba(244,122,34,0.26), inset 0 1px 0 rgba(255,255,255,0.07);
+  animation: chakra-node-soft-pulse 3.4s ease-in-out infinite;
+}
+
+.obsidian-chakra-node--active::after {
+  position: absolute;
+  inset: -0.9rem;
+  content: "";
+  border-radius: inherit;
+  border: 1px solid rgba(244,122,34,0.42);
+  animation: chakra-node-click-ripple 3s ease-out infinite;
+}
+
 .orbital-track {
   position: absolute;
   inset: -10%;
@@ -300,9 +429,9 @@ body {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0 8%, rgba(177,141,226,0.34) 9% 24%, rgba(114,205,233,0.22) 25% 44%, transparent 55%),
-    repeating-radial-gradient(circle, transparent 0 2.4rem, rgba(111,58,167,0.18) 2.48rem 2.55rem, transparent 2.62rem 3.3rem);
-  box-shadow: 0 0 64px rgba(177,141,226,0.22);
+    radial-gradient(circle at 50% 50%, rgba(255,154,74,0.92) 0 7%, rgba(244,122,34,0.3) 9% 24%, rgba(255,255,255,0.05) 25% 44%, transparent 55%),
+    repeating-radial-gradient(circle, transparent 0 2.4rem, rgba(244,122,34,0.18) 2.48rem 2.55rem, transparent 2.62rem 3.3rem);
+  box-shadow: 0 0 64px rgba(244,122,34,0.22);
   animation: lotus-breathe 8s ease-in-out infinite;
 }
 
@@ -311,7 +440,7 @@ body {
   inset: 26%;
   content: "";
   border-radius: 38%;
-  background: conic-gradient(from 0deg, #f5b5d1, #9ddff2, #a8e8d8, #fbd5c1, #d4bff4, #f5b5d1);
+  background: conic-gradient(from 0deg, #f47a22, #ff862a, #ff9a4a, #5b3423, #f47a22);
   filter: blur(0.2px);
   animation: sacred-spin 28s linear infinite;
 }
@@ -324,8 +453,8 @@ body {
   height: 0.7rem;
   margin: -0.35rem;
   border-radius: 999px;
-  background: var(--point-color, #b18de2);
-  box-shadow: 0 0 16px var(--point-color, #b18de2);
+  background: var(--point-color, #f47a22);
+  box-shadow: 0 0 16px var(--point-color, #f47a22);
   transform: rotate(var(--angle)) translateX(min(30vw, 10rem));
   animation: orbit-drift 18s linear infinite;
 }
@@ -1112,8 +1241,8 @@ body {
 
 @media (max-width: 360px) {
   :root {
-    --bottom-nav-height: 4.05rem;
-    --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.6rem);
+    --bottom-nav-height: 5rem;
+    --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 1rem);
   }
 
   .blush-action-button {
@@ -1777,6 +1906,78 @@ body {
   }
 }
 
+@keyframes frequency-scan-pass {
+  0%,
+  100% {
+    opacity: 0;
+    transform: rotate(24deg) translateX(-9rem);
+  }
+  18%,
+  70% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 0;
+    transform: rotate(24deg) translateX(9rem);
+  }
+}
+
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes frequency-ring-expand {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  16% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.15);
+  }
+}
+
+@keyframes core-pulse {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes chakra-node-soft-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+
+@keyframes chakra-node-click-ripple {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.72);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chakra-aura,
   .chakra-orb-immersive,
@@ -1808,7 +2009,16 @@ body {
   .orbital-track,
   .orbiting-point,
   .orange-particle,
-  .mini-waveform {
+  .mini-waveform,
+  .frequency-scan::before,
+  .radar-sweep,
+  .frequency-ring,
+  .sphere-core-pulse {
+    animation: none !important;
+  }
+
+  .obsidian-chakra-node,
+  .obsidian-chakra-node::after {
     animation: none !important;
   }
 

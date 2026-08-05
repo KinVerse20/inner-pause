@@ -145,7 +145,7 @@ export function SessionPlayerScreen({
 
   return (
     <div
-      className="chakra-player-shell relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc,#fdf2f8_44%,#eef8ff)] text-[var(--ip-ink)]"
+      className="mvp-bg chakra-player-shell relative min-h-dvh overflow-x-hidden text-[var(--ip-ink)]"
       onPointerDown={() => setControlsVisible(true)}
       style={
         {
@@ -155,8 +155,7 @@ export function SessionPlayerScreen({
         } as CSSProperties
       }
     >
-      <div className="psychedelic-backdrop pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-[radial-gradient(ellipse_at_35%_86%,rgba(255,255,255,0.86),transparent_38%),radial-gradient(ellipse_at_70%_82%,rgba(221,248,240,0.62),transparent_34%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_32%,rgba(255,138,42,0.11),transparent_24rem)]" />
       <main className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="relative z-20 grid grid-cols-[2.75rem_1fr_2.75rem] items-start gap-2 sm:grid-cols-[3rem_1fr_3rem] sm:gap-3">
           <button
@@ -165,19 +164,19 @@ export function SessionPlayerScreen({
               stopPlayback({ recordQuick: false });
               router.push(`/session/${chakra.id}/${session.id}/complete?before=${moodBefore}`);
             }}
-            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-2xl text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
+            className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-2xl text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
             aria-label="End session"
           >
             <span aria-hidden="true">&lsaquo;</span>
           </button>
 
           <div className="text-center">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Healing session</p>
-            <h1 className="mt-2 font-serif text-3xl leading-tight text-[var(--ip-ink)] sm:text-6xl">{chakra.name}</h1>
-            <p className="mt-1 text-sm sm:mt-2 sm:text-base" style={{ color: chakra.accent }}>
+            <p className="minimal-label text-[0.68rem]">Healing</p>
+            <h1 className="mt-2 text-3xl leading-tight text-[var(--ip-ink)] sm:text-6xl">{chakra.name}</h1>
+            <p className="mt-1 text-sm text-[var(--gold-light)] sm:mt-2 sm:text-base">
               {session.name}
             </p>
-            <p className="mt-1 text-base sm:mt-2 sm:text-lg" style={{ color: chakra.accent }}>
+            <p className="mt-1 text-base text-[var(--gold-light)] sm:mt-2 sm:text-lg">
               {chakra.frequencyLabel}
             </p>
           </div>
@@ -185,7 +184,7 @@ export function SessionPlayerScreen({
           <button
             type="button"
             onClick={() => setControlsVisible(true)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
+            className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
             aria-label="Show controls"
           >
             <span aria-hidden="true">•••</span>
@@ -195,15 +194,12 @@ export function SessionPlayerScreen({
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
           <div className="flex w-full flex-1 flex-col items-center justify-center">
             <div className={`relative grid place-items-center ${!isPlaying || reducedMotion ? "chakra-scene--paused" : ""}`}>
-              <div className="mandala-reference" aria-hidden="true">
-                {Array.from({ length: 10 }).map((_, index) => (
-                  <span key={index} className="lotus-petal" style={{ transform: `rotate(${index * 36}deg) translateY(-26%)` }} />
-                ))}
+              <div className="relative grid aspect-square w-[min(76vw,24rem)] place-items-center">
+                <div className="absolute inset-0 rounded-full border border-white/10" />
+                <div className="absolute inset-[10%] rounded-full border border-[rgba(255,138,42,0.22)]" />
+                <div className="healing-orbit-sphere w-[62%]" />
+                <p className="absolute bottom-4 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm text-[var(--ip-body)] backdrop-blur-xl">{breathLabel}</p>
               </div>
-              {Array.from({ length: 8 }).map((_, index) => (
-                <span key={`petal-${index}`} className="floating-petal" style={{ width: "0.42rem", height: "0.66rem", left: `${8 + index * 11}%`, top: `${10 + (index % 4) * 18}%`, animationDelay: `${index * 1.1}s` }} />
-              ))}
-              <p className="absolute bottom-4 rounded-full border border-[var(--gold-border-soft)] bg-white/72 px-4 py-2 text-sm text-[var(--ip-body)] backdrop-blur-xl">{breathLabel}</p>
             </div>
           </div>
 
@@ -212,27 +208,26 @@ export function SessionPlayerScreen({
               {session.prompts[affirmationIndex]}
             </p>
             {session.breathingPattern ? (
-              <p className="mx-auto mt-3 inline-flex rounded-full border border-[var(--gold-border-soft)] bg-white/68 px-4 py-2 text-sm text-[var(--ip-body)] backdrop-blur-xl sm:mt-4 sm:px-5">
+              <p className="mx-auto mt-3 inline-flex rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-sm text-[var(--ip-body)] backdrop-blur-xl sm:mt-4 sm:px-5">
                 {BREATH_STEPS[breathIndex]}
               </p>
             ) : null}
           </div>
 
           <div
-            className={`player-control-glass mt-4 w-full max-w-3xl rounded-[1.5rem] border p-4 backdrop-blur-2xl transition duration-500 sm:mt-6 sm:rounded-[1.75rem] sm:p-5 ${
+            className={`obsidian-panel mt-4 w-full max-w-3xl rounded-[1.5rem] p-4 transition duration-500 sm:mt-6 sm:rounded-[1.75rem] sm:p-5 ${
               controlsEmphasized ? "opacity-100" : "opacity-72"
             }`}
-            style={{ borderColor: `${chakra.accent}33` }}
           >
             <div className="mb-4 flex items-center gap-3 sm:mb-5 sm:gap-4">
               <div
                 className="grid h-12 w-12 shrink-0 place-items-center rounded-full sm:h-14 sm:w-14"
                 style={{
-                  background: `radial-gradient(circle, ${chakra.color}66, rgba(255,255,255,0.74))`,
-                  boxShadow: `0 0 24px ${chakra.color}66`,
+                  background: "radial-gradient(circle, rgba(255,138,42,0.22), rgba(35,38,41,0.9))",
+                  boxShadow: "0 0 24px rgba(255,138,42,0.18)",
                 }}
               >
-                <span className="h-7 w-7 rounded-full sm:h-8 sm:w-8" style={{ backgroundColor: chakra.accent }} />
+                <span className="h-7 w-7 rounded-full bg-[var(--gold-primary)] sm:h-8 sm:w-8" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-medium text-[var(--ip-ink)] sm:text-lg">{session.name}</p>
@@ -241,14 +236,14 @@ export function SessionPlayerScreen({
             </div>
 
             {audioError ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800">
+              <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-center text-sm text-amber-200">
                 Add the MP3 file to the public/audio folder.
               </div>
             ) : (
               <>
-                <div className="h-2 overflow-hidden rounded-full bg-[rgba(169,139,221,0.16)]">
+                <div className="h-2 overflow-hidden rounded-full bg-white/10">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#a9e7d7] via-[#a98bdd] to-[#f4b8cd]"
+                    className="h-full rounded-full bg-[var(--gold-primary)] shadow-[0_0_14px_rgba(255,138,42,0.8)]"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -269,7 +264,7 @@ export function SessionPlayerScreen({
                   setControlsVisible(true);
                 }}
                 disabled={audioError}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-3 py-2 text-xs text-[var(--ip-body)] disabled:opacity-50 sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-xs uppercase tracking-[0.16em] text-[var(--ip-body)] disabled:opacity-50 sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
               >
                 Restart
               </button>
@@ -277,8 +272,7 @@ export function SessionPlayerScreen({
                 type="button"
                 onClick={togglePlayback}
                 disabled={audioError}
-                className="mx-auto grid h-16 w-16 place-items-center rounded-full border bg-[linear-gradient(135deg,#ffffff,#f8cedb_52%,#c7b5ef)] text-lg font-semibold text-[var(--ip-ink)] disabled:opacity-50 sm:h-20 sm:w-20 sm:text-2xl"
-                style={{ borderColor: chakra.accent, boxShadow: `0 0 34px ${chakra.glow}` }}
+                className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-[rgba(255,138,42,0.55)] bg-[rgba(244,122,34,0.12)] text-lg font-semibold text-[var(--gold-light)] shadow-[0_0_34px_rgba(255,138,42,0.18)] disabled:opacity-50 sm:h-20 sm:w-20 sm:text-2xl"
               >
                 {isPlaying ? "Pause" : "Play"}
               </button>
@@ -288,7 +282,7 @@ export function SessionPlayerScreen({
                   stopPlayback({ recordQuick: false });
                   router.push(`/session/${chakra.id}/${session.id}/complete?before=${moodBefore}`);
                 }}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-3 py-2 text-xs text-[var(--ip-body)] sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-xs uppercase tracking-[0.16em] text-[var(--ip-body)] sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
               >
                 End
               </button>

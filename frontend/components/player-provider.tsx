@@ -303,35 +303,35 @@ function MiniPlayer() {
       className="fixed inset-x-0 z-30 px-2.5 sm:px-4"
       style={{ bottom: "calc(4.9rem + env(safe-area-inset-bottom))" }}
     >
-      <div className="mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1.5 rounded-[1.5rem] border border-white/70 bg-white/86 px-3 py-2.5 shadow-[0_18px_54px_rgba(152,117,139,0.18)] backdrop-blur-xl sm:flex sm:gap-3 sm:px-4 sm:py-3">
+      <div className="obsidian-panel mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1.5 rounded-[1.5rem] px-3 py-2.5 sm:flex sm:gap-3 sm:px-4 sm:py-3">
         <button
           type="button"
           onClick={() => router.push(player.activePlayback?.route ?? "/player")}
           className="min-w-0 flex-1 text-left"
         >
-          <p className="text-sm font-medium text-[#322d42]">{player.activePlayback.chakraName}</p>
-          <p className="text-xs text-[#6f687d]">
+          <p className="text-base font-medium text-[var(--ip-ink)]">{player.activePlayback.chakraName}</p>
+          <p className="text-sm text-[var(--ip-body)]">
             {player.activePlayback.moodLabel ?? player.activePlayback.frequencyLabel}
           </p>
         </button>
         <button
           type="button"
           onClick={player.togglePlayback}
-          className="min-h-10 rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-2.5 py-2 text-xs text-[#a77d97] sm:px-4 sm:text-sm"
+          className="min-h-10 rounded-full border border-[rgba(255,138,42,0.45)] bg-[rgba(244,122,34,0.1)] px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--gold-light)] sm:px-4 sm:text-sm"
         >
           {player.isPlaying ? "Pause" : "Play"}
         </button>
         <button
           type="button"
           onClick={() => router.push(player.activePlayback?.route ?? "/player")}
-          className="min-h-10 rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-2.5 py-2 text-xs text-[#a77d97] sm:px-4 sm:text-sm"
+          className="min-h-10 rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ip-body)] sm:px-4 sm:text-sm"
         >
           Open
         </button>
         <button
           type="button"
           onClick={() => player.stopPlayback()}
-          className="min-h-10 rounded-full border border-red-200 bg-red-50 px-2.5 py-2 text-xs text-red-700 sm:px-4 sm:text-sm"
+          className="min-h-10 rounded-full border border-red-400/35 bg-red-500/10 px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-red-200 sm:px-4 sm:text-sm"
         >
           Stop
         </button>

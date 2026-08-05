@@ -53,7 +53,7 @@ export function AnalysisScreen() {
         <SunriseScene>
           <div className="reference-phone-canvas grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-center lg:p-7">
             <div className="min-w-0 text-center lg:text-left">
-              <button type="button" onClick={() => router.push("/journal")} className="mb-5 min-h-10 rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-4 text-sm text-[var(--ip-body)]">
+              <button type="button" onClick={() => router.push("/journal")} className="mb-5 min-h-10 rounded-full border border-white/10 bg-white/[0.035] px-4 text-sm text-[var(--ip-body)]">
                 ← Back to journal
               </button>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Decoding</p>
@@ -62,7 +62,7 @@ export function AnalysisScreen() {
 
               <div className="mx-auto my-5 grid place-items-center lg:mx-0">
                 <div className="energy-decoding-orb" aria-hidden="true">
-                  {["#f5b5d1", "#72cde9", "#58d3b5", "#f5b692", "#b18de2"].map((color, index) => (
+                  {["#F47A22", "#FF862A", "#FF9A4A", "#B75A1D", "#F47A22"].map((color, index) => (
                     <span key={color} className="orbit-point" style={{ "--angle": `${index * 72}deg`, "--point-color": color } as CSSProperties} />
                   ))}
                 </div>
@@ -100,7 +100,7 @@ export function AnalysisScreen() {
 
               <div className="mt-6 flex flex-wrap gap-2">
                 {analysis.emotions.slice(0, 5).map((emotion) => (
-                  <details key={emotion.name} className="group rounded-full border border-[var(--gold-border-soft)] bg-white/58 px-4 py-2 text-sm text-[var(--ip-ink)] open:rounded-2xl">
+                  <details key={emotion.name} className="group rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-sm text-[var(--ip-ink)] open:rounded-2xl">
                     <summary className="cursor-pointer list-none">{emotion.name}</summary>
                     {emotion.explanation ? <p className="mt-2 max-w-xs text-xs leading-5 text-[var(--ip-body)]">{emotion.explanation}</p> : null}
                   </details>
@@ -128,7 +128,7 @@ export function AnalysisScreen() {
               <GoldButton className="mt-5 w-full sm:w-auto sm:px-8" disabled={analysis.safetyFlag} onClick={beginReset}>
                 Continue Healing
               </GoldButton>
-              <button type="button" onClick={() => router.push("/journey")} className="ml-0 mt-3 min-h-11 w-full rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-4 text-sm font-semibold text-[var(--gold-light)] sm:ml-3 sm:mt-0 sm:w-auto">
+              <button type="button" onClick={() => router.push("/journey")} className="ml-0 mt-3 min-h-11 w-full rounded-full border border-white/10 bg-white/[0.035] px-4 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)] sm:ml-3 sm:mt-0 sm:w-auto">
                 View Chakra Map
               </button>
             </div>
@@ -168,7 +168,7 @@ export function AnalysisScreen() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1rem] border border-[var(--gold-border-soft)] bg-white/58 p-3 text-left shadow-[0_12px_28px_rgba(169,139,221,0.1)]">
+    <div className="rounded-[1rem] border border-white/10 bg-white/[0.035] p-3 text-left shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
       <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--ip-muted)]">{label}</p>
       <p className="mt-1 font-serif text-xl text-[var(--ip-ink)]">{value}</p>
     </div>
