@@ -1272,6 +1272,70 @@ body {
 }
 
 @media (max-height: 650px) {
+  .quick-player-layout {
+    padding-top: calc(0.55rem + env(safe-area-inset-top));
+    padding-bottom: calc(0.55rem + env(safe-area-inset-bottom));
+  }
+
+  .quick-player-layout header {
+    min-height: 2.25rem;
+  }
+
+  .quick-player-layout header button {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.35rem;
+  }
+
+  .quick-player-visual {
+    flex: 0 0 auto;
+    padding-top: 0.35rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .quick-player-orbit {
+    width: min(64vw, 14.75rem);
+  }
+
+  .quick-player-title h1 {
+    font-size: 1.15rem;
+    letter-spacing: 0.38em;
+  }
+
+  .quick-player-divider {
+    margin-top: 0.55rem;
+  }
+
+  .quick-player-meta {
+    margin-top: 0.55rem;
+  }
+
+  .quick-player-controls {
+    margin-top: 0.8rem;
+  }
+
+  .quick-player-buttons {
+    margin-top: 0.55rem;
+  }
+
+  .quick-player-main-button {
+    width: 3.75rem;
+    height: 3.75rem;
+    font-size: 1.35rem;
+  }
+
+  .quick-player-footer {
+    margin-top: 0.65rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .quick-player-footer button {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.25rem;
+  }
+
   .chakra-player-shell .chakra-scene {
     height: 28svh;
     min-height: 10rem;

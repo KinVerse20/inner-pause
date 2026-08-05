@@ -105,8 +105,8 @@ export function QuickPlayerScreen() {
   const title = shortTitle(mood?.label ?? activePlayback.title);
 
   return (
-    <div className="mvp-bg min-h-dvh overflow-hidden text-[var(--ip-ink)]">
-      <main className="mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] lg:max-w-[72rem] lg:px-8">
+    <div className="mvp-bg quick-player-page min-h-dvh overflow-hidden text-[var(--ip-ink)]">
+      <main className="quick-player-layout mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] lg:max-w-[72rem] lg:px-8">
         <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
           <button
             type="button"
@@ -125,8 +125,8 @@ export function QuickPlayerScreen() {
           </button>
         </header>
 
-        <section className={`grid flex-1 place-items-center py-4 ${!isPlaying || reducedMotion ? "is-paused" : ""}`}>
-          <div className="relative grid aspect-square w-[min(82vw,25rem)] place-items-center lg:w-[min(42vw,28rem)]">
+        <section className={`quick-player-visual grid flex-1 place-items-center py-4 ${!isPlaying || reducedMotion ? "is-paused" : ""}`}>
+          <div className="quick-player-orbit relative grid aspect-square w-[min(82vw,25rem)] place-items-center lg:w-[min(42vw,28rem)]">
             <div className="absolute inset-0 rounded-full border border-white/10" />
             <div className="absolute inset-[8%] rounded-full border border-[rgba(255,122,34,0.22)]" />
             <div className="absolute inset-[18%] rounded-full border border-white/10" />
@@ -137,13 +137,13 @@ export function QuickPlayerScreen() {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-[28rem] text-center">
+        <section className="quick-player-title mx-auto w-full max-w-[28rem] text-center">
           <h1 className="minimal-label text-2xl tracking-[0.52em] text-[var(--ip-ink)]">{title}</h1>
-          <div className="mx-auto mt-4 h-px w-8 bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(255,122,34,0.8)]" />
-          <p className="mt-4 text-sm text-[var(--ip-muted)]">{chakra.name.replace(" Chakra", "")} · {chakra.frequencyLabel}</p>
+          <div className="quick-player-divider mx-auto mt-4 h-px w-8 bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(255,122,34,0.8)]" />
+          <p className="quick-player-meta mt-4 text-sm text-[var(--ip-muted)]">{chakra.name.replace(" Chakra", "")} · {chakra.frequencyLabel}</p>
         </section>
 
-        <section className="mt-7">
+        <section className="quick-player-controls mt-7">
           {audioError ? (
             <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-center text-sm text-amber-200">
               Add the MP3 file to the public/audio folder.
@@ -162,14 +162,14 @@ export function QuickPlayerScreen() {
             <div className="text-center text-lg text-[var(--ip-body)]">Playing continuously</div>
           )}
 
-          <div className="mt-5 grid grid-cols-5 items-center gap-2 text-[var(--ip-body)]">
+          <div className="quick-player-buttons mt-5 grid grid-cols-5 items-center gap-2 text-[var(--ip-body)]">
             <button type="button" className="grid min-h-11 place-items-center rounded-full text-2xl" aria-label="Shuffle">⌘</button>
             <button type="button" onClick={restartPlayback} disabled={audioError} className="grid min-h-11 place-items-center rounded-full text-3xl disabled:opacity-40" aria-label="Previous">‹</button>
             <button
               type="button"
               onClick={togglePlayback}
               disabled={audioError}
-              className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-[rgba(255,138,50,0.5)] bg-[rgba(244,122,34,0.08)] text-3xl text-[var(--gold-light)] shadow-[0_0_36px_rgba(255,122,34,0.18)] disabled:opacity-50"
+              className="quick-player-main-button mx-auto grid h-20 w-20 place-items-center rounded-full border border-[rgba(255,138,50,0.5)] bg-[rgba(244,122,34,0.08)] text-3xl text-[var(--gold-light)] shadow-[0_0_36px_rgba(255,122,34,0.18)] disabled:opacity-50"
               aria-label={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? "Ⅱ" : "▶"}
@@ -188,7 +188,7 @@ export function QuickPlayerScreen() {
             </button>
           </div>
 
-          <div className="obsidian-panel mt-6 grid grid-cols-[3rem_1fr_3rem] items-center rounded-full px-4 py-3">
+          <div className="obsidian-panel quick-player-footer mt-6 grid grid-cols-[3rem_1fr_3rem] items-center rounded-full px-4 py-3">
             <button type="button" className="grid h-11 w-11 place-items-center rounded-full text-2xl text-[var(--ip-body)]" aria-label="Favourite">♡</button>
             <div className={`mini-waveform ${!isPlaying ? "is-paused" : ""}`} aria-hidden="true" />
             <button
