@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { BlushCard, BlushChoicePanel, CircularActionButton, SunriseScene } from "@/components/morning-blush-ui";
+import { BlushChoicePanel, SunriseScene } from "@/components/morning-blush-ui";
 import { MvpShell } from "@/components/mvp-shell";
 import { usePlayer } from "@/components/player-provider";
 import { chakraMap } from "@/data/chakras";
@@ -26,13 +27,11 @@ function greeting() {
 }
 
 export function MvpHomeScreen() {
+  const router = useRouter();
   const state = useMvpState();
   const player = usePlayer();
   const [panelOpen, setPanelOpen] = useState(false);
   const firstName = state.profile.fullName?.split(" ")[0] || "Sahil";
-  const savedEntries = state.entries.filter((entry) => !entry.isTemporary);
-  const completedPlans = state.entries.filter((entry) => entry.plan?.status === "completed").length;
-  const latestPlan = state.entries.find((entry) => entry.plan)?.plan;
   const recommended = useMemo(() => {
     const latestChakra = state.entries.find((entry) => entry.analysis)?.analysis?.chakraAssociations[0]?.chakra as ChakraId | undefined;
     return latestChakra ? chakraMap[latestChakra] : chakraMap.heart;
@@ -45,58 +44,31 @@ export function MvpHomeScreen() {
 
   return (
     <MvpShell>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)] lg:items-start">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
         <SunriseScene>
-          <div className="flex min-h-[clamp(22rem,58dvh,31rem)] flex-col items-center justify-between px-5 py-5 text-center sm:py-6 lg:min-h-[32rem]">
-            <div>
-              <p className="text-sm font-medium text-[#6f687d]">{greeting()}, {firstName}</p>
-              <h1 className="mt-4 font-serif text-4xl leading-tight text-[#322d42]">Find your<br />inner pause</h1>
+          <div className="flex min-h-[clamp(20.5rem,54dvh,34rem)] flex-col items-center justify-center px-4 py-4 text-center sm:px-8 sm:py-6 lg:min-h-[36rem]">
+            <div className="mx-auto max-w-2xl">
+              <p className="text-sm font-medium text-[var(--gold-muted)]">{greeting()}, {firstName}</p>
+              <h1 className="mt-4 font-serif text-[clamp(2.35rem,8vw,5.25rem)] leading-[0.96] text-[var(--cream)] drop-shadow-[0_2px_18px_rgba(7,20,47,0.35)]">
+                What are you<br className="hidden sm:block" /> carrying today?
+              </h1>
+              <p className="mx-auto mt-4 max-w-md text-base text-[var(--ip-body)]">You don’t have to hold it alone.</p>
             </div>
 
-            <div className="grid place-items-center">
-              <CircularActionButton label="Tell us how you feel" onClick={() => setPanelOpen(true)}>
-                🎙
-              </CircularActionButton>
-              <p className="mt-3 text-sm font-medium text-[#6f687d]">Tell us how you feel</p>
+            <div className="mt-4 grid w-full max-w-3xl grid-cols-2 gap-2.5 sm:mt-7 sm:grid-cols-3 sm:gap-3">
+              <HomeAction title="Speak" copy="Talk it out loud" icon="♩" onClick={() => router.push("/journal?mode=speak")} />
+              <HomeAction title="Write" copy="Journal your thoughts" icon="✎" onClick={() => router.push("/journal?mode=write")} />
+              <HomeAction title="Just need relief" copy="Find calm and reset" icon="♧" onClick={() => setPanelOpen(true)} className="col-span-2 sm:col-span-1" />
             </div>
           </div>
         </SunriseScene>
 
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5">
-          <BlushCard className="p-4">
-            <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#fbedee] text-xl text-[#d58e93]">✦</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-[#90879d]">Today’s recommended reset</p>
-                <p className="truncate font-serif text-xl text-[#322d42]">{recommended.name.replace(" Chakra", "")} music</p>
-                <p className="text-sm text-[#6f687d]">{recommended.meaning}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => player.startQuickPlayback({ chakraId: recommended.id, duration: 20 })}
-                className="grid h-11 w-11 place-items-center rounded-full bg-[#eca98f] text-white shadow-[0_12px_28px_rgba(236,169,143,0.28)]"
-                aria-label="Play recommended reset"
-              >
-                ▶
-              </button>
-            </div>
-          </BlushCard>
-
-          <div className="grid grid-cols-2 gap-3">
-            <BlushCard className="p-4">
-              <p className="text-xs text-[#90879d]">Current streak</p>
-              <p className="mt-1 font-serif text-3xl text-[#322d42]">{Math.max(0, completedPlans)}</p>
-              <p className="text-sm text-[#6f687d]">completed resets</p>
-            </BlushCard>
-            <BlushCard className="p-4">
-              <p className="text-xs text-[#90879d]">Journey progress</p>
-              <p className="mt-1 font-serif text-3xl text-[#322d42]">{savedEntries.length}</p>
-              <p className="text-sm text-[#6f687d]">saved reflections</p>
-            </BlushCard>
-          </div>
-
-          <Link href={latestPlan ? `/healing?entry=${state.entries.find((entry) => entry.plan?.id === latestPlan.id)?.id}` : "/healing"} className="block rounded-full border border-white/70 bg-white/70 px-5 py-3 text-center text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
-            Open Healing Plan
+        <div className="hidden flex-wrap items-center justify-center gap-3 text-sm text-[var(--ip-muted)] sm:flex">
+          <button type="button" onClick={() => player.startQuickPlayback({ chakraId: recommended.id, duration: 20 })} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-5 font-semibold text-[var(--gold-light)]">
+            Play recommended reset
+          </button>
+          <Link href="/about" className="min-h-11 rounded-full border border-[var(--gold-border-soft)] px-5 py-3 font-semibold text-[var(--ip-body)]">
+            About The Inner Pause
           </Link>
         </div>
       </div>
@@ -112,5 +84,33 @@ export function MvpHomeScreen() {
         />
       ) : null}
     </MvpShell>
+  );
+}
+
+function HomeAction({
+  title,
+  copy,
+  icon,
+  onClick,
+  className = "",
+}: {
+  title: string;
+  copy: string;
+  icon: string;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group min-h-[5.35rem] rounded-[1.15rem] border border-[var(--gold-border-soft)] bg-[#19264d]/66 p-2.5 text-center text-[var(--cream)] shadow-[0_18px_44px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[var(--gold-border)] hover:bg-[#243464]/72 focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] sm:min-h-36 sm:p-4 ${className}`}
+    >
+      <span className="mx-auto grid h-9 w-9 place-items-center rounded-2xl border border-[var(--gold-border-soft)] text-xl text-[var(--gold-light)] shadow-[0_0_24px_rgba(240,206,160,0.12)] sm:h-12 sm:w-12 sm:text-3xl">
+        {icon}
+      </span>
+      <span className="mt-1.5 block font-serif text-lg sm:mt-3 sm:text-2xl">{title}</span>
+      <span className="mt-0.5 block text-[0.7rem] leading-4 text-[var(--ip-body)] sm:mt-1 sm:text-sm">{copy}</span>
+    </button>
   );
 }

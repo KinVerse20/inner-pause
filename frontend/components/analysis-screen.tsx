@@ -3,7 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-import { AppPageHeader, ChakraBadge, ChakraPath, ExpandableCard } from "@/components/chakra-path-ui";
+import { ChakraBadge, ExpandableCard } from "@/components/chakra-path-ui";
+import { BlushCard, SunriseScene } from "@/components/morning-blush-ui";
 import { GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
 import { chakraMap } from "@/data/chakras";
 import { savePlan, updateJournalEntry } from "@/lib/mvp-storage";
@@ -30,8 +31,6 @@ export function AnalysisScreen() {
   }
 
   const understanding = analysis.understandingSummary ?? analysis.summary;
-  const activeChakras = analysis.chakraAssociations.map((item) => item.chakra);
-
   const saveSummary = () => {
     updateJournalEntry(entry.id, { analysis: { ...analysis, understandingSummary: summaryDraft, summary: summaryDraft } });
     setEditingSummary(false);
@@ -45,72 +44,85 @@ export function AnalysisScreen() {
   return (
     <MvpShell>
       <div className="space-y-3.5">
-        <AppPageHeader title="Understand" copy="Here’s what we’re seeing." backHref="/journal" />
+        <SunriseScene variant="lake">
+          <div className="grid min-h-[clamp(30rem,70dvh,34rem)] gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center lg:p-7">
+            <div className="min-w-0">
+              <button type="button" onClick={() => router.push("/journal")} className="mb-5 min-h-10 rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 text-sm text-[var(--ip-body)]">
+                ← Back to journal
+              </button>
+              <h1 className="font-serif text-[clamp(2rem,7vw,4rem)] leading-tight text-[var(--cream)]">Here’s what we noticed.</h1>
+              <p className="mt-2 max-w-xl text-sm text-[var(--ip-body)]">Your voice says so much. We hold space with awareness and truth.</p>
 
-        <div data-testid="emotional-insight-artwork" className="rounded-[1.5rem] border border-[var(--ip-border)] bg-white/72 py-4 shadow-[0_14px_34px_rgba(108,62,244,0.1)]">
-          <ChakraPath active={activeChakras} compact />
-        </div>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {analysis.emotions.slice(0, 5).map((emotion) => (
+                  <details key={emotion.name} className="group rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 py-2 text-sm text-[var(--cream)] open:rounded-2xl">
+                    <summary className="cursor-pointer list-none">{emotion.name}</summary>
+                    {emotion.explanation ? <p className="mt-2 max-w-xs text-xs leading-5 text-[var(--ip-body)]">{emotion.explanation}</p> : null}
+                  </details>
+                ))}
+              </div>
 
-        <GlassCard className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--ip-purple)]">Your Reflection</p>
-              <h1 className="mt-1 font-serif text-2xl text-[var(--ip-ink)]">Here is what I understood</h1>
+              <BlushCard className="mt-5 p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--gold-muted)]">A gentle reflection</p>
+                    <p className="mt-3 text-sm leading-7 text-[var(--ip-body)]">{understanding}</p>
+                  </div>
+                  <button type="button" onClick={() => { setSummaryDraft(understanding); setEditingSummary(true); }} className="shrink-0 text-sm font-semibold text-[var(--gold-light)]">
+                    Review
+                  </button>
+                </div>
+                {editingSummary ? (
+                  <div className="mt-3 space-y-3">
+                    <textarea value={summaryDraft} onChange={(event) => setSummaryDraft(event.target.value)} className="soft-input min-h-28 w-full rounded-2xl p-3 outline-none" />
+                    <GoldButton onClick={saveSummary}>Save reflection</GoldButton>
+                  </div>
+                ) : null}
+              </BlushCard>
+
+              <GoldButton className="mt-5 w-full sm:w-auto sm:px-8" disabled={analysis.safetyFlag} onClick={beginReset}>
+                Continue my healing
+              </GoldButton>
             </div>
-            <button type="button" onClick={() => { setSummaryDraft(understanding); setEditingSummary(true); }} className="text-sm font-semibold text-[var(--ip-purple)]">
-              Edit Reflection
-            </button>
+
+            <BlushCard className="p-4">
+              <p className="font-serif text-xl text-[var(--gold-light)]">Your journey</p>
+              <div className="mt-4 space-y-4 text-sm text-[var(--ip-body)]">
+                <JourneyLine label="Reflections" value={String(state.entries.filter((item) => !item.isTemporary).length)} />
+                <JourneyLine label="Streak" value={`${Math.max(1, state.entries.length)} days`} />
+                <JourneyLine label="Time with you" value={`${Math.max(2, Math.round(state.entries.length * 7))} min`} />
+                <JourneyLine label="Preferred way" value="Speak" />
+              </div>
+            </BlushCard>
           </div>
-          {editingSummary ? (
-            <div className="mt-3 space-y-3">
-              <textarea value={summaryDraft} onChange={(event) => setSummaryDraft(event.target.value)} className="soft-input min-h-28 w-full rounded-2xl p-3 outline-none" />
-              <GoldButton onClick={saveSummary}>Save</GoldButton>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm leading-6 text-[var(--ip-body)]">{understanding}</p>
-          )}
-        </GlassCard>
+        </SunriseScene>
 
-        <section className="space-y-2">
-          <h2 className="px-1 font-serif text-xl text-[var(--ip-ink)]">Chakra Themes</h2>
+        <section className="grid gap-3 lg:grid-cols-2">
           {analysis.chakraAssociations.map((item) => {
             const chakra = chakraMap[item.chakra];
             return (
-              <ExpandableCard
-                key={item.chakra}
-                title={chakra.name.replace(" Chakra", "")}
-                summary={item.emotionalTheme ?? chakra.meaning}
-              >
+              <ExpandableCard key={item.chakra} title={chakra.name.replace(" Chakra", "")} summary={item.emotionalTheme ?? chakra.meaning}>
                 <div className="flex gap-3">
                   <ChakraBadge chakraId={item.chakra} />
                   <div className="min-w-0 space-y-2">
-                    <p><span className="font-semibold text-[var(--ip-ink)]">Why it may be relevant:</span> {item.reason}</p>
-                    <p><span className="font-semibold text-[var(--ip-ink)]">Emotional need:</span> {chakra.meaning}</p>
-                    <p><span className="font-semibold text-[var(--ip-ink)]">How the reset may support you:</span> {item.sessionSupport ?? chakra.purpose}</p>
+                    <p><span className="font-semibold text-[var(--gold-light)]">Why it may be relevant:</span> {item.reason}</p>
+                    <p><span className="font-semibold text-[var(--gold-light)]">How the reset may support you:</span> {item.sessionSupport ?? chakra.purpose}</p>
                   </div>
                 </div>
               </ExpandableCard>
             );
           })}
         </section>
-
-        <ExpandableCard title="Possible trigger" summary={analysis.triggers[0] ?? "A situation worth noticing"}>
-          <div className="space-y-2">
-            {analysis.keyIncidents.slice(0, 3).map((incident) => (
-              <p key={incident.id}>This could be connected to {incident.text}</p>
-            ))}
-          </div>
-        </ExpandableCard>
-
-        <GlassCard className="p-4">
-          <p className="font-serif text-xl text-[var(--ip-ink)]">This is normal.</p>
-          <p className="mt-1 text-sm text-[var(--ip-body)]">Awareness is the first step to shift.</p>
-        </GlassCard>
-
-        <GoldButton className="w-full" disabled={analysis.safetyFlag} onClick={beginReset}>
-          Begin My Reset
-        </GoldButton>
       </div>
     </MvpShell>
+  );
+}
+
+function JourneyLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-[var(--gold-border-soft)] pb-3 last:border-0 last:pb-0">
+      <span>{label}</span>
+      <span className="font-serif text-lg text-[var(--gold-light)]">{value}</span>
+    </div>
   );
 }

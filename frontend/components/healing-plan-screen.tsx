@@ -31,9 +31,9 @@ export function HealingPlanScreen() {
     return (
       <MvpShell>
         <BlushCard className="p-5">
-          <h1 className="font-serif text-2xl text-[#322d42]">No healing plan yet</h1>
-          <p className="mt-2 text-sm leading-6 text-[#6f687d]">Share one reflection to receive a simple reset plan.</p>
-          <Link href="/journal" className="mt-4 inline-flex rounded-full border border-white/70 bg-white px-5 py-3 text-sm font-semibold text-[#a77d97]">Open Journal</Link>
+          <h1 className="font-serif text-2xl text-[var(--cream)]">No healing plan yet</h1>
+          <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">Share one reflection to receive a simple reset plan.</p>
+          <Link href="/journal" className="mt-4 inline-flex rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-5 py-3 text-sm font-semibold text-[var(--gold-light)]">Open Journal</Link>
         </BlushCard>
       </MvpShell>
     );
@@ -43,8 +43,8 @@ export function HealingPlanScreen() {
     return (
       <MvpShell>
         <BlushCard className="p-5">
-          <h1 className="font-serif text-2xl text-[#322d42]">Your plan is almost ready</h1>
-          <p className="mt-2 text-sm leading-6 text-[#6f687d]">Confirm your reflection to create a reset.</p>
+          <h1 className="font-serif text-2xl text-[var(--cream)]">Your plan is almost ready</h1>
+          <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">Confirm your reflection to create a reset.</p>
           <GoldButton className="mt-4" onClick={() => { savePlan(entry.id); router.refresh(); }}>Create Healing Plan</GoldButton>
         </BlushCard>
       </MvpShell>
@@ -63,9 +63,9 @@ export function HealingPlanScreen() {
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(0,0.95fr)_minmax(20rem,1.05fr)] lg:items-start">
         <SunriseScene variant="plan">
           <div className="min-h-[clamp(12rem,32dvh,15rem)] px-5 py-5 text-center sm:py-6 lg:min-h-[26rem] lg:flex lg:flex-col lg:justify-center">
-            <p className="text-sm text-[#90879d]">Healing Plan</p>
-            <h1 className="mt-3 font-serif text-4xl text-[#322d42]">Flow with ease</h1>
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#6f687d]">{entry.analysis.understandingSummary ?? entry.analysis.summary}</p>
+            <p className="text-sm text-[var(--gold-muted)]">Healing Plan</p>
+            <h1 className="mt-3 font-serif text-[clamp(2.1rem,6vw,4rem)] text-[var(--cream)]">Flow with ease</h1>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[var(--ip-body)]">{entry.analysis.understandingSummary ?? entry.analysis.summary}</p>
           </div>
         </SunriseScene>
 
@@ -86,11 +86,11 @@ export function HealingPlanScreen() {
           </div>
 
           <BlushCard className="p-4">
-            <p className="font-serif text-xl text-[#322d42]">Keep this reflection?</p>
-            <p className="mt-1 text-sm leading-6 text-[#6f687d]">Saving it helps future insights feel more personal.</p>
+            <p className="font-serif text-xl text-[var(--cream)]">Keep this reflection?</p>
+            <p className="mt-1 text-sm leading-6 text-[var(--ip-body)]">Saving it helps future insights feel more personal.</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <button type="button" onClick={() => saveReflectionToJourney(entry.id)} className="min-h-11 rounded-full bg-[#eca98f] px-4 font-semibold text-white">Save to Journey</button>
-              <button type="button" onClick={() => router.push("/journal")} className="min-h-11 rounded-full border border-white/70 bg-white px-4 font-semibold text-[#a77d97]">New Journal Thought</button>
+              <button type="button" onClick={() => saveReflectionToJourney(entry.id)} className="min-h-11 rounded-full bg-[linear-gradient(135deg,#f6dfc1,#ddb27b)] px-4 font-semibold text-[#07142f]">Save to Journey</button>
+              <button type="button" onClick={() => router.push("/journal")} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 font-semibold text-[var(--ip-body)]">New Journal Thought</button>
             </div>
           </BlushCard>
 
@@ -126,17 +126,17 @@ function HealingActionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-[1.25rem] border border-white/70 bg-white/72 p-3 text-left shadow-[0_12px_30px_rgba(152,117,139,0.12)] backdrop-blur-xl transition ${completed ? "opacity-55" : "hover:bg-white/86"}`}
+      className={`w-full rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[#19264d]/62 p-3 text-left shadow-[0_12px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl transition ${completed ? "opacity-55" : "hover:bg-[#253362]/70"}`}
     >
       <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#f2eaf5] text-xl text-[#a99ac8]">{completed ? "✓" : icon}</span>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[var(--gold-border-soft)] bg-white/8 text-xl text-[var(--gold-light)]">{completed ? "✓" : icon}</span>
         <span className="min-w-0 flex-1">
-          <span className="block font-serif text-xl text-[#322d42]">{title}</span>
-          <span className="block text-sm text-[#6f687d]">{duration} · {benefit}</span>
+          <span className="block font-serif text-xl text-[var(--cream)]">{title}</span>
+          <span className="block text-sm text-[var(--ip-body)]">{duration} · {benefit}</span>
         </span>
-        <span className="text-2xl text-[#d79bb8]">›</span>
+        <span className="text-2xl text-[var(--gold-primary)]">›</span>
       </div>
-      {active ? <p className="mt-3 rounded-2xl bg-[#fff8f4]/78 px-3 py-2 text-sm leading-6 text-[#6f687d]">Recommended for your {chakraName} focus. Tap again when you are ready to begin.</p> : null}
+      {active ? <p className="mt-3 rounded-2xl bg-white/8 px-3 py-2 text-sm leading-6 text-[var(--ip-body)]">Recommended for your {chakraName} focus. Tap again when you are ready to begin.</p> : null}
     </button>
   );
 }

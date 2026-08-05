@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 
-import { BrandLogo, GlassCard, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { BlushCard, SunriseScene } from "@/components/morning-blush-ui";
+import { BrandLogo, MvpShell } from "@/components/mvp-shell";
 
 const steps = [
   {
@@ -42,88 +42,81 @@ const cards = [
 export function AboutScreen() {
   return (
     <MvpShell>
-      <div className="mx-auto max-w-4xl space-y-5">
+      <div className="mx-auto max-w-6xl space-y-5">
         <header className="flex items-center justify-between gap-4">
           <BrandLogo />
-          <Link href="/journal" className="hidden rounded-full border border-[var(--gold-border-soft)] px-4 py-2 text-sm text-[var(--gold-light)] sm:inline-flex">
+          <Link href="/journal" className="hidden rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 py-2 text-sm text-[var(--gold-light)] sm:inline-flex">
             Begin
           </Link>
         </header>
 
-        <GlassCard className="relative overflow-hidden p-5 sm:p-8">
-          <div className="pointer-events-none absolute right-[-4rem] top-[-4rem] h-56 w-56 rounded-full mvp-orb opacity-55" />
-          <div className="relative grid gap-6 sm:grid-cols-[1fr_12rem] sm:items-center">
-            <div>
-              <SectionTitle
-                eyebrow="About The Inner Pause"
-                title="A daily ritual for release, reflection and renewal"
-                copy="Turn your day into a personalised healing experience. The Inner Pause helps you feel lighter in the moment and understand yourself more deeply over time."
-              />
-            </div>
-            <div className="mx-auto overflow-hidden rounded-[2rem] border border-[var(--gold-border-soft)] bg-black/25 p-3 shadow-[0_0_50px_rgba(178,89,231,0.2)]">
-              <Image src="/branding/innerpause-logo-small.png" alt="The Inner Pause logo" width={900} height={396} className="h-auto w-48 rounded-[1.4rem]" priority />
+        <SunriseScene>
+          <div className="grid min-h-[clamp(28rem,62dvh,34rem)] place-items-center px-5 py-8 text-center">
+            <div className="mx-auto max-w-3xl">
+              <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/8 text-5xl text-[var(--gold-light)] shadow-[0_0_44px_rgba(240,206,160,0.16)]">
+                ♧
+              </div>
+              <h1 className="font-serif text-[clamp(2.2rem,7vw,4.8rem)] leading-tight text-[var(--cream)]">A ritual for your well-being.</h1>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[var(--ip-body)]">Short-term relief. Long-term transformation.</p>
             </div>
           </div>
-        </GlassCard>
+        </SunriseScene>
 
-        <GlassCard className="p-5">
+        <BlushCard className="p-5">
           <h2 className="font-serif text-2xl text-[var(--gold-light)]">How it works</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
             {steps.map((step, index) => (
-              <div key={step.title} className="rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-9 w-9 place-items-center rounded-full border border-[var(--gold-border-soft)] text-[var(--gold-light)]">{step.icon}</span>
-                  <span className="text-xs uppercase tracking-[0.22em] text-[var(--gold-muted)]">0{index + 1}</span>
-                </div>
-                <h3 className="mt-4 font-serif text-xl text-stone-100">{step.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-stone-300">{step.copy}</p>
+              <div key={step.title} className="rounded-[1.1rem] border border-[var(--gold-border-soft)] bg-white/[0.06] p-4">
+                <span className="text-xs uppercase tracking-[0.22em] text-[var(--gold-muted)]">0{index + 1}</span>
+                <h3 className="mt-3 font-serif text-xl text-[var(--cream)]">{step.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{step.copy}</p>
               </div>
             ))}
           </div>
-        </GlassCard>
+        </BlushCard>
 
         <div className="grid gap-4 lg:grid-cols-3">
           {cards.map((card) => (
-            <GlassCard key={card.title} className="p-5">
+            <BlushCard key={card.title} className="p-5">
               <span className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] text-xl text-[var(--gold-light)]">{card.icon}</span>
               <h2 className="mt-4 font-serif text-2xl text-[var(--gold-light)]">{card.title}</h2>
-              <div className="mt-3 space-y-3 text-sm leading-6 text-stone-300">
+              <div className="mt-3 space-y-3 text-sm leading-6 text-[var(--ip-body)]">
                 {card.copy.split("\n\n").map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
-            </GlassCard>
+            </BlushCard>
           ))}
         </div>
 
-        <GlassCard className="p-5 sm:p-6">
+        <BlushCard className="p-5 sm:p-6">
           <h2 className="font-serif text-3xl text-[var(--gold-light)]">Built with experience and care</h2>
-          <p className="mt-4 text-sm leading-7 text-stone-300 sm:text-base">
+          <p className="mt-4 text-sm leading-7 text-[var(--ip-body)] sm:text-base">
             The Inner Pause has been shaped by professionals with approximately 15 years of experience working with healing practices, emotional wellness and guided personal transformation.
           </p>
-          <p className="mt-4 text-sm leading-7 text-stone-300 sm:text-base">
+          <p className="mt-4 text-sm leading-7 text-[var(--ip-body)] sm:text-base">
             That experience has been used to create a thoughtful daily practice that combines reflection, sound and personalised guidance in a simple and accessible format.
           </p>
-          <p className="mt-4 border-t border-white/10 pt-4 text-sm leading-6 text-stone-400">
+          <p className="mt-4 border-t border-[var(--gold-border-soft)] pt-4 text-sm leading-6 text-[var(--ip-muted)]">
             Every experience inside The Inner Pause is designed with care, responsibility and respect for the user’s emotional privacy.
           </p>
-        </GlassCard>
+        </BlushCard>
 
-        <GlassCard className="p-5 text-center sm:p-7">
+        <BlushCard className="p-5 text-center sm:p-7">
           <h2 className="font-serif text-3xl text-[var(--gold-light)]">Begin Your Journey</h2>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-stone-300">
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[var(--ip-body)]">
             A gentle daily practice for emotional awareness and inner calm.
           </p>
           <Link
             href="/journal"
-            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-[var(--gold-border)] bg-[linear-gradient(135deg,rgba(244,189,94,0.95),rgba(178,89,231,0.55))] px-5 py-3 font-semibold text-[#120b16] shadow-[0_0_28px_rgba(244,189,94,0.18)] transition hover:brightness-110"
+            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-[var(--gold-border)] bg-[linear-gradient(135deg,#f6dfc1,#ddb27b)] px-5 py-3 font-semibold text-[#07142f] shadow-[0_0_28px_rgba(240,206,160,0.18)] transition hover:brightness-110"
           >
             Begin Your Journey
           </Link>
-          <p className="mx-auto mt-5 max-w-xl text-xs leading-5 text-stone-500">
+          <p className="mx-auto mt-5 max-w-xl text-xs leading-5 text-[var(--ip-muted)]">
             The Inner Pause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
           </p>
-        </GlassCard>
+        </BlushCard>
       </div>
     </MvpShell>
   );
