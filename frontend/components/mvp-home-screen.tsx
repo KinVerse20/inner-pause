@@ -46,7 +46,7 @@ export function MvpHomeScreen() {
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <SunriseScene>
-          <div className="reference-phone-canvas flex flex-col items-center justify-between px-4 py-5 text-center sm:px-8 lg:py-7">
+          <div className="flex min-h-[32rem] flex-col items-center justify-between px-4 py-5 text-center sm:min-h-[34rem] sm:px-8 lg:min-h-[calc(100dvh-2.5rem)] lg:py-7">
             <div className="mx-auto max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">{greeting()}, {firstName}</p>
               <h1 className="mt-3 font-serif text-[clamp(2.35rem,8vw,4.8rem)] leading-[0.95] text-[var(--ip-ink)]">How are you today?</h1>
@@ -72,7 +72,7 @@ export function MvpHomeScreen() {
           </div>
           </SunriseScene>
 
-          <div className="hidden grid-rows-[auto_auto_auto] gap-4 lg:grid">
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:grid-rows-[auto_auto_auto] lg:gap-4">
             <SummaryCard title="Today’s flow" value="Soft start" copy="Speak, write or reset in under a minute." />
             <SummaryCard title="Suggested session" value={recommended.name.replace(" Chakra", "")} copy={`${recommended.frequencyLabel} · 20 min`} />
             <SummaryCard title="Progress" value={`${state.entries.length} logs`} copy="Your recent reflections shape future sessions." />

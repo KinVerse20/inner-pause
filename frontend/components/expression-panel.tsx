@@ -215,7 +215,7 @@ export function ExpressionPanel({
               </div>
             </div>
 
-            <BlushCard className="hidden p-4 text-left lg:block">
+            <BlushCard className="p-4 text-left">
               <p className="font-serif text-xl text-[var(--ip-ink)]">Expression field</p>
               <div className="mt-4 space-y-3">
                 {[

@@ -3,15 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode, useEffect, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/auth-provider";
 
 const navItems = [
   { href: "/", label: "Portal", icon: "⌂" },
-  { href: "/history", label: "Logs", icon: "☷" },
-  { href: "/insights", label: "Insights", icon: "✧" },
+  { href: "/journal", label: "Express", icon: "♩" },
+  { href: "/analysis", label: "Analysis", icon: "✦" },
   { href: "/healing", label: "Sessions", icon: "♬" },
-  { href: "/profile", label: "More", icon: "◎" },
+  { href: "__more__", label: "More", icon: "◎" },
 ];
 
 const desktopNavItems = [
@@ -27,17 +27,19 @@ const desktopNavItems = [
 ];
 
 export function MvpShell({ children, hideNav = false }: { children: ReactNode; hideNav?: boolean }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="mvp-bg min-h-dvh overflow-x-hidden text-[var(--ip-ink)]">
       {!hideNav ? <PastelSidebar /> : null}
-      {!hideNav ? <MvpTopMenu /> : null}
+      {!hideNav ? <MvpTopMenu open={mobileMenuOpen} setOpen={setMobileMenuOpen} /> : null}
       <main
         className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[17rem] lg:max-w-[calc(100vw-18.5rem)] lg:px-6 lg:pb-4 lg:pt-[calc(1.25rem+env(safe-area-inset-top))] xl:max-w-[calc(100vw-20rem)]"
         style={hideNav ? { paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } : undefined}
       >
         {children}
       </main>
-      {!hideNav ? <MvpBottomNav /> : null}
+      {!hideNav ? <MvpBottomNav onOpenMenu={() => setMobileMenuOpen(true)} /> : null}
     </div>
   );
 }
@@ -89,15 +91,20 @@ function PastelSidebar() {
 }
 
 
-function MvpTopMenu() {
+function MvpTopMenu({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => setOpen(false));
-  }, [pathname]);
+  }, [pathname, setOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -108,7 +115,7 @@ function MvpTopMenu() {
 
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
+  }, [open, setOpen]);
 
   const signOut = () => {
     auth.signOut();
@@ -172,39 +179,75 @@ function MvpTopMenu() {
           />
           <div
             id="innerpause-top-menu"
-            className="fixed left-1/2 top-[calc(4rem+env(safe-area-inset-top))] z-50 w-[calc(100%-1.5rem)] max-w-[27rem] -translate-x-1/2 rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/92 p-3 shadow-[0_22px_55px_rgba(169,139,221,0.22)] backdrop-blur-2xl lg:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="InnerPause navigation"
+            className="fixed bottom-0 left-0 top-0 z-50 flex w-[min(88vw,23rem)] flex-col border-r border-[var(--gold-border-soft)] bg-white/92 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] shadow-[24px_0_70px_rgba(169,139,221,0.24)] backdrop-blur-2xl transition-transform lg:hidden"
           >
-            <nav className="grid gap-1">
-              {navItems.map((item) => {
+            <div className="flex items-center justify-between gap-3">
+              <BrandLogo />
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/74 text-xl text-[var(--gold-light)]"
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mt-6 rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/62 p-3 text-sm text-[var(--ip-body)]">
+              <p className="font-serif text-xl text-[var(--ip-ink)]">Hello{auth.profile?.fullName ? `, ${auth.profile.fullName.split(" ")[0]}` : ""}</p>
+              <p className="mt-1 text-xs leading-5">Use the same InnerPause sections on mobile and desktop.</p>
+            </div>
+            <nav className="mt-5 grid gap-1.5">
+              {desktopNavItems.slice(0, 7).map((item) => {
                 const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
                 return (
                   <Link
-                    key={item.href}
+                    key={`${item.href}-${item.label}-mobile-drawer`}
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className={`flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium transition ${
+                    className={`flex min-h-12 items-center gap-3 rounded-2xl px-3 text-sm font-semibold transition ${
                       active
-                        ? "bg-[var(--ip-lavender)] text-[var(--ip-ink)]"
+                        ? "bg-[linear-gradient(135deg,rgba(231,221,248,0.92),rgba(252,228,236,0.88))] text-[var(--ip-ink)] shadow-[0_12px_26px_rgba(169,139,221,0.15)]"
                         : "text-[var(--ip-muted)] hover:bg-white/70 hover:text-[var(--ip-ink)]"
                     }`}
                   >
-                    <span className="w-6 text-center text-lg">{item.icon}</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-full bg-white/58 text-[var(--gold-light)]">{item.icon}</span>
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
-
+            </nav>
+            <div className="mt-auto space-y-3 rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/58 p-3">
+              <div className="grid gap-1.5">
+                {desktopNavItems.slice(7).map((item) => {
+                  const active = pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={`${item.href}-${item.label}-mobile-account`}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-semibold transition ${
+                        active ? "bg-[var(--ip-lavender)] text-[var(--ip-ink)]" : "text-[var(--ip-muted)] hover:bg-white/70 hover:text-[var(--ip-ink)]"
+                      }`}
+                    >
+                      <span className="grid h-8 w-8 place-items-center rounded-full bg-white/58 text-[var(--gold-light)]">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
               {auth.profile ? (
                 <button
                   type="button"
                   onClick={signOut}
-                  className="flex min-h-12 items-center gap-3 rounded-xl px-4 text-left text-sm font-medium text-[var(--ip-muted)] transition hover:bg-white/70 hover:text-[var(--gold-light)]"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--gold-border-soft)] bg-white/72 px-4 text-sm font-semibold text-[var(--gold-light)]"
                 >
-                  <span className="w-6 text-center text-lg">↩</span>
-                  <span>Logout</span>
+                  Logout
                 </button>
               ) : null}
-            </nav>
+            </div>
           </div>
         </>
       ) : null}
@@ -234,13 +277,31 @@ export function BrandLogo({
   );
 }
 
-function MvpBottomNav() {
+function MvpBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--gold-border-soft)] bg-white/54 shadow-[0_-14px_36px_rgba(169,139,221,0.14)] backdrop-blur-2xl lg:hidden">
       <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 rounded-t-[1.55rem] border border-[var(--gold-border-soft)] bg-white/78 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-14px_42px_rgba(169,139,221,0.16)] backdrop-blur-2xl md:max-w-[42rem]">
         {navItems.map((item) => {
+          if (item.href === "__more__") {
+            const active = pathname.startsWith("/profile") || pathname.startsWith("/about") || pathname.startsWith("/history") || pathname.startsWith("/journey");
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={onOpenMenu}
+                className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[#d79bb8] ${
+                  active ? "bg-[var(--ip-lavender)] text-[var(--gold-light)]" : "text-[var(--ip-muted)] hover:text-[var(--gold-light)]"
+                }`}
+                aria-label="Open full navigation menu"
+              >
+                <span className="text-lg leading-none">{item.icon}</span>
+                <span>{item.label}</span>
+                <span className={`h-0.5 w-5 rounded-full ${active ? "bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(169,139,221,0.3)]" : "bg-transparent"}`} />
+              </button>
+            );
+          }
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <Link
