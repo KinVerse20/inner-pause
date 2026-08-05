@@ -7,10 +7,10 @@ import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth/auth-provider";
 
 const navItems = [
-  { href: "/", label: "Portal", icon: "⌂" },
-  { href: "/journal", label: "Express", icon: "♩" },
-  { href: "/analysis", label: "Analysis", icon: "✦" },
-  { href: "/healing", label: "Sessions", icon: "♬" },
+  { href: "/", label: "Home", icon: "○" },
+  { href: "/history", label: "Logs", icon: "▥" },
+  { href: "/healing", label: "Heal", icon: "◉" },
+  { href: "/journal", label: "Write", icon: "≋" },
   { href: "__more__", label: "More", icon: "◎" },
 ];
 
@@ -34,7 +34,7 @@ export function MvpShell({ children, hideNav = false }: { children: ReactNode; h
       {!hideNav ? <PastelSidebar /> : null}
       {!hideNav ? <MvpTopMenu open={mobileMenuOpen} setOpen={setMobileMenuOpen} /> : null}
       <main
-        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[17rem] lg:max-w-[calc(100vw-18.5rem)] lg:px-6 lg:pb-4 lg:pt-[calc(1.25rem+env(safe-area-inset-top))] xl:max-w-[calc(100vw-20rem)]"
+        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[16.75rem] lg:max-w-[calc(100vw-18rem)] lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))] xl:max-w-[calc(100vw-20rem)]"
         style={hideNav ? { paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } : undefined}
       >
         {children}
@@ -55,7 +55,7 @@ function PastelSidebar() {
   };
 
   return (
-    <aside className="fixed bottom-4 left-4 top-4 z-40 hidden w-[15.5rem] rounded-[1.65rem] border border-[var(--gold-border-soft)] bg-white/68 p-4 shadow-[0_24px_70px_rgba(169,139,221,0.18)] backdrop-blur-2xl lg:flex lg:flex-col">
+    <aside className="obsidian-panel fixed bottom-4 left-4 top-4 z-40 hidden w-[15.5rem] rounded-[1.65rem] p-4 lg:flex lg:flex-col">
       <BrandLogo className="px-1" />
       <nav className="mt-8 grid gap-1.5">
         {desktopNavItems.map((item) => {
@@ -65,23 +65,23 @@ function PastelSidebar() {
               key={`${item.href}-${item.label}`}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] ${
+              className={`tap-ripple flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-medium uppercase tracking-[0.18em] transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] ${
                 active
-                  ? "bg-[linear-gradient(135deg,rgba(231,221,248,0.92),rgba(252,228,236,0.88))] text-[var(--ip-ink)] shadow-[0_12px_26px_rgba(169,139,221,0.15)]"
-                  : "text-[var(--ip-muted)] hover:bg-white/64 hover:text-[var(--ip-ink)]"
+                  ? "bg-[rgba(244,122,34,0.12)] text-[var(--gold-light)] shadow-[0_0_28px_rgba(244,122,34,0.08)]"
+                  : "text-[var(--ip-muted)] hover:bg-white/[0.04] hover:text-[var(--ip-ink)]"
               }`}
             >
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/58 text-[var(--gold-light)]">{item.icon}</span>
+              <span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-[var(--gold-light)]">{item.icon}</span>
               <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/58 p-3 text-sm text-[var(--ip-body)]">
-        <p className="font-serif text-lg text-[var(--ip-ink)]">Soft reset</p>
-        <p className="mt-1 text-xs leading-5">Pause, reflect and restore your inner rhythm.</p>
+      <div className="mt-auto rounded-[1.25rem] border border-white/10 bg-white/[0.035] p-3 text-sm text-[var(--ip-body)]">
+        <p className="minimal-label text-[0.62rem]">Reset</p>
+        <p className="mt-2 text-lg text-[var(--ip-ink)]">Inner quiet</p>
         {auth.profile ? (
-          <button type="button" onClick={signOut} className="mt-3 min-h-10 w-full rounded-full border border-[var(--gold-border-soft)] bg-white/72 text-sm font-semibold text-[var(--gold-light)]">
+          <button type="button" onClick={signOut} className="mt-3 min-h-10 w-full rounded-full border border-white/10 bg-white/[0.04] text-sm font-medium uppercase tracking-[0.18em] text-[var(--gold-light)]">
             Logout
           </button>
         ) : null}
@@ -125,7 +125,7 @@ function MvpTopMenu({
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--gold-border-soft)] bg-white/72 pt-[env(safe-area-inset-top)] shadow-[0_12px_38px_rgba(169,139,221,0.12)] backdrop-blur-2xl lg:hidden">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#17191b]/82 pt-[env(safe-area-inset-top)] shadow-[0_12px_38px_rgba(0,0,0,0.28)] backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid h-14 max-w-[28rem] grid-cols-[auto_1fr_auto] items-center gap-3 px-3.5 sm:px-5 md:max-w-[42rem] lg:max-w-[74rem] xl:max-w-[88rem]">
           <button
             type="button"
@@ -133,7 +133,7 @@ function MvpTopMenu({
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls="innerpause-top-menu"
-            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/72 text-xl text-[var(--gold-light)] shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] lg:hidden"
+            className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-xl text-[var(--ip-body)] shadow-sm transition hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] lg:hidden"
           >
             {open ? "×" : "☰"}
           </button>
@@ -159,10 +159,10 @@ function MvpTopMenu({
           </nav>
 
           <div className="flex items-center justify-end gap-2">
-            <Link href="/about" className="hidden h-10 min-w-10 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/64 text-[var(--gold-light)] transition hover:bg-white lg:grid" aria-label="About The Inner Pause">
+            <Link href="/about" className="hidden h-10 min-w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--gold-light)] transition hover:bg-white/[0.06] lg:grid" aria-label="About The Inner Pause">
               ☼
             </Link>
-            <Link href="/profile" className="grid h-10 w-10 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/64 text-[var(--gold-light)] transition hover:bg-white" aria-label="Profile">
+            <Link href="/profile" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--ip-body)] transition hover:bg-white/[0.06]" aria-label="Profile">
               ◎
             </Link>
           </div>
@@ -175,29 +175,29 @@ function MvpTopMenu({
             type="button"
             aria-label="Close menu"
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-40 bg-[#49316f]/18 backdrop-blur-[2px] lg:hidden"
+            className="fixed inset-0 z-40 bg-black/52 backdrop-blur-[2px] lg:hidden"
           />
           <div
             id="innerpause-top-menu"
             role="dialog"
             aria-modal="true"
             aria-label="InnerPause navigation"
-            className="fixed bottom-0 left-0 top-0 z-50 flex w-[min(88vw,23rem)] flex-col border-r border-[var(--gold-border-soft)] bg-white/92 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] shadow-[24px_0_70px_rgba(169,139,221,0.24)] backdrop-blur-2xl transition-transform lg:hidden"
+            className="obsidian-panel fixed bottom-0 left-0 top-0 z-50 flex w-[min(88vw,23rem)] flex-col rounded-r-[1.8rem] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] transition-transform lg:hidden"
           >
             <div className="flex items-center justify-between gap-3">
               <BrandLogo />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/74 text-xl text-[var(--gold-light)]"
+                className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-xl text-[var(--ip-body)]"
                 aria-label="Close menu"
               >
                 ×
               </button>
             </div>
-            <div className="mt-6 rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/62 p-3 text-sm text-[var(--ip-body)]">
-              <p className="font-serif text-xl text-[var(--ip-ink)]">Hello{auth.profile?.fullName ? `, ${auth.profile.fullName.split(" ")[0]}` : ""}</p>
-              <p className="mt-1 text-xs leading-5">Use the same InnerPause sections on mobile and desktop.</p>
+            <div className="mt-6 rounded-[1.25rem] border border-white/10 bg-white/[0.035] p-3 text-sm text-[var(--ip-body)]">
+              <p className="minimal-label text-[0.62rem]">Account</p>
+              <p className="mt-2 text-xl text-[var(--ip-ink)]">Hello{auth.profile?.fullName ? `, ${auth.profile.fullName.split(" ")[0]}` : ""}</p>
             </div>
             <nav className="mt-5 grid gap-1.5">
               {desktopNavItems.slice(0, 7).map((item) => {
@@ -207,19 +207,19 @@ function MvpTopMenu({
                     key={`${item.href}-${item.label}-mobile-drawer`}
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className={`flex min-h-12 items-center gap-3 rounded-2xl px-3 text-sm font-semibold transition ${
+                    className={`tap-ripple flex min-h-12 items-center gap-3 rounded-2xl px-3 text-sm font-medium uppercase tracking-[0.18em] transition ${
                       active
-                        ? "bg-[linear-gradient(135deg,rgba(231,221,248,0.92),rgba(252,228,236,0.88))] text-[var(--ip-ink)] shadow-[0_12px_26px_rgba(169,139,221,0.15)]"
-                        : "text-[var(--ip-muted)] hover:bg-white/70 hover:text-[var(--ip-ink)]"
+                        ? "bg-[rgba(244,122,34,0.12)] text-[var(--gold-light)] shadow-[0_0_28px_rgba(244,122,34,0.08)]"
+                        : "text-[var(--ip-muted)] hover:bg-white/[0.05] hover:text-[var(--ip-ink)]"
                     }`}
                   >
-                    <span className="grid h-8 w-8 place-items-center rounded-full bg-white/58 text-[var(--gold-light)]">{item.icon}</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-[var(--gold-light)]">{item.icon}</span>
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
             </nav>
-            <div className="mt-auto space-y-3 rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-white/58 p-3">
+            <div className="mt-auto space-y-3 rounded-[1.25rem] border border-white/10 bg-white/[0.035] p-3">
               <div className="grid gap-1.5">
                 {desktopNavItems.slice(7).map((item) => {
                   const active = pathname.startsWith(item.href);
@@ -228,11 +228,11 @@ function MvpTopMenu({
                       key={`${item.href}-${item.label}-mobile-account`}
                       href={item.href}
                       aria-current={active ? "page" : undefined}
-                      className={`flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-semibold transition ${
-                        active ? "bg-[var(--ip-lavender)] text-[var(--ip-ink)]" : "text-[var(--ip-muted)] hover:bg-white/70 hover:text-[var(--ip-ink)]"
+                      className={`flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-medium uppercase tracking-[0.18em] transition ${
+                        active ? "bg-[rgba(244,122,34,0.12)] text-[var(--gold-light)]" : "text-[var(--ip-muted)] hover:bg-white/[0.05] hover:text-[var(--ip-ink)]"
                       }`}
                     >
-                      <span className="grid h-8 w-8 place-items-center rounded-full bg-white/58 text-[var(--gold-light)]">{item.icon}</span>
+                      <span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-[var(--gold-light)]">{item.icon}</span>
                       <span>{item.label}</span>
                     </Link>
                   );
@@ -242,7 +242,7 @@ function MvpTopMenu({
                 <button
                   type="button"
                   onClick={signOut}
-                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--gold-border-soft)] bg-white/72 px-4 text-sm font-semibold text-[var(--gold-light)]"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm font-medium uppercase tracking-[0.18em] text-[var(--gold-light)]"
                 >
                   Logout
                 </button>
@@ -264,13 +264,13 @@ export function BrandLogo({
 }) {
   return (
     <Link href="/" className={`inline-flex items-center gap-3 ${className}`} aria-label="The Inner Pause home">
-      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--gold-border-soft)] bg-white shadow-[0_0_24px_rgba(169,139,221,0.18)]">
+      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-[#232527] shadow-[0_0_24px_rgba(255,138,50,0.12)]">
         <Image src="/branding/innerpause-icon.png" alt="" fill sizes="36px" className="object-cover" priority={compact} />
       </span>
       {!compact ? (
         <span>
-          <span className="block font-serif text-xl leading-none text-[var(--ip-ink)]">The Inner Pause</span>
-          <span className="mt-1 block text-xs uppercase tracking-[0.22em] text-[var(--gold-muted)]">Pause and reset</span>
+          <span className="block text-xl leading-none text-[var(--ip-ink)]">The Inner Pause</span>
+          <span className="mt-1 block text-xs uppercase tracking-[0.32em] text-[var(--gold-muted)]">Pause</span>
         </span>
       ) : null}
     </Link>
@@ -281,8 +281,8 @@ function MvpBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--gold-border-soft)] bg-white/54 shadow-[0_-14px_36px_rgba(169,139,221,0.14)] backdrop-blur-2xl lg:hidden">
-      <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 rounded-t-[1.55rem] border border-[var(--gold-border-soft)] bg-white/78 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-14px_42px_rgba(169,139,221,0.16)] backdrop-blur-2xl md:max-w-[42rem]">
+    <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-white/10 bg-[#17191b]/78 shadow-[0_-14px_36px_rgba(0,0,0,0.34)] backdrop-blur-2xl lg:hidden">
+      <div className="obsidian-panel mx-auto mb-2 grid max-w-[24rem] grid-cols-5 gap-1 rounded-full px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[32rem]">
         {navItems.map((item) => {
           if (item.href === "__more__") {
             const active = pathname.startsWith("/profile") || pathname.startsWith("/about") || pathname.startsWith("/history") || pathname.startsWith("/journey");
@@ -291,14 +291,14 @@ function MvpBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
                 key={item.label}
                 type="button"
                 onClick={onOpenMenu}
-                className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[#d79bb8] ${
-                  active ? "bg-[var(--ip-lavender)] text-[var(--gold-light)]" : "text-[var(--ip-muted)] hover:text-[var(--gold-light)]"
+                className={`grid min-h-12 place-items-center rounded-full text-center text-[0.62rem] uppercase tracking-[0.16em] transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] ${
+                  active ? "text-[var(--gold-light)]" : "text-[var(--ip-muted)] hover:text-[var(--gold-light)]"
                 }`}
                 aria-label="Open full navigation menu"
               >
                 <span className="text-lg leading-none">{item.icon}</span>
                 <span>{item.label}</span>
-                <span className={`h-0.5 w-5 rounded-full ${active ? "bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(169,139,221,0.3)]" : "bg-transparent"}`} />
+                <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(255,138,50,0.8)]" : "bg-transparent"}`} />
               </button>
             );
           }
@@ -308,13 +308,13 @@ function MvpBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[#d79bb8] ${
-                active ? "bg-[var(--ip-lavender)] text-[var(--gold-light)]" : "text-[var(--ip-muted)] hover:text-[var(--gold-light)]"
+              className={`grid min-h-12 place-items-center rounded-full text-center text-[0.62rem] uppercase tracking-[0.16em] transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] ${
+                active ? "text-[var(--gold-light)]" : "text-[var(--ip-muted)] hover:text-[var(--gold-light)]"
               }`}
             >
               <span className="text-lg leading-none">{item.icon}</span>
               <span>{item.label}</span>
-              <span className={`h-0.5 w-5 rounded-full ${active ? "bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(169,139,221,0.3)]" : "bg-transparent"}`} />
+              <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(255,138,50,0.8)]" : "bg-transparent"}`} />
             </Link>
           );
         })}
@@ -331,7 +331,7 @@ export function GoldButton({
   return (
     <button
       {...props}
-      className={`min-h-11 rounded-full border border-white/70 bg-[linear-gradient(135deg,#a98bdd,#f4b8cd_62%,#f5b792)] px-4 py-2.5 font-semibold text-white shadow-[0_16px_34px_rgba(169,139,221,0.22)] transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={`tap-ripple min-h-11 rounded-full border border-[rgba(255,138,50,0.45)] bg-[rgba(244,122,34,0.10)] px-4 py-2.5 font-medium uppercase tracking-[0.22em] text-[var(--gold-light)] shadow-[0_0_24px_rgba(244,122,34,0.08)] transition hover:bg-[rgba(244,122,34,0.16)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
     >
       {children}
     </button>
@@ -349,7 +349,7 @@ export function GlassCard({
 }) {
   return (
     <section
-      className={`rounded-[1.25rem] border border-[var(--gold-border-soft)] bg-[var(--ip-card)] shadow-[0_18px_44px_rgba(169,139,221,0.13)] backdrop-blur-xl ${className}`}
+      className={`obsidian-panel rounded-[1.25rem] ${className}`}
       style={style}
     >
       {children}
@@ -360,8 +360,8 @@ export function GlassCard({
 export function SectionTitle({ eyebrow, title, copy }: { eyebrow?: string; title: string; copy?: string }) {
   return (
     <div>
-      {eyebrow ? <p className="text-xs uppercase tracking-[0.28em] text-[var(--gold-muted)]">{eyebrow}</p> : null}
-      <h1 className="mt-1 font-serif text-3xl leading-tight text-[var(--ip-ink)] sm:text-5xl">{title}</h1>
+      {eyebrow ? <p className="minimal-label text-xs">{eyebrow}</p> : null}
+      <h1 className="mt-1 text-3xl font-medium leading-tight text-[var(--ip-ink)] sm:text-5xl">{title}</h1>
       {copy ? <p className="mt-2 max-w-2xl text-sm leading-5 text-[var(--ip-body)]">{copy}</p> : null}
     </div>
   );

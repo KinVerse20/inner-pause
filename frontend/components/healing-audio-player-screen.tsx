@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { ChakraGlyph } from "@/components/chakra-symbol";
 import { GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
 import { chakraMap } from "@/data/chakras";
 import { updatePlan } from "@/lib/mvp-storage";
@@ -105,88 +105,93 @@ export function HealingAudioPlayerScreen() {
 
   return (
     <MvpShell hideNav>
-      <div
-        className="relative min-h-dvh overflow-x-hidden px-0 pb-[calc(1rem+env(safe-area-inset-bottom))] text-[var(--ip-ink)]"
-        style={{ background: `radial-gradient(circle at 50% 36%, ${chakra.color}28, transparent 32%), radial-gradient(circle at 50% 0%, rgba(255,255,255,0.72), transparent 22rem), linear-gradient(180deg,#fff9fc,#fdf2f8 56%,#eef8ff)` }}
-      >
-        <div className="mx-auto flex min-h-dvh max-w-3xl flex-col px-3.5 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+      <div className="mvp-bg relative min-h-dvh overflow-x-hidden px-0 pb-[calc(1rem+env(safe-area-inset-bottom))] text-[var(--ip-ink)]">
+        <div className="mx-auto flex min-h-dvh max-w-4xl flex-col px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]">
           <header className="flex items-center justify-between">
-            <button type="button" onClick={() => router.push(`/healing?entry=${entry?.id}`)} className="grid h-10 w-10 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-[var(--gold-light)]" aria-label="Exit safely">⌄</button>
+            <button type="button" onClick={() => router.push(`/healing?entry=${entry?.id}`)} className="grid h-11 w-11 place-items-center rounded-full text-3xl text-[var(--ip-body)]" aria-label="Exit safely">‹</button>
             <div className="text-center">
-              <p className="text-xs uppercase tracking-[0.24em] text-[var(--gold-primary)]">{block.frequencyLabel}</p>
-              <h1 className="font-serif text-2xl text-[var(--ip-ink)]">Emerald Quietude</h1>
-              <p className="text-xs text-[var(--ip-body)]">{block.title}</p>
+              <p className="minimal-label text-xs">Healing</p>
+              <h1 className="mt-2 text-3xl text-[var(--ip-ink)]">Ground</h1>
+              <p className="text-sm text-[var(--ip-body)]">{block.frequencyLabel}</p>
             </div>
             <button
               type="button"
               onClick={() => window.alert("Audio settings are using the current session defaults in this demo build.")}
-              className="grid h-10 w-10 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-[var(--gold-light)]"
+              className="grid h-11 w-11 place-items-center rounded-full text-xl text-[var(--ip-body)]"
               aria-label="Audio settings"
             >
-              ≛
+              •••
             </button>
           </header>
 
-          <div className="grid flex-1 place-items-center py-4">
-            <div className="relative grid aspect-square w-[min(70vw,21rem)] place-items-center">
-              <div className="absolute inset-0 rounded-full border border-[var(--gold-border)] mvp-orb" />
-              <div className="absolute inset-8 rounded-full border border-[var(--gold-border-soft)]" />
-              <ChakraGlyph chakraId={chakra.id} className="relative z-10 h-28 w-28" />
-              <div className="absolute bottom-6 rounded-full border border-[var(--gold-border-soft)] bg-white/76 px-3 py-1.5 text-xs text-[var(--ip-body)] backdrop-blur-xl">
-                {showGuidance ? block.guidanceText ?? "Breathe slowly" : "Music only"}
-              </div>
+          <div className={`grid flex-1 place-items-center py-4 ${!playing ? "is-paused" : ""}`}>
+            <div className="relative grid aspect-square w-[min(82vw,25rem)] place-items-center lg:w-[min(42vw,29rem)]">
+              <div className="absolute inset-0 rounded-full border border-white/10" />
+              <div className="absolute inset-[8%] rounded-full border border-[rgba(255,122,34,0.22)]" />
+              <div className="absolute inset-[18%] rounded-full border border-white/10" />
+              <span className="orbiting-point" style={{ "--orbit-radius": "42%", "--orbit-speed": "22s", "--orbit-angle": "0deg" } as CSSProperties} />
+              <span className="orbiting-point" style={{ "--orbit-radius": "48%", "--orbit-speed": "31s", "--orbit-angle": "132deg" } as CSSProperties} />
+              <span className="orbiting-point" style={{ "--orbit-radius": "35%", "--orbit-speed": "42s", "--orbit-angle": "248deg" } as CSSProperties} />
+              <div className="healing-orbit-sphere w-[62%]" />
             </div>
           </div>
 
-          <GlassCard className="p-3.5">
-            <p className="text-sm text-[var(--gold-muted)]">Emotional intention</p>
-            <p className="mt-1 line-clamp-1 font-serif text-xl text-[var(--ip-ink)]">{block.intention}</p>
+          <GlassCard className="p-4">
+            <p className="minimal-label text-center text-xl tracking-[0.52em] text-[var(--ip-ink)]">{block.title.split(" ")[0] ?? "Ground"}</p>
+            <p className="mt-3 line-clamp-1 text-center text-sm text-[var(--ip-body)]">{showGuidance ? block.guidanceText ?? block.intention : "Music only"}</p>
             {plan.customisation ? (
-              <p className="mt-1 text-xs text-[var(--ip-body)]">
+              <p className="mt-2 text-center text-xs text-[var(--ip-muted)]">
                 {plan.customisation.musicStyle.replaceAll("-", " ")} • {voiceGuidanceOff ? "no voice guidance" : `${plan.customisation.voiceGuidanceLevel} guidance`}
               </p>
             ) : null}
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[rgba(169,139,221,0.16)]">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#a9e7d7] via-[#a98bdd] to-[#f4b8cd]" style={{ width: `${totalSeconds ? (totalElapsed / totalSeconds) * 100 : 0}%` }} />
+            <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/12">
+              <div className="h-full rounded-full bg-[var(--gold-primary)] shadow-[0_0_14px_rgba(255,122,34,0.8)]" style={{ width: `${totalSeconds ? (totalElapsed / totalSeconds) * 100 : 0}%` }} />
             </div>
-            <div className="mt-2 flex justify-between text-sm text-[var(--ip-body)]">
+            <div className="mt-3 flex justify-between text-lg text-[var(--ip-body)]">
               <span>{formatTime(totalElapsed)}</span>
               <span>{formatTime(remaining)}</span>
             </div>
 
             {audioError ? (
-              <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              <p className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
                 Add the MP3 file to the public/audio folder or replace placeholder audio with licensed production audio.
               </p>
             ) : null}
 
-            <div className="mt-3 grid grid-cols-5 items-center gap-2">
+            <div className="mt-5 grid grid-cols-5 items-center gap-2 text-[var(--ip-body)]">
               <button
                 type="button"
                 disabled={blockIndex === 0}
                 onClick={() => goToBlock(blockIndex - 1)}
-                className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/64 text-[var(--gold-light)] disabled:opacity-35"
+                className="min-h-11 rounded-full text-3xl disabled:opacity-35"
                 aria-label="Previous block"
               >
                 ‹
               </button>
-              <button type="button" disabled={voiceGuidanceOff} onClick={() => setGuidanceOn((value) => !value)} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/64 text-xs text-[var(--ip-body)] disabled:opacity-35">{voiceGuidanceOff ? "No voice" : guidanceOn ? "Guide" : "Silent"}</button>
-              <button type="button" onClick={toggle} className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-[var(--gold-border)] bg-[linear-gradient(135deg,#ffffff,#f8cedb_52%,#c7b5ef)] text-sm font-semibold text-[var(--ip-ink)]">
-                {playing ? "Pause" : "Play"}
+              <button type="button" disabled={voiceGuidanceOff} onClick={() => setGuidanceOn((value) => !value)} className="min-h-11 rounded-full text-xs uppercase tracking-[0.16em] text-[var(--ip-body)] disabled:opacity-35">{voiceGuidanceOff ? "No" : guidanceOn ? "Guide" : "Silent"}</button>
+              <button type="button" onClick={toggle} className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-[rgba(255,138,50,0.5)] bg-[rgba(244,122,34,0.08)] text-3xl text-[var(--gold-light)] shadow-[0_0_36px_rgba(255,122,34,0.18)]">
+                {playing ? "Ⅱ" : "▶"}
               </button>
-              <button type="button" onClick={() => setMusicOnly((value) => !value)} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/64 text-xs text-[var(--ip-body)]">{musicOnly ? "Music" : "Mixed"}</button>
+              <button type="button" onClick={() => setMusicOnly((value) => !value)} className="min-h-11 rounded-full text-xs uppercase tracking-[0.16em] text-[var(--ip-body)]">{musicOnly ? "Music" : "Mix"}</button>
               <button
                 type="button"
                 disabled={blockIndex === plan.blocks.length - 1}
                 onClick={() => goToBlock(blockIndex + 1)}
-                className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/64 text-[var(--gold-light)] disabled:opacity-35"
+                className="min-h-11 rounded-full text-3xl disabled:opacity-35"
                 aria-label="Next block"
               >
                 ›
               </button>
             </div>
-            <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="mt-3 min-h-11 w-full rounded-full border border-[var(--gold-border-soft)] bg-white/64 text-sm text-[var(--ip-body)]">
-              Exit safely
+            <div className="obsidian-panel mt-6 grid grid-cols-[3rem_1fr_3rem] items-center rounded-full px-4 py-3">
+              <button type="button" className="grid h-11 w-11 place-items-center rounded-full text-2xl text-[var(--ip-body)]" aria-label="Favourite">♡</button>
+              <div className={`mini-waveform ${!playing ? "is-paused" : ""}`} aria-hidden="true" />
+              <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="grid h-11 w-11 place-items-center rounded-full text-xl text-[var(--ip-body)]" aria-label="End session">
+                ≡
+              </button>
+            </div>
+            <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="mt-3 min-h-11 w-full rounded-full border border-white/10 bg-white/[0.03] text-sm uppercase tracking-[0.22em] text-[var(--ip-body)]">
+              End
             </button>
           </GlassCard>
         </div>

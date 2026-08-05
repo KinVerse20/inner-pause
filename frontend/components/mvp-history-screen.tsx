@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import { ChakraBadge, ExpandableCard } from "@/components/chakra-path-ui";
 import { GlassCard, MvpShell } from "@/components/mvp-shell";
 import { chakraMap } from "@/data/chakras";
 import { deleteJournalEntry } from "@/lib/mvp-storage";
@@ -10,9 +9,19 @@ import { useMvpState } from "@/lib/use-mvp-state";
 
 const filters = ["All", "Insights", "Sessions", "Journal", "Favourites"] as const;
 
+const fallbackLogs = [
+  { title: "Calm", time: "08:24" },
+  { title: "Focus", time: "06:12" },
+  { title: "Energy", time: "09:03" },
+  { title: "Balance", time: "07:45" },
+  { title: "Restore", time: "05:30" },
+  { title: "Clarity", time: "07:10" },
+];
+
 export function MvpHistoryScreen() {
   const state = useMvpState();
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const entries = useMemo(() => {
     return state.entries.filter((entry) => {
       if (filter === "Insights") return Boolean(entry.analysis);
@@ -22,77 +31,103 @@ export function MvpHistoryScreen() {
       return true;
     });
   }, [filter, state.entries]);
+  const selectedEntry = entries.find((entry) => entry.id === selectedId);
 
   return (
     <MvpShell>
-      <div className="space-y-3.5">
-        <header className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Resonance archive</p>
-            <h1 className="mt-1 font-serif text-[clamp(2.4rem,7vw,4.6rem)] leading-tight text-[var(--ip-ink)]">Frequency Logs</h1>
-            <p className="mt-1 text-sm text-[var(--ip-body)]">Your journal, insights and healing sessions over time.</p>
-          </div>
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/72 text-[var(--gold-light)]">☷</span>
-        </header>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(24rem,34rem)_minmax(0,1fr)]">
+        <section className="obsidian-panel min-h-[calc(100dvh-9rem)] rounded-[1.8rem] p-5 sm:p-7 lg:min-h-[calc(100dvh-2.5rem)]">
+          <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
+            <button type="button" className="grid h-11 w-11 place-items-center rounded-full text-2xl text-[var(--ip-body)]" aria-label="Open logs menu">☰</button>
+            <h1 className="minimal-label text-center text-xs">Logs</h1>
+            <button type="button" onClick={() => setFilter(filter === "All" ? "Insights" : "All")} className="grid h-11 w-11 place-items-center rounded-full text-xl text-[var(--ip-body)]" aria-label="Filter logs">≡</button>
+          </header>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {filters.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setFilter(item)}
-              className={`min-h-10 shrink-0 rounded-full border px-4 text-sm font-medium ${filter === item ? "border-[var(--ip-purple)] bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "border-[var(--ip-border)] bg-white/78 text-[var(--ip-body)]"}`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-
-        {entries.length === 0 ? (
-          <GlassCard className="pastel-cloud-card p-5 text-sm text-[var(--ip-body)]">No saved logs yet. Start Expressing and choose Save to My Journey when something feels worth remembering.</GlassCard>
-        ) : (
-          <div className="relative space-y-3 pl-4 before:absolute before:bottom-3 before:left-1.5 before:top-3 before:w-px before:bg-gradient-to-b before:from-[#50cbaf] before:via-[#a98bdd] before:to-[#f5b792]">
-            {entries.map((entry) => {
-              const summary = entry.analysis?.understandingSummary ?? entry.analysis?.summary ?? entry.title;
-              const primaryChakra = entry.analysis?.chakraAssociations[0]?.chakra;
-              return (
-                <div key={entry.id} className="relative">
-                  <span className="absolute -left-[1.08rem] top-5 h-3 w-3 rounded-full border border-white bg-[#a98bdd] shadow-[0_0_18px_rgba(169,139,221,0.42)]" />
-                  <ExpandableCard
-                    title={new Date(entry.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    summary={summary}
-                  >
-                    <div className="space-y-3">
-                      <p>{summary}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {entry.analysis?.chakraAssociations.slice(0, 4).map((item) => (
-                          <span key={item.chakra} className="inline-flex items-center gap-1 rounded-full border bg-white/58 px-2.5 py-1 text-xs" style={{ borderColor: chakraMap[item.chakra].accent, color: chakraMap[item.chakra].color }}>
-                            {chakraMap[item.chakra].name.replace(" Chakra", "")}
-                          </span>
-                        ))}
-                      </div>
-                      {primaryChakra ? (
-                        <div className="flex items-center gap-3 rounded-2xl border border-[var(--ip-border)] bg-white/70 p-3">
-                          <ChakraBadge chakraId={primaryChakra} />
-                          <div>
-                            <p className="font-semibold text-[var(--ip-ink)]">Session focus</p>
-                            <p className="text-sm text-[var(--ip-muted)]">{entry.plan ? `${entry.plan.totalDurationMinutes} min personalised reset` : `${chakraMap[primaryChakra].frequencyLabel} focus`}</p>
-                          </div>
-                        </div>
-                      ) : null}
-                      {entry.feedback ? (
-                        <p>Before and after check-in: {entry.emotionalIntensityBefore}/10 → {entry.feedback.emotionalIntensityAfter}/10</p>
-                      ) : null}
-                      {entry.feedback?.reflection ? <p>Saved notes: {entry.feedback.reflection}</p> : null}
-                      <button type="button" onClick={() => deleteJournalEntry(entry.id)} className="text-sm font-semibold text-red-600">Delete</button>
-                    </div>
-                  </ExpandableCard>
-                </div>
-              );
-            })}
+          <div className="mt-10 space-y-4">
+            {entries.length === 0
+              ? fallbackLogs.map((item) => <MinimalLogCard key={item.title} title={item.title} time={item.time} />)
+              : entries.map((entry) => {
+                  const primaryChakra = entry.analysis?.chakraAssociations[0]?.chakra;
+                  const title = entry.analysis?.emotions[0]?.name ?? entry.title ?? "Reflection";
+                  const time = new Date(entry.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                  return (
+                    <MinimalLogCard
+                      key={entry.id}
+                      title={title}
+                      time={time}
+                      active={entry.id === selectedId}
+                      chakraColor={primaryChakra ? chakraMap[primaryChakra].color : undefined}
+                      onClick={() => setSelectedId(entry.id)}
+                    />
+                  );
+                })}
           </div>
-        )}
+        </section>
+
+        <aside className="obsidian-panel rounded-[1.8rem] p-5 lg:min-h-[calc(100dvh-2.5rem)]">
+          <div className="flex gap-2 overflow-x-auto pb-3">
+            {filters.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setFilter(item)}
+                className={`min-h-10 shrink-0 rounded-full border px-4 text-xs uppercase tracking-[0.22em] ${filter === item ? "border-[rgba(255,138,50,0.58)] text-[var(--gold-light)]" : "border-white/10 text-[var(--ip-muted)]"}`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {selectedEntry ? (
+            <div className="mt-8 space-y-4">
+              <p className="minimal-label text-xs">Detail</p>
+              <h2 className="text-3xl font-medium text-[var(--ip-ink)]">{selectedEntry.analysis?.emotions[0]?.name ?? selectedEntry.title}</h2>
+              <p className="text-lg leading-7 text-[var(--ip-body)]">{selectedEntry.analysis?.understandingSummary ?? selectedEntry.analysis?.summary ?? selectedEntry.rawText}</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedEntry.analysis?.chakraAssociations.slice(0, 4).map((item) => (
+                  <span key={item.chakra} className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1 text-sm text-[var(--ip-body)]">
+                    {chakraMap[item.chakra].name.replace(" Chakra", "")}
+                  </span>
+                ))}
+              </div>
+              <button type="button" onClick={() => deleteJournalEntry(selectedEntry.id)} className="min-h-11 rounded-full border border-red-400/30 px-4 text-sm uppercase tracking-[0.2em] text-red-300">Delete</button>
+            </div>
+          ) : (
+            <GlassCard className="mt-8 p-5">
+              <p className="minimal-label text-xs">Archive</p>
+              <p className="mt-3 text-2xl text-[var(--ip-ink)]">{entries.length ? "Select a log" : "No saved logs"}</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{entries.length ? "Open a reflection, insight or session detail." : "Use Express to create your first reflection."}</p>
+            </GlassCard>
+          )}
+        </aside>
       </div>
     </MvpShell>
+  );
+}
+
+function MinimalLogCard({
+  title,
+  time,
+  active = false,
+  chakraColor,
+  onClick,
+}: {
+  title: string;
+  time: string;
+  active?: boolean;
+  chakraColor?: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} className={`obsidian-panel tap-ripple flex min-h-[5.5rem] w-full items-center gap-4 rounded-[1.15rem] p-4 text-left ${active ? "border-[rgba(255,138,50,0.42)]" : ""}`}>
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.035]">
+        <span className="h-5 w-5 rounded-full border border-white/20" style={{ boxShadow: `0 0 18px ${chakraColor ?? "rgba(255,138,50,0.45)"}` }} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="minimal-label block truncate text-[0.82rem]">{title}</span>
+        <span className="mt-1 block text-lg text-[var(--ip-muted)]">{time}</span>
+      </span>
+      <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(255,138,50,0.8)]" />
+    </button>
   );
 }

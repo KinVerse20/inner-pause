@@ -10,7 +10,7 @@ export function BlushCard({
   className?: string;
 }) {
   return (
-    <section className={`min-w-0 max-w-full overflow-hidden rounded-[1.35rem] border border-[var(--gold-border-soft)] bg-[rgba(255,255,255,0.78)] shadow-[0_18px_46px_rgba(169,139,221,0.13)] backdrop-blur-2xl ${className}`}>
+    <section className={`obsidian-panel min-w-0 max-w-full overflow-hidden rounded-[1.35rem] ${className}`}>
       {children}
     </section>
   );
@@ -35,7 +35,7 @@ export function CircularActionButton({
       onClick={onClick}
       aria-label={label}
       aria-pressed={pressed}
-      className={`blush-action-button relative grid h-20 w-20 place-items-center rounded-full border border-[var(--gold-border)] bg-[rgba(255,255,255,0.74)] text-3xl text-[var(--gold-light)] shadow-[0_0_38px_rgba(169,139,221,0.18)] backdrop-blur-xl transition hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] active:scale-[0.98] ${className}`}
+      className={`tap-ripple relative grid h-20 w-20 place-items-center rounded-full border border-[rgba(255,138,50,0.42)] bg-[rgba(35,37,39,0.86)] text-3xl text-[var(--gold-light)] shadow-[0_0_38px_rgba(255,138,50,0.16)] backdrop-blur-xl transition hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] active:scale-[0.98] ${className}`}
     >
       {pressed ? <span className="absolute inset-[-0.55rem] animate-ping rounded-full border border-[var(--gold-primary)]/45" /> : null}
       <span className="relative z-10">{children}</span>
@@ -43,18 +43,12 @@ export function CircularActionButton({
   );
 }
 
-export function SunriseScene({ children, variant = "sunrise" }: { children?: ReactNode; variant?: "sunrise" | "lake" | "plan" }) {
+export function SunriseScene({ children }: { children?: ReactNode; variant?: "sunrise" | "lake" | "plan" }) {
   return (
-    <div className={`blush-scene blush-scene-${variant} relative overflow-hidden rounded-[1.6rem] border border-[var(--gold-border-soft)] bg-[#fff9fc] shadow-[0_26px_70px_rgba(169,139,221,0.16)]`}>
-      <div className="blush-sun" />
-      <div className="blush-mist blush-mist-one" />
-      <div className="blush-mist blush-mist-two" />
-      <div className="blush-mountains blush-mountains-back" />
-      <div className="blush-mountains blush-mountains-front" />
-      <div className="blush-lake">
-        <span className="blush-ripple blush-ripple-one" />
-        <span className="blush-ripple blush-ripple-two" />
-      </div>
+    <div className={`obsidian-panel relative overflow-hidden rounded-[1.6rem]`}>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,122,34,0.10),transparent_20rem),linear-gradient(180deg,rgba(255,255,255,0.025),transparent)]" />
+      <div className="pointer-events-none absolute -bottom-20 left-1/2 h-44 w-[110%] -translate-x-1/2 rounded-[50%] border border-white/[0.06]" />
+      <div className="pointer-events-none absolute -bottom-10 left-1/2 h-24 w-[92%] -translate-x-1/2 rounded-[50%] border border-[rgba(255,122,34,0.08)]" />
       <div className="relative z-10">{children}</div>
     </div>
   );
