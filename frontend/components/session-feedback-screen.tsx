@@ -1,11 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { MvpShell } from "@/components/mvp-shell";
+import { RitualBackdrop, RitualOrb, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { saveFeedback } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
+
+const feelingOptions = ["Lighter", "Calmer", "More clear", "Still processing"] as const;
 
 export function SessionFeedbackScreen() {
   const router = useRouter();
@@ -13,118 +16,137 @@ export function SessionFeedbackScreen() {
   const state = useMvpState();
   const entry = state.entries.find((item) => item.plan?.id === planId);
   const plan = entry?.plan;
-  const [emotionalAfter, setEmotionalAfter] = useState(Math.max(1, (entry?.emotionalIntensityBefore ?? 6) - 2));
-  const [bodyTension, setBodyTension] = useState(4);
-  const [mentalCalmness, setMentalCalmness] = useState(7);
-  const [helpfulSection, setHelpfulSection] = useState(plan?.blocks[0]?.title ?? "");
-  const [wouldRepeat, setWouldRepeat] = useState(true);
-  const [reflection, setReflection] = useState("");
-  const [uncomfortable, setUncomfortable] = useState("");
-  const [feelingNow, setFeelingNow] = useState("A little calmer");
+  const [feelingNow, setFeelingNow] = useState<(typeof feelingOptions)[number]>("Calmer");
   const [saving, setSaving] = useState(false);
+
+  const beforeLine = useMemo(() => {
+    const firstEmotion = entry?.analysis?.emotions[0]?.name?.toLowerCase();
+    if (firstEmotion?.includes("confus")) return "You entered feeling scattered.";
+    if (firstEmotion?.includes("stress") || firstEmotion?.includes("anx")) return "You entered braced and overloaded.";
+    if (firstEmotion?.includes("sad")) return "You entered carrying heaviness.";
+    return "You entered holding a lot.";
+  }, [entry?.analysis?.emotions]);
+
+  const afterLine =
+    feelingNow === "Lighter"
+      ? "You are leaving a little lighter."
+      : feelingNow === "Calmer"
+        ? "You are leaving more grounded."
+        : feelingNow === "More clear"
+          ? "You are leaving with more clarity."
+          : "You are leaving with space to keep processing.";
 
   if (!entry || !plan) {
     return (
       <MvpShell hideNav>
-        <GlassCard className="mx-auto max-w-xl p-6">No session found.</GlassCard>
+        <div className="mx-auto max-w-xl rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.66)] p-6">No session found.</div>
       </MvpShell>
     );
   }
 
-  const before = entry.emotionalIntensityBefore;
+  const tone = inferWeatherTone(`${entry.analysis?.summary ?? ""} ${feelingNow}`);
 
   const submit = () => {
     if (saving) return;
     setSaving(true);
     saveFeedback(plan.id, {
-      emotionalIntensityAfter: emotionalAfter,
-      bodyTensionAfter: bodyTension,
-      mentalCalmnessAfter: mentalCalmness,
-      helpfulSection,
-      uncomfortable,
-      wouldRepeat,
-      reflection: reflection ? `${feelingNow}: ${reflection}` : feelingNow,
+      emotionalIntensityAfter: feelingNow === "Still processing" ? 6 : feelingNow === "More clear" ? 4 : 3,
+      bodyTensionAfter: feelingNow === "Still processing" ? 5 : 3,
+      mentalCalmnessAfter: feelingNow === "More clear" ? 8 : feelingNow === "Still processing" ? 5 : 7,
+      helpfulSection: plan.blocks[0]?.title ?? "Healing",
+      wouldRepeat: true,
+      reflection: `${beforeLine} ${afterLine}`,
       createdAt: new Date().toISOString(),
     });
-    router.push("/");
+    router.push("/insights");
   };
 
+  const intention = createTomorrowIntention(entry.analysis?.triggers[0], entry.analysis?.emotions[0]?.name);
+
   return (
-    <MvpShell>
-      <div className="mx-auto max-w-2xl space-y-3.5">
-        <SectionTitle title="How do you feel now?" copy="Notice what changed after this reset." />
-
-        <GlassCard className="p-3.5">
-          <div className="grid grid-cols-2 gap-2">
-            {["Much calmer", "A little calmer", "About the same", "More unsettled"].map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setFeelingNow(option)}
-                className={`min-h-12 rounded-2xl border px-3 text-sm font-medium ${feelingNow === option ? "border-purple-300 bg-purple-100 text-[#6d28d9]" : "border-purple-100 bg-white/70 text-[#4b3f86]"}`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-3.5">
-          <h2 className="font-serif text-xl text-[#130b4f]">Before and after</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-2xl border border-purple-100 bg-white/70 p-3">
-              <p className="text-xs text-[#6d5ea8]">Before</p>
-              <p className="mt-1 font-serif text-3xl text-[#130b4f]">{before}/10</p>
+    <MvpShell hideNav>
+      <div className="space-y-5">
+        <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] lg:items-center">
+            <div className="grid place-items-center">
+              <RitualOrb stage="integrate" tone={tone} intensity={0.68} label="Closing ritual orb" />
             </div>
-            <div className="rounded-2xl border border-purple-100 bg-white/70 p-3">
-              <p className="text-xs text-[#6d5ea8]">Now</p>
-              <p className="mt-1 font-serif text-3xl text-[#6d28d9]">{emotionalAfter}/10</p>
+
+            <div className="space-y-5">
+              <p className="minimal-label text-xs">Close</p>
+              <h1 className="font-serif text-[clamp(2.5rem,7vw,4.6rem)] leading-[0.95] text-[var(--ip-ink)]">
+                Carry this with you.
+              </h1>
+              <p className="text-base leading-7 text-[var(--ip-body)]">
+                Notice the difference between how you arrived and how you are leaving.
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <RitualWeatherCard title="Before" line={beforeLine} tone={inferWeatherTone(entry.analysis?.summary)} />
+                <RitualWeatherCard title="After" line={afterLine} tone={tone} />
+              </div>
+
+              <div className="rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
+                <p className="minimal-label text-[0.62rem]">How are you feeling right now?</p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {feelingOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setFeelingNow(option)}
+                      className={`min-h-12 rounded-full border px-4 text-sm font-semibold uppercase tracking-[0.16em] ${
+                        feelingNow === option
+                          ? "border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] text-[var(--gold-light)]"
+                          : "border-white/10 bg-white/[0.035] text-[var(--ip-body)]"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-          <p className="mt-3 text-sm text-[#4b3f86]">
-            {emotionalAfter < before ? "Your check-in suggests this session helped you feel slightly calmer." : "Your check-in has been saved without assuming a guaranteed result."}
-          </p>
-        </GlassCard>
+        </RitualBackdrop>
 
-        <GlassCard className="space-y-3 p-3.5">
-          {[
-            { label: "Emotional intensity", value: emotionalAfter, set: setEmotionalAfter },
-            { label: "Body tension", value: bodyTension, set: setBodyTension },
-            { label: "Mental calmness", value: mentalCalmness, set: setMentalCalmness },
-          ].map((item) => (
-            <label key={item.label} className="block">
-              <span className="flex justify-between text-sm font-semibold text-stone-100">
-                <span>{item.label}</span>
-                <span className="text-stone-400">{item.value}/10</span>
-              </span>
-              <input type="range" min={1} max={10} value={item.value} onChange={(event) => item.set(Number(event.target.value))} className="mt-2 w-full" />
-            </label>
-          ))}
-        </GlassCard>
+        <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="relative z-10 space-y-5">
+            <p className="minimal-label text-xs">Carry forward</p>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
+              <div className="rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
+                <h2 className="font-serif text-3xl text-[var(--ip-ink)]">One gentle intention for tomorrow.</h2>
+                <p className="mt-3 text-base leading-7 text-[var(--ip-body)]">
+                  {entry.analysis?.triggers[0]
+                    ? `Yesterday, ${entry.analysis.triggers[0].toLowerCase()} stood out. Did today feel any different?`
+                    : "Yesterday left a trace. Notice if tomorrow asks for something softer."}
+                </p>
+                <p className="mt-4 font-serif text-[1.55rem] leading-8 text-[var(--gold-light)]">{intention}</p>
+              </div>
 
-        <GlassCard className="p-3.5">
-          <label className="text-sm font-semibold text-stone-100">Which section helped most?</label>
-          <select value={helpfulSection} onChange={(event) => setHelpfulSection(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100">
-            {plan.blocks.map((block) => <option key={block.id}>{block.title}</option>)}
-          </select>
-          <details className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-            <summary className="cursor-pointer text-sm font-semibold text-[var(--gold-light)]">Optional notes</summary>
-            <label className="mt-3 block text-sm font-semibold text-stone-100">Anything uncomfortable?</label>
-            <input value={uncomfortable} onChange={(event) => setUncomfortable(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" placeholder="Optional" />
-            <label className="mt-3 block text-sm font-semibold text-stone-100">Reflection</label>
-            <textarea value={reflection} onChange={(event) => setReflection(event.target.value)} className="mt-2 min-h-20 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" placeholder="What did you notice?" />
-          </details>
-          <label className="mt-3 flex items-center gap-3 text-sm text-stone-300">
-            <input type="checkbox" checked={wouldRepeat} onChange={(event) => setWouldRepeat(event.target.checked)} />
-            I would use this session again
-          </label>
-        </GlassCard>
-
-        <div className="grid gap-2 sm:grid-cols-2">
-          <GoldButton disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save Session"}</GoldButton>
-          <button type="button" disabled={saving} onClick={() => router.push("/")} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] text-[var(--gold-light)] disabled:opacity-45">Return Home</button>
-        </div>
+              <div className="space-y-3">
+                <RitualWeatherCard title="Yesterday to today" line={entry.analysis?.understandingSummary ?? entry.analysis?.summary ?? "You stayed with your inner weather long enough to hear it."} tone={tone} />
+                <button
+                  type="button"
+                  onClick={submit}
+                  disabled={saving}
+                  className="min-h-12 w-full rounded-full border border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)] disabled:opacity-45"
+                >
+                  {saving ? "Carrying..." : "Carry it forward"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </RitualBackdrop>
       </div>
     </MvpShell>
   );
 }
+
+function createTomorrowIntention(trigger?: string, emotion?: string) {
+  if (trigger?.toLowerCase().includes("confidence")) return "Tomorrow, I will pause before I shrink.";
+  if (trigger?.toLowerCase().includes("pressure")) return "Tomorrow, I will breathe before I react.";
+  if (emotion?.toLowerCase().includes("sad")) return "Tomorrow, I will leave room for what is tender.";
+  if (emotion?.toLowerCase().includes("anx")) return "Tomorrow, I will come back to one steady breath.";
+  return "Tomorrow, I will move more gently with myself.";
+}
+

@@ -1,50 +1,99 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { RitualBackdrop, RitualOrb, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 
-const messages = [
-  "Understanding what you shared",
-  "Noticing the emotions beneath it",
-  "Connecting what may be affecting you",
-  "Preparing your personalised reset",
+const emotionVisuals = [
+  { key: "stress", label: "Stress", lineClass: "bg-[linear-gradient(90deg,rgba(235,101,38,0.05),rgba(235,101,38,0.92),rgba(235,101,38,0.05))]" },
+  { key: "sadness", label: "Sadness", lineClass: "bg-[linear-gradient(90deg,rgba(87,109,164,0.05),rgba(87,109,164,0.88),rgba(87,109,164,0.05))]" },
+  { key: "confusion", label: "Confusion", lineClass: "bg-[linear-gradient(90deg,rgba(149,109,209,0.05),rgba(149,109,209,0.88),rgba(149,109,209,0.05))]" },
+  { key: "calm", label: "Calm", lineClass: "bg-[linear-gradient(90deg,rgba(226,192,108,0.05),rgba(226,192,108,0.88),rgba(226,192,108,0.05))]" },
 ];
 
-const chakraColors = ["#ef4444", "#f97316", "#facc15", "#22c55e", "#38bdf8", "#6366f1", "#a855f7"];
-
-export function ChakraProcessingScreen() {
-  const [messageIndex, setMessageIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setMessageIndex((index) => (index + 1) % messages.length), 1700);
-    return () => window.clearInterval(interval);
-  }, []);
+export function ChakraProcessingScreen({
+  draftText = "",
+  selectedEmotions = [],
+}: {
+  draftText?: string;
+  selectedEmotions?: string[];
+}) {
+  const tone = inferWeatherTone(`${selectedEmotions.join(" ")} ${draftText}`);
+  const mirrorLine = buildMirrorLine(draftText, selectedEmotions);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[radial-gradient(circle_at_50%_12%,rgba(123,77,255,0.22),transparent_18rem),linear-gradient(180deg,#fcfbff,#f3f0ff)] px-5 text-[var(--ip-ink)]">
-      <div className="w-full max-w-sm overflow-hidden rounded-[2rem] border border-[var(--ip-border)] bg-white/78 p-5 text-center shadow-[0_24px_60px_rgba(108,62,244,0.18)] backdrop-blur-2xl">
-        <p className="text-xs uppercase tracking-[0.24em] text-[var(--ip-purple)]">The Inner Pause</p>
-        <h1 className="mt-2 font-serif text-2xl text-[var(--ip-ink)]">Activating your emotion reset</h1>
-        <div className="relative mx-auto mt-5 h-64 max-w-xs overflow-hidden rounded-[1.5rem] bg-[radial-gradient(circle_at_50%_45%,rgba(123,77,255,0.2),transparent_48%),linear-gradient(180deg,#ffffff,#ede8ff)]">
-          <div className="absolute inset-0 mvp-energy-wave opacity-30" />
-          <div className="absolute left-1/2 top-8 h-48 w-px -translate-x-1/2 bg-[var(--ip-border-strong)]" />
-          <div className="absolute left-1/2 top-8 flex h-48 -translate-x-1/2 flex-col justify-between">
-            {chakraColors.map((color, index) => (
-              <span
-                key={color}
-                className="chakra-activation-dot h-5 w-5 rounded-full border border-white/50 shadow-[0_0_24px_currentColor]"
-                style={{ color, backgroundColor: color, animationDelay: `${index * 0.28}s` }}
-              />
-            ))}
+    <div className="fixed inset-0 z-50 px-4 py-[calc(1rem+env(safe-area-inset-top))]">
+      <RitualBackdrop tone={tone} className="mx-auto min-h-[calc(100dvh-2rem)] max-w-5xl px-5 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="relative z-10 grid min-h-[calc(100dvh-4rem)] content-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] lg:items-center">
+          <div className="space-y-5 text-center lg:text-left">
+            <p className="minimal-label text-xs">Witness</p>
+            <h1 className="font-serif text-[clamp(2.6rem,8vw,4.8rem)] leading-[0.92] text-[var(--ip-ink)]">
+              Here&apos;s what we noticed.
+            </h1>
+            <p className="text-base leading-7 text-[var(--ip-body)]">
+              Your reflection is becoming visible.
+            </p>
+
+            <div className="emotion-constellation">
+              {emotionVisuals.map((item, index) => (
+                <div
+                  key={item.key}
+                  className={`emotion-constellation__line ${item.lineClass}`}
+                  style={{ transform: `translate(-50%, -50%) rotate(${index * 39 - 58}deg)` }}
+                />
+              ))}
+              {emotionVisuals.map((item, index) => (
+                <span
+                  key={`${item.key}-node`}
+                  className="emotion-constellation__node"
+                  style={{
+                    color: item.key === "stress" ? "#eb6526" : item.key === "sadness" ? "#6f84c0" : item.key === "confusion" ? "#956dd1" : "#e2c06c",
+                    left: `${18 + index * 18}%`,
+                    top: `${36 + (index % 2) * 20}%`,
+                    background: "currentColor",
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="rounded-[1.35rem] border border-white/10 bg-[rgba(15,17,19,0.58)] p-4 text-left">
+              <p className="minimal-label text-[0.62rem]">Emotional mirror</p>
+              <p className="mt-3 font-serif text-[1.45rem] leading-8 text-[var(--ip-ink)]">{mirrorLine}</p>
+            </div>
           </div>
-          <div className="absolute inset-x-0 bottom-4 mx-auto w-fit rounded-full border border-[var(--ip-border)] bg-white/80 px-4 py-2 text-sm text-[var(--ip-ink)] backdrop-blur-xl">
-            Calm • Balanced • Connected
+
+          <div className="grid place-items-center gap-5">
+            <RitualOrb stage="witness" tone={tone} intensity={0.8} label="Emotional constellation orb" />
+            <div className="w-full max-w-md space-y-2">
+              {emotionVisuals.map((item) => (
+                <div key={item.key} className="flex items-center justify-between rounded-full border border-white/10 bg-[rgba(15,17,19,0.42)] px-4 py-3 text-sm">
+                  <span className="text-[var(--ip-ink)]">{item.label}</span>
+                  <span className="text-[var(--ip-body)]">forming</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-sm leading-6 text-[var(--ip-body)]">
+              Let us turn this into something lighter.
+            </p>
           </div>
         </div>
-        <p aria-live="polite" className="mt-5 min-h-6 text-sm font-medium text-[var(--ip-ink)]">
-          {messages[messageIndex]}
-        </p>
-        <p className="mt-1 text-xs text-[var(--ip-muted)]">This will only take a moment.</p>
-      </div>
+      </RitualBackdrop>
     </div>
   );
 }
+
+function buildMirrorLine(draftText: string, selectedEmotions: string[]) {
+  const lower = draftText.toLowerCase();
+  if (/(tired|exhausted|drained)/.test(lower)) {
+    return "You were not only tired today — you were tired of having to stay strong.";
+  }
+  if (/(anxious|panic|worry|pressure)/.test(lower) || selectedEmotions.includes("Anxious")) {
+    return "This was not just pressure. It was your body asking for somewhere softer to land.";
+  }
+  if (/(angry|resent|frustrat)/.test(lower)) {
+    return "There is heat here, but underneath it there may be hurt that has gone unspoken.";
+  }
+  if (/(sad|grief|lonely|miss)/.test(lower) || selectedEmotions.includes("Melancholic")) {
+    return "This sounds like sadness that has been trying to stay quiet while still asking to be seen.";
+  }
+  return "There is more here than one feeling. We are gathering the parts that have been hard to carry alone.";
+}
+

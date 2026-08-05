@@ -526,6 +526,314 @@ body {
   animation-delay: -4s;
 }
 
+.ritual-backdrop {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255,255,255,0.04), transparent 22rem),
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+    #1b1d20;
+  isolation: isolate;
+}
+
+.ritual-backdrop__veil,
+.ritual-backdrop__mist,
+.ritual-backdrop__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ritual-backdrop__veil {
+  background: var(--ritual-haze);
+  opacity: 0.95;
+}
+
+.ritual-backdrop__mist {
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255,255,255,0.05), transparent 16rem),
+    radial-gradient(circle at 84% 34%, rgba(255,255,255,0.035), transparent 18rem),
+    radial-gradient(circle at 52% 82%, rgba(255,255,255,0.03), transparent 20rem);
+  animation: ritual-drift 28s linear infinite;
+}
+
+.ritual-backdrop__grid {
+  background:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 5rem 5rem;
+  opacity: 0.25;
+  mask-image: radial-gradient(circle at 50% 35%, black, transparent 76%);
+}
+
+.ritual-weather-card {
+  border: 1px solid rgba(255,255,255,0.1);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.045), transparent 42%),
+    rgba(20,22,24,0.66);
+  border-radius: 1.3rem;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 16px 34px rgba(0,0,0,0.24);
+  backdrop-filter: blur(16px);
+}
+
+.ritual-orb-shell {
+  position: relative;
+  width: min(84vw, 28rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 0 42px color-mix(in srgb, var(--ritual-glow) 78%, transparent));
+}
+
+.ritual-orb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.ritual-orb__halo,
+.ritual-orb__track,
+.ritual-orb__particle,
+.ritual-orb__core,
+.ritual-orb__pulse {
+  position: absolute;
+  border-radius: 999px;
+}
+
+.ritual-orb__halo {
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.ritual-orb__halo--outer {
+  inset: 0;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 0 60px var(--ritual-glow);
+}
+
+.ritual-orb__halo--middle {
+  inset: 11%;
+  border-color: color-mix(in srgb, var(--ritual-accent) 32%, rgba(255,255,255,0.07));
+}
+
+.ritual-orb__halo--inner {
+  inset: 23%;
+  border-color: rgba(255,255,255,0.12);
+}
+
+.ritual-orb__core {
+  inset: 18%;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255,255,255,0.3), transparent 20%),
+    radial-gradient(circle at 36% 28%, rgba(255,255,255,0.16), transparent 24%),
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ritual-accent) calc(var(--ritual-intensity) * 100%), #161719) 0 22%, rgba(17,18,20,0.96) 74%);
+  box-shadow:
+    inset -34px -42px 70px rgba(0,0,0,0.56),
+    inset 16px 14px 24px rgba(255,255,255,0.05),
+    0 0 62px color-mix(in srgb, var(--ritual-glow) 78%, transparent);
+}
+
+.ritual-orb__pulse {
+  inset: 28%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.92) 0 4%, color-mix(in srgb, var(--ritual-accent) 72%, rgba(255,255,255,0.1)) 6% 20%, transparent 34%);
+  opacity: 0.78;
+  filter: blur(1px);
+}
+
+.ritual-orb__track {
+  inset: 10%;
+  border: 1px solid rgba(255,255,255,0.08);
+  animation: ritual-rotate 32s linear infinite;
+}
+
+.ritual-orb__track--two {
+  inset: 22%;
+  border-color: rgba(255,255,255,0.06);
+  animation-duration: 46s;
+  transform: rotate(28deg);
+}
+
+.ritual-orb__track--three {
+  inset: 33%;
+  border-color: color-mix(in srgb, var(--ritual-accent) 26%, rgba(255,255,255,0.05));
+  animation-duration: 58s;
+  transform: rotate(-18deg);
+}
+
+.ritual-orb__particle {
+  width: 0.4rem;
+  height: 0.4rem;
+  background: var(--ritual-accent);
+  box-shadow: 0 0 18px var(--ritual-accent);
+  animation: ritual-float 14s ease-in-out infinite;
+}
+
+.ritual-orb__particle--one { left: 14%; top: 34%; animation-delay: -1s; }
+.ritual-orb__particle--two { left: 22%; top: 66%; animation-delay: -4s; }
+.ritual-orb__particle--three { right: 16%; top: 26%; animation-delay: -7s; }
+.ritual-orb__particle--four { right: 12%; top: 62%; animation-delay: -10s; }
+.ritual-orb__particle--five { left: 50%; top: 14%; margin-left: -0.2rem; animation-delay: -2.5s; }
+
+.ritual-orb--arrive .ritual-orb__core,
+.ritual-orb--restore .ritual-orb__core,
+.ritual-orb--garden .ritual-orb__core {
+  animation: ritual-breathe 9s ease-in-out infinite;
+}
+
+.ritual-orb--speak .ritual-orb__core,
+.ritual-orb--witness .ritual-orb__core {
+  animation: ritual-voice-pulse 2.8s ease-in-out infinite;
+}
+
+.ritual-orb--write .ritual-orb__core {
+  animation: ritual-breathe 11s ease-in-out infinite;
+}
+
+.ritual-orb--transform .ritual-orb__core {
+  animation: ritual-transform 7.4s ease-in-out infinite;
+}
+
+.ritual-orb--release .ritual-orb__core {
+  animation: ritual-release 8s ease-in-out infinite;
+}
+
+.ritual-orb--breathe .ritual-orb__core,
+.ritual-orb--breathe .ritual-orb__pulse {
+  animation: ritual-breathe 12s cubic-bezier(0.35, 0, 0.2, 1) infinite;
+}
+
+.ritual-orb--integrate .ritual-orb__core {
+  animation: ritual-integrate 11s ease-in-out infinite;
+}
+
+.ritual-orb--witness .ritual-orb__particle,
+.ritual-orb--transform .ritual-orb__particle {
+  animation-name: ritual-constellation-float;
+}
+
+.ritual-orb--garden .ritual-orb__particle {
+  background: rgba(232, 201, 126, 0.92);
+  box-shadow: 0 0 18px rgba(232, 201, 126, 0.88);
+}
+
+.ritual-stage-pill {
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(20,22,24,0.58);
+  color: var(--ip-body);
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.ritual-stage-pill--active {
+  color: var(--gold-light);
+  border-color: rgba(244,122,34,0.5);
+  box-shadow: 0 0 18px rgba(244,122,34,0.16);
+}
+
+.ritual-waveform {
+  height: 3rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, transparent, color-mix(in srgb, var(--ritual-accent) 52%, transparent), transparent),
+    repeating-linear-gradient(90deg, transparent 0 0.55rem, color-mix(in srgb, var(--ritual-accent) 88%, rgba(255,255,255,0.2)) 0.6rem 0.72rem, transparent 0.8rem 1.18rem);
+  mask-image: radial-gradient(ellipse at center, black 0 62%, transparent 70%);
+  animation: waveform-flow 1.6s linear infinite;
+}
+
+.emotion-constellation {
+  position: relative;
+  min-height: 18rem;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04), transparent 40%),
+    rgba(14,16,18,0.58);
+}
+
+.emotion-constellation__line,
+.emotion-constellation__node {
+  position: absolute;
+  transform-origin: center;
+}
+
+.emotion-constellation__line {
+  left: 50%;
+  top: 50%;
+  width: 42%;
+  height: 2px;
+  margin-left: -21%;
+  margin-top: -1px;
+  border-radius: 999px;
+  opacity: 0.85;
+}
+
+.emotion-constellation__node {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  box-shadow: 0 0 22px currentColor;
+}
+
+.inner-garden {
+  position: relative;
+  min-height: clamp(22rem, 60dvh, 34rem);
+  overflow: hidden;
+  border-radius: 1.8rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    radial-gradient(circle at 50% 105%, rgba(244,122,34,0.16), transparent 34rem),
+    linear-gradient(180deg, rgba(255,255,255,0.04), transparent 34%),
+    rgba(20,22,24,0.58);
+}
+
+.inner-garden__stem {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: 2px;
+  height: 48%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(244,122,34,0.52), rgba(255,255,255,0.08));
+}
+
+.inner-garden__petal,
+.inner-garden__leaf,
+.inner-garden__star {
+  position: absolute;
+  border-radius: 999px;
+  animation: ritual-breathe 9s ease-in-out infinite;
+}
+
+.inner-garden__petal {
+  width: 4.4rem;
+  height: 6.2rem;
+  border-radius: 100% 100% 36% 36%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(244,122,34,0.28), rgba(139,101,188,0.22));
+  border: 1px solid rgba(255,255,255,0.22);
+}
+
+.inner-garden__leaf {
+  width: 4.2rem;
+  height: 2rem;
+  background: linear-gradient(145deg, rgba(232,201,126,0.18), rgba(116,169,106,0.28));
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.inner-garden__star {
+  width: 0.42rem;
+  height: 0.42rem;
+  background: rgba(232, 201, 126, 0.92);
+  box-shadow: 0 0 18px rgba(232, 201, 126, 0.86);
+}
+
 .chakra-body-silhouette {
   position: relative;
   min-height: clamp(24rem, 58dvh, 34rem);
@@ -616,6 +924,68 @@ body {
 
 @keyframes orbit-drift {
   to { transform: rotate(calc(var(--angle) + 360deg)) translateX(min(30vw, 10rem)); }
+}
+
+@keyframes ritual-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(1rem, -1.2rem, 0) scale(1.03); }
+  100% { transform: translate3d(-0.8rem, 0.9rem, 0) scale(1); }
+}
+
+@keyframes ritual-rotate {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ritual-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(0.9); opacity: 0.35; }
+  50% { transform: translate3d(0.65rem, -1rem, 0) scale(1.15); opacity: 1; }
+}
+
+@keyframes ritual-constellation-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(0.82); opacity: 0.28; }
+  50% { transform: translate3d(0.9rem, -1.1rem, 0) scale(1.18); opacity: 1; }
+}
+
+@keyframes ritual-breathe {
+  0%, 100% { transform: scale(0.95); opacity: 0.86; }
+  33% { transform: scale(1.02); opacity: 0.98; }
+  50% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(0.94); opacity: 0.84; }
+}
+
+@keyframes ritual-voice-pulse {
+  0%, 100% { transform: scale(0.94); }
+  25% { transform: scale(1.04); }
+  50% { transform: scale(0.98); }
+  75% { transform: scale(1.08); }
+}
+
+@keyframes ritual-transform {
+  0%, 100% { transform: scale(0.92) rotate(0deg); filter: saturate(0.82); }
+  50% { transform: scale(1.06) rotate(10deg); filter: saturate(1.08); }
+}
+
+@keyframes ritual-release {
+  0%, 100% { transform: scale(0.88); filter: brightness(0.84); }
+  50% { transform: scale(1) translateY(-0.2rem); filter: brightness(1.04); }
+}
+
+@keyframes ritual-integrate {
+  0%, 100% { transform: scale(0.98); filter: brightness(0.92); }
+  50% { transform: scale(1); filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ritual-backdrop__mist,
+  .ritual-orb__track,
+  .ritual-orb__particle,
+  .ritual-orb__core,
+  .ritual-orb__pulse,
+  .inner-garden__petal,
+  .inner-garden__leaf,
+  .inner-garden__star {
+    animation: none !important;
+  }
 }
 
 @keyframes chakra-node-pulse {

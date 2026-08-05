@@ -1,12 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CSSProperties } from "react";
-import { useState } from "react";
 
-import { ChakraBadge, ExpandableCard } from "@/components/chakra-path-ui";
-import { BlushCard, SunriseScene } from "@/components/morning-blush-ui";
-import { GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
+import { MvpShell } from "@/components/mvp-shell";
+import { RitualBackdrop, RitualOrb, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { chakraMap } from "@/data/chakras";
 import { savePlan, updateJournalEntry } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
@@ -17,169 +14,197 @@ export function AnalysisScreen() {
   const state = useMvpState();
   const entry = state.entries.find((item) => item.id === entryId);
   const analysis = entry?.analysis;
-  const [editingSummary, setEditingSummary] = useState(false);
-  const [summaryDraft, setSummaryDraft] = useState("");
 
   if (!entry || !analysis) {
     return (
       <MvpShell>
-        <GlassCard className="mx-auto max-w-xl p-5">
+        <div className="mx-auto max-w-xl rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.66)] p-5">
           <p className="text-[var(--ip-body)]">No emotional insight found. Share what you feel first.</p>
-          <GoldButton className="mt-4" onClick={() => router.replace("/journal")}>Start Expressing</GoldButton>
-        </GlassCard>
+          <button
+            type="button"
+            onClick={() => router.replace("/journal")}
+            className="mt-4 min-h-11 rounded-full border border-[rgba(244,122,34,0.45)] bg-[rgba(244,122,34,0.1)] px-5 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)]"
+          >
+            Start expressing
+          </button>
+        </div>
       </MvpShell>
     );
   }
 
-  const understanding = analysis.understandingSummary ?? analysis.summary;
-  const saveSummary = () => {
-    updateJournalEntry(entry.id, { analysis: { ...analysis, understandingSummary: summaryDraft, summary: summaryDraft } });
-    setEditingSummary(false);
-  };
-
-  const beginReset = () => {
-    savePlan(entry.id);
-    router.push(`/healing?entry=${entry.id}`);
-  };
+  const tone = inferWeatherTone(
+    `${analysis.emotions.map((item) => item.name).join(" ")} ${analysis.triggers.join(" ")} ${analysis.summary}`,
+  );
   const primaryEmotion = analysis.emotions[0]?.name ?? "Reflective";
   const primaryChakra = analysis.chakraAssociations[0];
   const secondaryChakra = analysis.chakraAssociations[1];
-  const resonanceMatch = Math.max(52, Math.min(96, Math.round((primaryChakra?.confidence ?? 0.72) * 100)));
-  const emotionalDensity = Math.max(20, Math.min(100, Math.round(analysis.emotions.slice(0, 4).reduce((sum, emotion) => sum + (emotion.intensity ?? 5), 0) * 6)));
+  const witnessLine = createWitnessLine(analysis.summary, analysis.triggers[0], primaryEmotion);
+  const transformLine = analysis.healingApproachSummary ?? "Your difficult material is being gathered into a gentler sequence.";
+
+  const beginHealing = () => {
+    savePlan(entry.id);
+    router.push(`/healing?entry=${entry.id}`);
+  };
 
   return (
     <MvpShell>
-      <div className="space-y-3.5">
-        <SunriseScene>
-          <div className="reference-phone-canvas grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-center lg:p-7">
-            <div className="min-w-0 text-center lg:text-left">
-              <button type="button" onClick={() => router.push("/journal")} className="mb-5 min-h-10 rounded-full border border-white/10 bg-white/[0.035] px-4 text-sm text-[var(--ip-body)]">
-                ← Back to journal
-              </button>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Decoding</p>
-              <h1 className="mt-2 font-serif text-[clamp(2.4rem,8vw,5rem)] leading-[0.92] text-[var(--ip-ink)]">Your energy decoded</h1>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[var(--ip-body)] lg:mx-0">A gentle map of what appeared in your reflection.</p>
+      <div className="space-y-5">
+        <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(18rem,24rem)] lg:items-center">
+            <div className="space-y-5">
+              <p className="minimal-label text-xs">Witness</p>
+              <h1 className="font-serif text-[clamp(2.8rem,8vw,4.8rem)] leading-[0.92] text-[var(--ip-ink)]">
+                Here&apos;s what we noticed.
+              </h1>
+              <p className="text-base leading-7 text-[var(--ip-body)]">Your reflection is becoming visible.</p>
 
-              <div className="mx-auto my-5 grid place-items-center lg:mx-0">
-                <div className="energy-decoding-orb" aria-hidden="true">
-                  {["#F47A22", "#FF862A", "#FF9A4A", "#B75A1D", "#F47A22"].map((color, index) => (
-                    <span key={color} className="orbit-point" style={{ "--angle": `${index * 72}deg`, "--point-color": color } as CSSProperties} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-3">
-                <Metric label="Dominant frequency" value={primaryChakra ? chakraMap[primaryChakra.chakra].frequencyLabel : "639 Hz"} />
-                <Metric label="Resonance match" value={`${resonanceMatch}%`} />
-                <Metric label="Emotional density" value={`${emotionalDensity}%`} />
-              </div>
-            </div>
-
-            <BlushCard className="p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--gold-light)]">Aura detected</p>
-              <h2 className="mt-2 font-serif text-3xl leading-tight text-[var(--ip-ink)]">{primaryEmotion} Resonance</h2>
-              <div className="pastel-wave-visual mt-4 rounded-[1.2rem] border border-[var(--gold-border-soft)]" />
-              <div className="mt-4 space-y-3 text-sm text-[var(--ip-body)]">
-                <JourneyLine label="Dominant chakra" value={primaryChakra ? chakraMap[primaryChakra.chakra].name.replace(" Chakra", "") : "Heart"} />
-                <JourneyLine label="Secondary chakra" value={secondaryChakra ? chakraMap[secondaryChakra.chakra].name.replace(" Chakra", "") : "Throat"} />
-                <JourneyLine label="Key pattern" value={analysis.emotions[0]?.name ?? "Reflection"} />
-              </div>
-              <GoldButton className="mt-4 w-full" disabled={analysis.safetyFlag} onClick={beginReset}>
-                See more
-              </GoldButton>
-            </BlushCard>
-          </div>
-        </SunriseScene>
-
-        <SunriseScene variant="lake">
-          <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:p-7">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">State analysis</p>
-              <h2 className="mt-2 font-serif text-[clamp(2rem,7vw,4rem)] leading-tight text-[var(--ip-ink)]">Luminous {primaryEmotion}</h2>
-              <p className="mt-2 max-w-xl text-sm text-[var(--ip-body)]">Here’s what we noticed in your reflection.</p>
-
-              <div className="mt-6 flex flex-wrap gap-2">
-                {analysis.emotions.slice(0, 5).map((emotion) => (
-                  <details key={emotion.name} className="group rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-sm text-[var(--ip-ink)] open:rounded-2xl">
-                    <summary className="cursor-pointer list-none">{emotion.name}</summary>
-                    {emotion.explanation ? <p className="mt-2 max-w-xs text-xs leading-5 text-[var(--ip-body)]">{emotion.explanation}</p> : null}
-                  </details>
+              <div className="emotion-constellation">
+                {analysis.emotions.slice(0, 4).map((emotion, index) => (
+                  <div
+                    key={`${emotion.name}-line`}
+                    className="emotion-constellation__line"
+                    style={{
+                      transform: `translate(-50%, -50%) rotate(${index * 42 - 52}deg)`,
+                      background:
+                        emotion.name.toLowerCase().includes("stress") || emotion.name.toLowerCase().includes("anger")
+                          ? "linear-gradient(90deg,rgba(235,101,38,0.05),rgba(235,101,38,0.92),rgba(235,101,38,0.05))"
+                          : emotion.name.toLowerCase().includes("sad")
+                            ? "linear-gradient(90deg,rgba(87,109,164,0.05),rgba(87,109,164,0.88),rgba(87,109,164,0.05))"
+                            : emotion.name.toLowerCase().includes("confus")
+                              ? "linear-gradient(90deg,rgba(149,109,209,0.05),rgba(149,109,209,0.88),rgba(149,109,209,0.05))"
+                              : "linear-gradient(90deg,rgba(226,192,108,0.05),rgba(226,192,108,0.88),rgba(226,192,108,0.05))",
+                    }}
+                  />
+                ))}
+                {analysis.emotions.slice(0, 4).map((emotion, index) => (
+                  <span
+                    key={`${emotion.name}-node`}
+                    className="emotion-constellation__node"
+                    style={{
+                      left: `${18 + index * 18}%`,
+                      top: `${34 + (index % 2) * 22}%`,
+                      color:
+                        emotion.name.toLowerCase().includes("stress") || emotion.name.toLowerCase().includes("anger")
+                          ? "#eb6526"
+                          : emotion.name.toLowerCase().includes("sad")
+                            ? "#6f84c0"
+                            : emotion.name.toLowerCase().includes("confus")
+                              ? "#956dd1"
+                              : "#e2c06c",
+                      background: "currentColor",
+                    }}
+                  />
                 ))}
               </div>
 
-              <BlushCard className="mt-5 p-4 sm:p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--gold-muted)]">Emotional overview</p>
-                    <p className="mt-3 text-sm leading-7 text-[var(--ip-body)]">{understanding}</p>
-                  </div>
-                    <button type="button" onClick={() => { setSummaryDraft(understanding); setEditingSummary(true); }} className="shrink-0 text-sm font-semibold text-[var(--gold-light)]">
-                    Review
-                  </button>
-                </div>
-                {editingSummary ? (
-                  <div className="mt-3 space-y-3">
-                    <textarea value={summaryDraft} onChange={(event) => setSummaryDraft(event.target.value)} className="soft-input min-h-28 w-full rounded-2xl p-3 outline-none" />
-                    <GoldButton onClick={saveSummary}>Save reflection</GoldButton>
-                  </div>
-                ) : null}
-              </BlushCard>
-
-              <GoldButton className="mt-5 w-full sm:w-auto sm:px-8" disabled={analysis.safetyFlag} onClick={beginReset}>
-                Continue Healing
-              </GoldButton>
-              <button type="button" onClick={() => router.push("/journey")} className="ml-0 mt-3 min-h-11 w-full rounded-full border border-white/10 bg-white/[0.035] px-4 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)] sm:ml-3 sm:mt-0 sm:w-auto">
-                View Chakra Map
-              </button>
+              <div className="rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
+                <p className="minimal-label text-[0.62rem]">Emotional mirror</p>
+                <p className="mt-3 font-serif text-[1.55rem] leading-8 text-[var(--ip-ink)]">{witnessLine}</p>
+                <p className="mt-3 text-sm leading-6 text-[var(--ip-body)]">{analysis.understandingSummary ?? analysis.summary}</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateJournalEntry(entry.id, {
+                      analysis: {
+                        ...analysis,
+                        understandingSummary: analysis.understandingSummary ?? analysis.summary,
+                      },
+                    })
+                  }
+                  className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)]"
+                >
+                  Keep this reflection
+                </button>
+              </div>
             </div>
 
-            <BlushCard className="p-4">
-              <p className="font-serif text-xl text-[var(--ip-ink)]">Your journey</p>
-              <div className="mt-4 space-y-4 text-sm text-[var(--ip-body)]">
-                <JourneyLine label="Reflections" value={String(state.entries.filter((item) => !item.isTemporary).length)} />
-                <JourneyLine label="Streak" value={`${Math.max(1, state.entries.length)} days`} />
-                <JourneyLine label="Time with you" value={`${Math.max(2, Math.round(state.entries.length * 7))} min`} />
-                <JourneyLine label="Preferred way" value="Speak" />
+            <div className="grid place-items-center gap-5">
+              <RitualOrb stage="witness" tone={tone} intensity={0.82} label="Witness constellation orb" />
+              <div className="grid w-full gap-3">
+                {analysis.emotions.slice(0, 4).map((emotion) => (
+                  <RitualWeatherCard
+                    key={emotion.name}
+                    title={emotion.name}
+                    line={emotion.explanation ?? `Intensity ${emotion.intensity}/10`}
+                    tone={inferWeatherTone(emotion.name)}
+                  />
+                ))}
               </div>
-            </BlushCard>
+            </div>
           </div>
-        </SunriseScene>
+        </RitualBackdrop>
 
-        <section className="grid gap-3 lg:grid-cols-2">
-          {analysis.chakraAssociations.map((item) => {
-            const chakra = chakraMap[item.chakra];
-            return (
-              <ExpandableCard key={item.chakra} title={chakra.name.replace(" Chakra", "")} summary={item.emotionalTheme ?? chakra.meaning}>
-                <div className="flex gap-3">
-                  <ChakraBadge chakraId={item.chakra} />
-                  <div className="min-w-0 space-y-2">
-                    <p><span className="font-semibold text-[var(--gold-light)]">Why it may be relevant:</span> {item.reason}</p>
-                    <p><span className="font-semibold text-[var(--gold-light)]">Suggested gentle action:</span> {item.sessionSupport ?? chakra.purpose}</p>
-                  </div>
-                </div>
-              </ExpandableCard>
-            );
-          })}
-        </section>
+        <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] lg:items-center">
+            <div className="grid place-items-center">
+              <RitualOrb stage="transform" tone={tone} intensity={0.92} label="Transformation orb" />
+            </div>
+
+            <div className="space-y-5">
+              <p className="minimal-label text-xs">Transform</p>
+              <h2 className="font-serif text-[clamp(2.4rem,7vw,4.3rem)] leading-[0.95] text-[var(--ip-ink)]">
+                Let us turn this into something lighter.
+              </h2>
+              <p className="text-base leading-7 text-[var(--ip-body)]">
+                Your personalised healing journey is taking shape.
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <RitualWeatherCard
+                  title="Dominant current"
+                  line={primaryChakra ? `${chakraMap[primaryChakra.chakra].name} is carrying most of the charge.` : `${primaryEmotion} is the strongest signal right now.`}
+                  tone={tone}
+                />
+                <RitualWeatherCard
+                  title="Secondary thread"
+                  line={secondaryChakra ? `${chakraMap[secondaryChakra.chakra].name} is close behind.` : "A quieter second layer is also present."}
+                  tone={tone}
+                />
+              </div>
+
+              <div className="rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
+                <p className="text-sm leading-7 text-[var(--ip-body)]">{transformLine}</p>
+                <p className="mt-3 text-sm leading-7 text-[var(--ip-body)]">
+                  Suggested outcome: {analysis.suggestedOutcome}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={beginHealing}
+                  disabled={analysis.safetyFlag}
+                  className="min-h-12 rounded-full border border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)] disabled:opacity-45"
+                >
+                  Begin healing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push("/journey")}
+                  className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ip-body)]"
+                >
+                  View topology
+                </button>
+              </div>
+            </div>
+          </div>
+        </RitualBackdrop>
       </div>
     </MvpShell>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1rem] border border-white/10 bg-white/[0.035] p-3 text-left shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-      <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--ip-muted)]">{label}</p>
-      <p className="mt-1 font-serif text-xl text-[var(--ip-ink)]">{value}</p>
-    </div>
-  );
+function createWitnessLine(summary: string, trigger: string | undefined, emotion: string) {
+  const lower = summary.toLowerCase();
+  if (/(tired|exhausted|drained)/.test(lower)) {
+    return "You were not only tired today — you were tired of having to stay strong.";
+  }
+  if (/(anxious|pressure|worry)/.test(lower) || trigger?.toLowerCase().includes("pressure")) {
+    return "There is a strain here that feels older than this one moment alone.";
+  }
+  if (/(sad|grief|lonely)/.test(lower)) {
+    return "This feels like sadness that has been holding itself together for too long.";
+  }
+  return `This is not only ${emotion.toLowerCase()} — it is the story underneath it asking to be witnessed.`;
 }
 
-function JourneyLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-[var(--gold-border-soft)] pb-3 last:border-0 last:pb-0">
-      <span>{label}</span>
-      <span className="font-serif text-lg text-[var(--gold-light)]">{value}</span>
-    </div>
-  );
-}

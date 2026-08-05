@@ -1,9 +1,9 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { RitualBackdrop, RitualOrb, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { chakraMap, relaxMoodMap } from "@/data/chakras";
 import { usePlayer } from "@/components/player-provider";
 import { ChakraId, QuickPlayDuration, RelaxMoodId } from "@/lib/types";
@@ -103,10 +103,11 @@ export function QuickPlayerScreen() {
   if (!chakra || !activePlayback) return null;
 
   const title = shortTitle(mood?.label ?? activePlayback.title);
+  const tone = inferWeatherTone(`${mood?.label ?? ""} ${chakra.meaning} ${chakra.id}`);
 
   return (
-    <div className="mvp-bg quick-player-page min-h-dvh overflow-hidden text-[var(--ip-ink)]">
-      <main className="quick-player-layout mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] lg:max-w-[72rem] lg:px-8">
+    <RitualBackdrop tone={tone} className="quick-player-page min-h-dvh rounded-none border-0 text-[var(--ip-ink)]">
+      <main className="quick-player-layout relative z-10 mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] lg:max-w-[72rem] lg:px-8">
         <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
           <button
             type="button"
@@ -126,15 +127,14 @@ export function QuickPlayerScreen() {
         </header>
 
         <section className={`quick-player-visual grid flex-1 place-items-center py-4 ${!isPlaying || reducedMotion ? "is-paused" : ""}`}>
-          <div className="quick-player-orbit relative grid aspect-square w-[min(82vw,25rem)] place-items-center lg:w-[min(42vw,28rem)]">
-            <div className="absolute inset-0 rounded-full border border-white/10" />
-            <div className="absolute inset-[8%] rounded-full border border-[rgba(255,122,34,0.22)]" />
-            <div className="absolute inset-[18%] rounded-full border border-white/10" />
-            <span className="orbiting-point" style={{ "--orbit-radius": "42%", "--orbit-speed": "22s", "--orbit-angle": "0deg" } as CSSProperties} />
-            <span className="orbiting-point" style={{ "--orbit-radius": "48%", "--orbit-speed": "31s", "--orbit-angle": "132deg" } as CSSProperties} />
-            <span className="orbiting-point" style={{ "--orbit-radius": "35%", "--orbit-speed": "42s", "--orbit-angle": "248deg" } as CSSProperties} />
-            <div className="healing-orbit-sphere w-[62%]" />
-          </div>
+          <RitualOrb
+            stage="restore"
+            tone={tone}
+            active={isPlaying && !reducedMotion}
+            intensity={activePlayback.keepPlaying ? 0.82 : Math.max(0.45, progressPercent / 100)}
+            label="Quick relief ritual orb"
+            className="quick-player-orbit w-[min(82vw,25rem)] lg:w-[min(42vw,28rem)]"
+          />
         </section>
 
         <section className="quick-player-title mx-auto w-full max-w-[28rem] text-center">
@@ -205,6 +205,6 @@ export function QuickPlayerScreen() {
           </div>
         </section>
       </main>
-    </div>
+    </RitualBackdrop>
   );
 }
