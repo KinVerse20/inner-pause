@@ -45,7 +45,7 @@ export function AboutScreen() {
       <div className="mx-auto max-w-6xl space-y-5">
         <header className="flex items-center justify-between gap-4">
           <BrandLogo />
-          <Link href="/journal" className="hidden rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 py-2 text-sm text-[var(--gold-light)] sm:inline-flex">
+          <Link href="/journal" className="hidden rounded-full border border-[var(--gold-border-soft)] bg-white/68 px-4 py-2 text-sm text-[var(--gold-light)] sm:inline-flex">
             Begin
           </Link>
         </header>
@@ -53,10 +53,10 @@ export function AboutScreen() {
         <SunriseScene>
           <div className="grid min-h-[clamp(28rem,62dvh,34rem)] place-items-center px-5 py-8 text-center">
             <div className="mx-auto max-w-3xl">
-              <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/8 text-5xl text-[var(--gold-light)] shadow-[0_0_44px_rgba(240,206,160,0.16)]">
+              <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-5xl text-[var(--gold-light)] shadow-[0_0_44px_rgba(169,139,221,0.16)]">
                 ♧
               </div>
-              <h1 className="font-serif text-[clamp(2.2rem,7vw,4.8rem)] leading-tight text-[var(--cream)]">A ritual for your well-being.</h1>
+              <h1 className="font-serif text-[clamp(2.2rem,7vw,4.8rem)] leading-tight text-[var(--ip-ink)]">A ritual for your well-being.</h1>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[var(--ip-body)]">Short-term relief. Long-term transformation.</p>
             </div>
           </div>
@@ -66,9 +66,9 @@ export function AboutScreen() {
           <h2 className="font-serif text-2xl text-[var(--gold-light)]">How it works</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {steps.map((step, index) => (
-              <div key={step.title} className="rounded-[1.1rem] border border-[var(--gold-border-soft)] bg-white/[0.06] p-4">
+              <div key={step.title} className="rounded-[1.1rem] border border-[var(--gold-border-soft)] bg-white/58 p-4">
                 <span className="text-xs uppercase tracking-[0.22em] text-[var(--gold-muted)]">0{index + 1}</span>
-                <h3 className="mt-3 font-serif text-xl text-[var(--cream)]">{step.title}</h3>
+                <h3 className="mt-3 font-serif text-xl text-[var(--ip-ink)]">{step.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{step.copy}</p>
               </div>
             ))}
@@ -109,7 +109,7 @@ export function AboutScreen() {
           </p>
           <Link
             href="/journal"
-            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-[var(--gold-border)] bg-[linear-gradient(135deg,#f6dfc1,#ddb27b)] px-5 py-3 font-semibold text-[#07142f] shadow-[0_0_28px_rgba(240,206,160,0.18)] transition hover:brightness-110"
+            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-white/70 bg-[linear-gradient(135deg,#a98bdd,#f4b8cd_62%,#f5b792)] px-5 py-3 font-semibold text-white shadow-[0_16px_34px_rgba(169,139,221,0.22)] transition hover:brightness-110"
           >
             Begin Your Journey
           </Link>

@@ -41,13 +41,17 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
     <MvpShell>
       <div className="space-y-3.5">
         <header className="text-center">
-          <p className="text-sm font-medium text-[#90879d]">Your Flow</p>
-          <h1 className="mt-1 font-serif text-3xl text-[#322d42]">{selectedChakra.name}</h1>
-          <p className="mt-1 text-sm text-[#6f687d]">Stage {selectedChakra.index + 1} · {completedCount} of 5 complete</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Energy architecture</p>
+          <h1 className="mt-1 font-serif text-[clamp(2.4rem,7vw,4.8rem)] leading-tight text-[var(--ip-ink)]">Chakra Topology</h1>
+          <p className="mt-1 text-sm text-[var(--ip-body)]">Map your current flow through the seven energy centres.</p>
         </header>
 
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(15rem,0.8fr)_minmax(22rem,1.2fr)] lg:items-start">
-          <BlushCard className="p-3 sm:p-4">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(18rem,0.86fr)_minmax(24rem,1.14fr)] lg:items-start">
+          <BlushCard className="pastel-cloud-card p-3 sm:p-4">
+            <div className="mb-2 text-center">
+              <p className="font-serif text-2xl text-[var(--ip-ink)]">Energy body</p>
+              <p className="text-xs text-[var(--ip-muted)]">Tap an open chakra to expand</p>
+            </div>
             <ChakraStonePath
               stones={chakras.map((chakra) => {
                 const unlocked = isChakraUnlocked(progress, chakra.index);
@@ -77,6 +81,7 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
                   <p className="text-xs text-[#90879d]">Current chakra</p>
                   <h2 className="mt-1 font-serif text-2xl text-[#322d42]">{selectedChakra.name}</h2>
                   <p className="mt-2 text-sm leading-6 text-[#6f687d]">{selectedChakra.meaning}</p>
+                  <p className="mt-2 text-sm font-semibold text-[var(--gold-light)]">{selectedChakra.frequencyLabel}</p>
                 </div>
                 <span className="rounded-full bg-[#f2eaf5] px-3 py-1 text-xs font-semibold text-[#a99ac8]">{selectedUnlocked ? "Open" : "Locked"}</span>
               </div>
@@ -107,6 +112,9 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
                 {selectedUnlocked ? "Open sessions" : "Complete earlier stages to unlock"}
               </button>
             )}
+            <Link href={`/player?chakraId=${selectedChakra.id}&duration=20`} className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/70 bg-[linear-gradient(135deg,#a98bdd,#f4b8cd)] px-5 text-sm font-semibold text-white shadow-[0_16px_34px_rgba(169,139,221,0.2)]">
+              Enter Frequency Player
+            </Link>
           </div>
         </div>
       </div>

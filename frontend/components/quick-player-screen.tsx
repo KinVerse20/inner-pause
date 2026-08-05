@@ -104,7 +104,7 @@ export function QuickPlayerScreen() {
 
   return (
     <div
-      className="chakra-player-shell relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#07142f,#0d1a3a_48%,#07142f)] text-[var(--cream)]"
+      className="chakra-player-shell relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc,#fdf2f8_44%,#eef8ff)] text-[var(--ip-ink)]"
       onPointerDown={() => setControlsVisible(true)}
       style={
         {
@@ -114,7 +114,8 @@ export function QuickPlayerScreen() {
         } as CSSProperties
       }
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_4%,rgba(240,206,160,0.26),transparent_20rem),radial-gradient(circle_at_80%_16%,rgba(233,181,190,0.18),transparent_18rem),radial-gradient(circle_at_15%_70%,rgba(119,121,175,0.26),transparent_22rem)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_4%,rgba(255,255,255,0.82),transparent_18rem),radial-gradient(circle_at_80%_16%,rgba(248,206,219,0.58),transparent_18rem),radial-gradient(circle_at_15%_70%,rgba(169,220,239,0.48),transparent_22rem)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-[radial-gradient(ellipse_at_35%_86%,rgba(255,255,255,0.86),transparent_38%),radial-gradient(ellipse_at_70%_82%,rgba(221,248,240,0.62),transparent_34%)]" />
       <main className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(0.6rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="relative z-20 grid grid-cols-[2.75rem_1fr_2.75rem] items-start gap-2 sm:grid-cols-[3rem_1fr_3rem] sm:gap-3">
           <button
@@ -123,18 +124,19 @@ export function QuickPlayerScreen() {
               stopPlayback();
               router.replace("/");
             }}
-            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/8 text-2xl text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
+            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-2xl text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
             aria-label="End session"
           >
             <span aria-hidden="true">&lsaquo;</span>
           </button>
 
           <div className="text-center">
-            <h1 className="font-serif text-[clamp(1.8rem,8vw,3.75rem)] leading-tight text-[var(--cream)]">You are safe here.</h1>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">{chakra.name.replace(" Chakra", "")} sound reset</p>
+            <h1 className="mt-2 font-serif text-[clamp(2rem,8vw,4.2rem)] leading-tight text-[var(--ip-ink)]">Emerald Quietude</h1>
             <p className="mt-1 text-sm sm:mt-2 sm:text-base text-[var(--ip-body)]">
               {mood?.label ?? "The Inner Pause Music"}
             </p>
-            <p className="mt-1 text-base text-[var(--gold-primary)] sm:mt-2 sm:text-lg">
+            <p className="mt-1 text-base text-[var(--gold-light)] sm:mt-2 sm:text-lg">
               {chakra.name} · {chakra.frequencyLabel}
             </p>
           </div>
@@ -142,7 +144,7 @@ export function QuickPlayerScreen() {
           <button
             type="button"
             onClick={() => setControlsVisible(true)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/8 text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
+            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
             aria-label="Show controls"
           >
             <span aria-hidden="true">•••</span>
@@ -161,7 +163,7 @@ export function QuickPlayerScreen() {
           </div>
 
           <div
-            className={`quick-player-controls w-full max-w-3xl rounded-[1.5rem] border border-[var(--gold-border-soft)] bg-[#111e41]/72 p-3 shadow-[0_22px_60px_rgba(0,0,0,0.26)] backdrop-blur-2xl transition duration-500 sm:rounded-[1.75rem] sm:p-5 ${
+            className={`quick-player-controls w-full max-w-3xl rounded-[1.5rem] border border-[var(--gold-border-soft)] bg-white/72 p-3 shadow-[0_22px_60px_rgba(169,139,221,0.18)] backdrop-blur-2xl transition duration-500 sm:rounded-[1.75rem] sm:p-5 ${
               controlsVisible || !isPlaying ? "opacity-100" : "opacity-72"
             }`}
             style={{ borderColor: `${chakra.accent}33` }}
@@ -170,14 +172,14 @@ export function QuickPlayerScreen() {
               <div
                 className="quick-player-track-art grid h-12 w-12 shrink-0 place-items-center rounded-full sm:h-14 sm:w-14"
                 style={{
-                  background: `radial-gradient(circle, ${chakra.color}66, rgba(15,23,42,0.3))`,
+                  background: `radial-gradient(circle, ${chakra.color}66, rgba(255,255,255,0.74))`,
                   boxShadow: `0 0 24px ${chakra.color}66`,
                 }}
               >
                 <span className="h-7 w-7 rounded-full sm:h-8 sm:w-8" style={{ backgroundColor: chakra.accent }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-medium text-[var(--cream)] sm:text-lg">
+                <p className="truncate text-base font-medium text-[var(--ip-ink)] sm:text-lg">
                   {mood ? `${mood.label} Inner Pause session` : `${chakra.name} Inner Pause session`}
                 </p>
                 <p className="mt-1 text-sm text-[var(--ip-body)]">
@@ -192,9 +194,9 @@ export function QuickPlayerScreen() {
               </div>
             ) : !activePlayback.keepPlaying ? (
               <>
-                <div className="h-2 overflow-hidden rounded-full bg-white/15">
+                <div className="h-2 overflow-hidden rounded-full bg-[rgba(169,139,221,0.16)]">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#f6dfc1] to-[#e9b5be]"
+                    className="h-full rounded-full bg-gradient-to-r from-[#a9e7d7] via-[#a98bdd] to-[#f4b8cd]"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -215,7 +217,7 @@ export function QuickPlayerScreen() {
                   setControlsVisible(true);
                 }}
                 disabled={audioError}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-3 py-2 text-xs text-[var(--ip-body)] disabled:opacity-50 sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/66 px-3 py-2 text-xs text-[var(--ip-body)] disabled:opacity-50 sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
               >
                 Restart
               </button>
@@ -223,7 +225,7 @@ export function QuickPlayerScreen() {
                 type="button"
                 onClick={togglePlayback}
                 disabled={audioError}
-                className="mx-auto grid h-16 w-16 place-items-center rounded-full border bg-[linear-gradient(135deg,#f6dfc1,#ddb27b)] text-lg font-semibold text-[#07142f] disabled:opacity-50 sm:h-20 sm:w-20 sm:text-2xl"
+                className="mx-auto grid h-16 w-16 place-items-center rounded-full border bg-[linear-gradient(135deg,#ffffff,#f8cedb_52%,#c7b5ef)] text-lg font-semibold text-[var(--ip-ink)] disabled:opacity-50 sm:h-20 sm:w-20 sm:text-2xl"
                 style={{ borderColor: chakra.accent, boxShadow: `0 0 34px ${chakra.glow}` }}
               >
                 {isPlaying ? "Pause" : "Play"}
@@ -235,7 +237,7 @@ export function QuickPlayerScreen() {
                   const nextDuration = activePlayback.duration === 10 ? 20 : activePlayback.duration === 20 ? 30 : "keep-playing";
                   startQuickPlayback({ chakraId: chakra.id, duration: nextDuration, moodId: moodId ?? undefined });
                 }}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-3 py-2 text-xs text-[var(--ip-body)] sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/66 px-3 py-2 text-xs text-[var(--ip-body)] sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
               >
                 Loop
               </button>
@@ -246,7 +248,7 @@ export function QuickPlayerScreen() {
                 stopPlayback();
                 router.replace("/");
               }}
-                className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 py-2 text-sm text-[var(--ip-body)] sm:mt-4"
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/66 px-4 py-2 text-sm text-[var(--ip-body)] sm:mt-4"
             >
               End Session
             </button>

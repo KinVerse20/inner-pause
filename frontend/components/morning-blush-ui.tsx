@@ -10,7 +10,7 @@ export function BlushCard({
   className?: string;
 }) {
   return (
-    <section className={`min-w-0 max-w-full overflow-hidden rounded-[1.35rem] border border-[var(--gold-border-soft)] bg-[rgba(25,38,77,0.62)] shadow-[0_18px_46px_rgba(0,0,0,0.18)] backdrop-blur-2xl ${className}`}>
+    <section className={`min-w-0 max-w-full overflow-hidden rounded-[1.35rem] border border-[var(--gold-border-soft)] bg-[rgba(255,255,255,0.78)] shadow-[0_18px_46px_rgba(169,139,221,0.13)] backdrop-blur-2xl ${className}`}>
       {children}
     </section>
   );
@@ -35,7 +35,7 @@ export function CircularActionButton({
       onClick={onClick}
       aria-label={label}
       aria-pressed={pressed}
-      className={`blush-action-button relative grid h-20 w-20 place-items-center rounded-full border border-[var(--gold-border)] bg-[rgba(25,38,77,0.62)] text-3xl text-[var(--gold-light)] shadow-[0_0_38px_rgba(240,206,160,0.18)] backdrop-blur-xl transition hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] active:scale-[0.98] ${className}`}
+      className={`blush-action-button relative grid h-20 w-20 place-items-center rounded-full border border-[var(--gold-border)] bg-[rgba(255,255,255,0.74)] text-3xl text-[var(--gold-light)] shadow-[0_0_38px_rgba(169,139,221,0.18)] backdrop-blur-xl transition hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] active:scale-[0.98] ${className}`}
     >
       {pressed ? <span className="absolute inset-[-0.55rem] animate-ping rounded-full border border-[var(--gold-primary)]/45" /> : null}
       <span className="relative z-10">{children}</span>
@@ -45,7 +45,7 @@ export function CircularActionButton({
 
 export function SunriseScene({ children, variant = "sunrise" }: { children?: ReactNode; variant?: "sunrise" | "lake" | "plan" }) {
   return (
-    <div className={`blush-scene blush-scene-${variant} relative overflow-hidden rounded-[1.6rem] border border-[var(--gold-border-soft)] bg-[#0d1a3a] shadow-[0_26px_70px_rgba(0,0,0,0.24)]`}>
+    <div className={`blush-scene blush-scene-${variant} relative overflow-hidden rounded-[1.6rem] border border-[var(--gold-border-soft)] bg-[#fff9fc] shadow-[0_26px_70px_rgba(169,139,221,0.16)]`}>
       <div className="blush-sun" />
       <div className="blush-mist blush-mist-one" />
       <div className="blush-mist blush-mist-two" />
@@ -81,13 +81,13 @@ export function ChakraStonePath({
           key={stone.key}
           type="button"
           onClick={stone.onClick}
-          className={`blush-stone relative z-10 -mt-1 first:mt-0 grid place-items-center border border-[rgba(246,223,193,0.34)] text-xs font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] ${
+      className={`blush-stone relative z-10 -mt-1 first:mt-0 grid place-items-center border border-white/70 text-xs font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] ${
             stone.current ? "blush-stone-current" : ""
           } ${stone.completed ? "blush-stone-complete" : ""} ${stone.locked ? "opacity-42" : "opacity-100"}`}
           style={{
             width: `${4.4 + index * 0.18}rem`,
             height: `${2.35 + index * 0.08}rem`,
-            background: `linear-gradient(180deg, ${stone.color}ee, ${stone.color}9c)`,
+          background: `linear-gradient(180deg, ${stone.color}ee, ${stone.color}b0)`,
             boxShadow: stone.completed || stone.current ? `0 14px 36px ${stone.color}55` : undefined,
           }}
           aria-label={`${stone.label}${stone.locked ? " locked" : stone.current ? " current" : ""}`}
@@ -106,12 +106,12 @@ export function InsightRing({ value }: { value: number }) {
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          background: `conic-gradient(from -40deg, #f0cea0 ${clamped * 3.6}deg, rgba(119,121,175,0.35) 0deg)`,
+          background: `conic-gradient(from -40deg, #a98bdd ${clamped * 3.6}deg, rgba(231,221,248,0.72) 0deg)`,
           mask: "radial-gradient(circle, transparent 54%, black 56%)",
           WebkitMask: "radial-gradient(circle, transparent 54%, black 56%)",
         }}
       />
-      <div className="absolute inset-4 rounded-full border border-[var(--gold-border-soft)] bg-[#19264d]/56 shadow-inner" />
+      <div className="absolute inset-4 rounded-full border border-[var(--gold-border-soft)] bg-white/74 shadow-inner" />
       <div className="relative text-center">
         <p className="font-serif text-[clamp(2.15rem,8vw,3rem)] text-[var(--gold-light)]">{clamped}%</p>
         <p className="mt-1 text-xs text-[var(--ip-muted)]">Calm score</p>
@@ -130,14 +130,14 @@ export function BlushChoicePanel({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-[#07142f]/62 px-3 pb-3 backdrop-blur-[3px] sm:items-center sm:justify-center">
+    <div className="fixed inset-0 z-50 flex items-end bg-[#49316f]/20 px-3 pb-3 backdrop-blur-[3px] sm:items-center sm:justify-center">
       <button type="button" className="absolute inset-0" aria-label="Close choices" onClick={onClose} />
-      <section className="relative z-10 max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-[1.8rem] border border-[var(--gold-border-soft)] bg-[#111e41]/94 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-2xl">
+      <section className="relative z-10 max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-[1.8rem] border border-[var(--gold-border-soft)] bg-white/90 p-4 shadow-[0_24px_70px_rgba(169,139,221,0.24)] backdrop-blur-2xl">
         <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-[var(--gold-primary)]/42" />
-        <h2 className="text-center font-serif text-2xl text-[var(--gold-light)]">{title}</h2>
+        <h2 className="text-center font-serif text-2xl text-[var(--ip-ink)]">{title}</h2>
         <div className="mt-4 grid gap-2">
           {choices.map((choice) => (
-            <button key={choice.label} type="button" onClick={choice.onClick} className="min-h-12 rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 text-sm font-semibold text-[var(--cream)] shadow-sm transition hover:bg-white/12">
+            <button key={choice.label} type="button" onClick={choice.onClick} className="min-h-12 rounded-full border border-[var(--gold-border-soft)] bg-white/70 px-4 text-sm font-semibold text-[var(--ip-ink)] shadow-sm transition hover:bg-white/90">
               {choice.label}
             </button>
           ))}

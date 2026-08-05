@@ -146,7 +146,7 @@ export function SessionPlayerScreen({
 
   return (
     <div
-      className={`chakra-player-shell relative min-h-dvh overflow-x-hidden bg-gradient-to-b ${chakra.gradient} text-slate-50`}
+      className="chakra-player-shell relative min-h-dvh overflow-x-hidden bg-[linear-gradient(180deg,#fff9fc,#fdf2f8_44%,#eef8ff)] text-[var(--ip-ink)]"
       onPointerDown={() => setControlsVisible(true)}
       style={
         {
@@ -157,6 +157,7 @@ export function SessionPlayerScreen({
       }
     >
       <div className="psychedelic-backdrop pointer-events-none absolute inset-0" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-[radial-gradient(ellipse_at_35%_86%,rgba(255,255,255,0.86),transparent_38%),radial-gradient(ellipse_at_70%_82%,rgba(221,248,240,0.62),transparent_34%)]" />
       <main className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="relative z-20 grid grid-cols-[2.75rem_1fr_2.75rem] items-start gap-2 sm:grid-cols-[3rem_1fr_3rem] sm:gap-3">
           <button
@@ -165,14 +166,15 @@ export function SessionPlayerScreen({
               stopPlayback({ recordQuick: false });
               router.push(`/session/${chakra.id}/${session.id}/complete?before=${moodBefore}`);
             }}
-            className="grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-white/8 text-2xl text-white/85 backdrop-blur-xl sm:h-12 sm:w-12"
+            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-2xl text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
             aria-label="End session"
           >
             <span aria-hidden="true">&lsaquo;</span>
           </button>
 
           <div className="text-center">
-            <h1 className="font-serif text-3xl leading-tight text-white sm:text-6xl">{chakra.name}</h1>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Healing session</p>
+            <h1 className="mt-2 font-serif text-3xl leading-tight text-[var(--ip-ink)] sm:text-6xl">{chakra.name}</h1>
             <p className="mt-1 text-sm sm:mt-2 sm:text-base" style={{ color: chakra.accent }}>
               {session.name}
             </p>
@@ -184,7 +186,7 @@ export function SessionPlayerScreen({
           <button
             type="button"
             onClick={() => setControlsVisible(true)}
-            className="grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-white/8 text-white/85 backdrop-blur-xl sm:h-12 sm:w-12"
+            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] bg-white/68 text-[var(--gold-light)] backdrop-blur-xl sm:h-12 sm:w-12"
             aria-label="Show controls"
           >
             <span aria-hidden="true">•••</span>
@@ -203,11 +205,11 @@ export function SessionPlayerScreen({
           </div>
 
           <div className="mx-auto -mt-3 w-full max-w-2xl text-center sm:-mt-10">
-            <p className="text-base font-medium leading-relaxed text-white/92 sm:text-2xl">
+            <p className="text-base font-medium leading-relaxed text-[var(--ip-ink)] sm:text-2xl">
               {session.prompts[affirmationIndex]}
             </p>
             {session.breathingPattern ? (
-              <p className="mx-auto mt-3 inline-flex rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm text-white/72 backdrop-blur-xl sm:mt-4 sm:px-5">
+              <p className="mx-auto mt-3 inline-flex rounded-full border border-[var(--gold-border-soft)] bg-white/68 px-4 py-2 text-sm text-[var(--ip-body)] backdrop-blur-xl sm:mt-4 sm:px-5">
                 {BREATH_STEPS[breathIndex]}
               </p>
             ) : null}
@@ -223,31 +225,31 @@ export function SessionPlayerScreen({
               <div
                 className="grid h-12 w-12 shrink-0 place-items-center rounded-full sm:h-14 sm:w-14"
                 style={{
-                  background: `radial-gradient(circle, ${chakra.color}66, rgba(15,23,42,0.3))`,
+                  background: `radial-gradient(circle, ${chakra.color}66, rgba(255,255,255,0.74))`,
                   boxShadow: `0 0 24px ${chakra.color}66`,
                 }}
               >
                 <span className="h-7 w-7 rounded-full sm:h-8 sm:w-8" style={{ backgroundColor: chakra.accent }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-medium text-white sm:text-lg">{session.name}</p>
-                <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-300 sm:text-sm">{session.instructions}</p>
+                <p className="truncate text-base font-medium text-[var(--ip-ink)] sm:text-lg">{session.name}</p>
+                <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--ip-muted)] sm:text-sm">{session.instructions}</p>
               </div>
             </div>
 
             {audioError ? (
-              <div className="rounded-2xl border border-amber-200/20 bg-amber-200/10 p-4 text-center text-sm text-amber-50">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800">
                 Add the MP3 file to the public/audio folder.
               </div>
             ) : (
               <>
-                <div className="h-2 overflow-hidden rounded-full bg-white/12">
+                <div className="h-2 overflow-hidden rounded-full bg-[rgba(169,139,221,0.16)]">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-amber-200 to-orange-100"
+                    className="h-full rounded-full bg-gradient-to-r from-[#a9e7d7] via-[#a98bdd] to-[#f4b8cd]"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-                <div className="mt-3 flex items-center justify-between text-sm text-white/78">
+                <div className="mt-3 flex items-center justify-between text-sm text-[var(--ip-body)]">
                   <p>{formatTime(elapsedSeconds)}</p>
                   <p>{formatTime(secondsRemaining)}</p>
                 </div>
@@ -264,7 +266,7 @@ export function SessionPlayerScreen({
                   setControlsVisible(true);
                 }}
                 disabled={audioError}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 bg-white/8 px-3 py-2 text-xs text-white/90 disabled:opacity-50 sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-3 py-2 text-xs text-[var(--ip-body)] disabled:opacity-50 sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
               >
                 Restart
               </button>
@@ -272,7 +274,7 @@ export function SessionPlayerScreen({
                 type="button"
                 onClick={togglePlayback}
                 disabled={audioError}
-                className="mx-auto grid h-16 w-16 place-items-center rounded-full border bg-white/10 text-lg font-semibold text-white disabled:opacity-50 sm:h-20 sm:w-20 sm:text-2xl"
+                className="mx-auto grid h-16 w-16 place-items-center rounded-full border bg-[linear-gradient(135deg,#ffffff,#f8cedb_52%,#c7b5ef)] text-lg font-semibold text-[var(--ip-ink)] disabled:opacity-50 sm:h-20 sm:w-20 sm:text-2xl"
                 style={{ borderColor: chakra.accent, boxShadow: `0 0 34px ${chakra.glow}` }}
               >
                 {isPlaying ? "Pause" : "Play"}
@@ -283,7 +285,7 @@ export function SessionPlayerScreen({
                   stopPlayback({ recordQuick: false });
                   router.push(`/session/${chakra.id}/${session.id}/complete?before=${moodBefore}`);
                 }}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 bg-white/8 px-3 py-2 text-xs text-white/90 sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-3 py-2 text-xs text-[var(--ip-body)] sm:min-h-12 sm:px-4 sm:py-3 sm:text-sm"
               >
                 End
               </button>

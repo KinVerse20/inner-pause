@@ -34,7 +34,7 @@ type SpeechRecognitionLike = {
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
-const emotionChips = ["Overwhelm", "Anxiety", "Sadness", "Loneliness", "Hope", "Calm", "Hurt", "Confused"];
+const emotionChips = ["Restless", "Quiet", "Melancholic", "Grounded", "Hopeful", "Anxious", "Overwhelmed", "Peaceful"];
 const journalPrompts = [
   "What’s weighing on me today?",
   "What do I need to let go of?",
@@ -157,6 +157,9 @@ export function ExpressionPanel({
     setText((current) => (current.trim() ? `${current.trim()}\n\n${prompt}\n` : `${prompt}\n`));
   };
 
+  const expressionLevel = Math.min(100, Math.max(8, text.trim().length / 4 + selectedEmotions.length * 8));
+  const dominantTone = selectedEmotions[0] ?? (text.trim() ? "Reflective" : "Waiting");
+
   const submit = async (overrideText?: string) => {
     const sourceText = overrideText ?? text;
     if (!sourceText.trim()) {
@@ -192,10 +195,11 @@ export function ExpressionPanel({
     <section className="space-y-3.5">
       {!panelOpen ? (
         <SunriseScene variant="lake">
-          <div className="grid min-h-[clamp(25rem,62dvh,32rem)] gap-5 px-5 py-6 text-center lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-center lg:text-left">
+          <div className="grid min-h-[clamp(25rem,62dvh,32rem)] gap-5 px-5 py-6 text-center lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center lg:text-left">
             <div className="mx-auto flex max-w-xl flex-col items-center lg:items-start">
-              <h2 className="font-serif text-[clamp(2rem,7vw,4rem)] leading-tight text-[var(--cream)]">Speak your heart.</h2>
-              <p className="mt-2 text-sm text-[var(--ip-body)]">We listen, then reflect.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Vibrational query</p>
+              <h2 className="mt-3 font-serif text-[clamp(2.2rem,7vw,4.4rem)] leading-[0.95] text-[var(--ip-ink)]">How does your soul echo today?</h2>
+              <p className="mt-3 text-sm text-[var(--ip-body)]">Speak freely. The Inner Pause will reflect it back gently.</p>
               <div className="relative mt-9 grid place-items-center">
                 <div className={`voice-halo ${listening ? "voice-halo--active" : ""}`} />
                 <CircularActionButton label="Start speaking" onClick={startVoice} pressed={listening} className="h-28 w-28 text-5xl">
@@ -203,28 +207,32 @@ export function ExpressionPanel({
                 </CircularActionButton>
               </div>
               <div className="dawn-wave mt-8 h-10 w-full max-w-sm" aria-hidden="true" />
-              <button type="button" onClick={startVoice} className="mt-5 min-h-11 rounded-full border border-[var(--gold-border)] bg-[#19264d]/70 px-7 text-sm font-semibold text-[var(--gold-light)] shadow-[0_0_24px_rgba(240,206,160,0.14)]">
+              <button type="button" onClick={startVoice} className="mt-5 min-h-11 rounded-full border border-[var(--gold-border)] bg-white/72 px-7 text-sm font-semibold text-[var(--gold-light)] shadow-[0_0_24px_rgba(169,139,221,0.14)]">
                 Start speaking
               </button>
-              <button type="button" onClick={() => setPanelOpen(true)} className="mt-3 min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-6 text-sm font-semibold text-[var(--ip-body)]">
+              <button type="button" onClick={() => setPanelOpen(true)} className="mt-3 min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/58 px-6 text-sm font-semibold text-[var(--ip-body)]">
                 Write instead
               </button>
             </div>
 
             <BlushCard className="hidden p-4 text-left lg:block">
-              <p className="font-serif text-xl text-[var(--gold-light)]">Recent reflections</p>
+              <p className="font-serif text-xl text-[var(--ip-ink)]">Expression field</p>
               <div className="mt-4 space-y-3">
-                {["This morning, I felt overwhelmed", "I’ve been holding back", "What I truly need right now"].map((item, index) => (
-                  <div key={item} className="flex gap-3 rounded-2xl border border-[var(--gold-border-soft)] bg-white/6 p-3">
+                {[
+                  ["Expression level", `${Math.round(expressionLevel)}%`],
+                  ["Emotional intensity", selectedEmotions.length ? "Active" : "Gentle"],
+                  ["Dominant tone", dominantTone],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex gap-3 rounded-2xl border border-[var(--gold-border-soft)] bg-white/58 p-3">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--gold-border-soft)] text-[var(--gold-light)]">✺</span>
                     <div>
-                      <p className="text-sm text-[var(--cream)]">{item}</p>
-                      <p className="text-xs text-[var(--ip-muted)]">{index + 1} day{index ? "s" : ""} ago</p>
+                      <p className="text-xs text-[var(--ip-muted)]">{label}</p>
+                      <p className="text-sm font-semibold text-[var(--ip-ink)]">{value}</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => router.push("/history")} className="mt-4 text-sm text-[var(--gold-light)]">View all reflections →</button>
+              <div className="dawn-wave mt-5 h-10 w-full" aria-hidden="true" />
             </BlushCard>
           </div>
         </SunriseScene>
@@ -234,22 +242,23 @@ export function ExpressionPanel({
             <div className="flex min-w-0 flex-col">
               {!embedded ? (
                 <div className="mb-4">
-                  <h2 className="font-serif text-[clamp(2rem,7vw,3.6rem)] leading-tight text-[var(--cream)]">{compact ? "What is weighing on you?" : "Write to release."}</h2>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--gold-light)]">Vibrational query</p>
+                  <h2 className="mt-2 font-serif text-[clamp(2rem,7vw,3.6rem)] leading-tight text-[var(--ip-ink)]">{compact ? "What is weighing on you?" : "How does your soul echo today?"}</h2>
                   <p className="mt-1 text-sm text-[var(--ip-body)]">Let your thoughts find clarity.</p>
                 </div>
               ) : null}
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.1rem] border border-[var(--gold-border-soft)] bg-[#0d1a3a]/42">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.1rem] border border-[var(--gold-border-soft)] bg-white/60">
                 <textarea
                   value={text}
                   onChange={(event) => setText(event.target.value)}
                   placeholder="Start writing what’s on your mind..."
-                  className="min-h-[13rem] flex-1 resize-none bg-transparent p-4 text-base leading-7 text-[var(--cream)] outline-none placeholder:text-[rgba(238,220,203,0.58)] sm:min-h-[18rem]"
+                  className="min-h-[13rem] flex-1 resize-none bg-transparent p-4 text-base leading-7 text-[var(--ip-ink)] outline-none placeholder:text-[rgba(110,86,143,0.52)] sm:min-h-[18rem]"
                 />
                 <div className="flex min-h-12 items-center justify-between gap-3 border-t border-[var(--gold-border-soft)] px-3 text-xs text-[var(--ip-muted)]">
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => insertPrompt(journalPrompts[0])} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/8" aria-label="Insert prompt">▣</button>
-                    <button type="button" onClick={startVoice} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/8" aria-label="Use microphone">♩</button>
+                    <button type="button" onClick={() => insertPrompt(journalPrompts[0])} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/70" aria-label="Insert prompt">▣</button>
+                    <button type="button" onClick={startVoice} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/70" aria-label="Use microphone">♩</button>
                     {listening || paused ? (
                       <>
                         {listening ? <button type="button" onClick={pauseVoice} className="min-h-9 rounded-full px-3 text-xs text-[var(--gold-light)]">Pause</button> : null}
@@ -262,41 +271,41 @@ export function ExpressionPanel({
                 </div>
               </div>
 
-              {voiceUnsupported || voiceError ? <p className="mt-3 rounded-2xl border border-[var(--gold-border-soft)] bg-white/8 p-3 text-sm text-[var(--ip-body)]">{voiceError || "Voice input is not available in this browser. You can still type your thoughts."}</p> : null}
+              {voiceUnsupported || voiceError ? <p className="mt-3 rounded-2xl border border-[var(--gold-border-soft)] bg-white/64 p-3 text-sm text-[var(--ip-body)]">{voiceError || "Voice input is not available in this browser. You can still type your thoughts."}</p> : null}
 
               <div className="mt-4">
-                <p className="text-sm font-medium text-[var(--cream)]">What emotion are you experiencing?</p>
+                <p className="text-sm font-medium text-[var(--ip-ink)]">Or pick a state</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {emotionChips.map((emotion) => (
-                    <button key={emotion} type="button" onClick={() => toggleEmotion(emotion)} className={`min-h-10 rounded-full border px-3 text-sm transition ${selectedEmotions.includes(emotion) ? "border-[var(--gold-border)] bg-[rgba(240,206,160,0.14)] text-[var(--gold-light)]" : "border-[var(--gold-border-soft)] bg-white/7 text-[var(--ip-body)]"}`}>
+                    <button key={emotion} type="button" onClick={() => toggleEmotion(emotion)} className={`min-h-10 rounded-full border px-3 text-sm transition ${selectedEmotions.includes(emotion) ? "border-[var(--gold-border)] bg-[var(--ip-lavender)] text-[var(--gold-light)]" : "border-[var(--gold-border-soft)] bg-white/58 text-[var(--ip-body)]"}`}>
                       {emotion}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {error ? <p className="mt-3 rounded-2xl border border-red-300/40 bg-red-950/30 p-3 text-sm text-red-100">{error}</p> : null}
+              {error ? <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
 
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <GoldButton className="flex-1" disabled={!text.trim()} onClick={() => submit()}>Continue to insight</GoldButton>
-                <button type="button" onClick={() => void submit("I just want a quick reset.")} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 py-2.5 font-semibold text-[var(--ip-body)]">Quick reset</button>
-                <button type="button" onClick={() => { if (text && window.confirm("Remove the words currently written on this screen? Saved reflections will remain safe.")) setText(""); if (!text) setPanelOpen(false); }} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/8 px-4 py-2.5 font-semibold text-[var(--ip-body)]">Clear</button>
+                <GoldButton className="flex-1" disabled={!text.trim()} onClick={() => submit()}>Analyze My Vibration</GoldButton>
+                <button type="button" onClick={() => void submit("I just want a quick reset.")} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-4 py-2.5 font-semibold text-[var(--ip-body)]">Quick reset</button>
+                <button type="button" onClick={() => { if (text && window.confirm("Remove the words currently written on this screen? Saved reflections will remain safe.")) setText(""); if (!text) setPanelOpen(false); }} className="min-h-11 rounded-full border border-[var(--gold-border-soft)] bg-white/64 px-4 py-2.5 font-semibold text-[var(--ip-body)]">Clear</button>
               </div>
             </div>
 
             <BlushCard className="p-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-serif text-xl text-[var(--gold-light)]">Journal prompts</h3>
+                <h3 className="font-serif text-xl text-[var(--ip-ink)]">Journal prompts</h3>
                 <HelpTooltip label="Journal prompt information">Prompts are optional. They only add text to your writing area.</HelpTooltip>
               </div>
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:grid lg:overflow-visible">
                 {journalPrompts.map((prompt) => (
-                  <button key={prompt} type="button" onClick={() => insertPrompt(prompt)} className="min-h-11 min-w-[13rem] rounded-full border border-[var(--gold-border-soft)] bg-white/7 px-4 text-left text-sm text-[var(--ip-body)] lg:min-w-0">
+                  <button key={prompt} type="button" onClick={() => insertPrompt(prompt)} className="min-h-11 min-w-[13rem] rounded-full border border-[var(--gold-border-soft)] bg-white/58 px-4 text-left text-sm text-[var(--ip-body)] lg:min-w-0">
                     {prompt}
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => insertPrompt(journalPrompts[Math.floor(Math.random() * journalPrompts.length)])} className="mt-3 min-h-11 w-full rounded-full border border-[var(--gold-border-soft)] bg-white/8 text-sm text-[var(--gold-light)]">
+              <button type="button" onClick={() => insertPrompt(journalPrompts[Math.floor(Math.random() * journalPrompts.length)])} className="mt-3 min-h-11 w-full rounded-full border border-[var(--gold-border-soft)] bg-white/58 text-sm text-[var(--gold-light)]">
                 Shuffle prompt
               </button>
             </BlushCard>
