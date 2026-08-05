@@ -45,7 +45,7 @@ export function CircularActionButton({
 
 export function SunriseScene({ children }: { children?: ReactNode; variant?: "sunrise" | "lake" | "plan" }) {
   return (
-    <div className={`obsidian-panel relative overflow-hidden rounded-[1.6rem]`}>
+    <div className="relative min-w-0 overflow-hidden border-y border-white/10 bg-white/[0.018] lg:border-y-0 lg:bg-transparent">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,122,34,0.10),transparent_20rem),linear-gradient(180deg,rgba(255,255,255,0.025),transparent)]" />
       <div className="pointer-events-none absolute -bottom-20 left-1/2 h-44 w-[110%] -translate-x-1/2 rounded-[50%] border border-white/[0.06]" />
       <div className="pointer-events-none absolute -bottom-10 left-1/2 h-24 w-[92%] -translate-x-1/2 rounded-[50%] border border-[rgba(255,122,34,0.08)]" />

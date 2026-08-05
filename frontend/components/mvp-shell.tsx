@@ -21,7 +21,7 @@ const desktopNavItems = [
   { href: "/journey", label: "Chakra Topology", icon: "☸" },
   { href: "/history", label: "Frequency Logs", icon: "☷" },
   { href: "/healing", label: "Healing Sessions", icon: "♬" },
-  { href: "/about", label: "Library", icon: "✧" },
+  { href: "/about", label: "About Us", icon: "✧" },
   { href: "/profile", label: "Profile", icon: "◎" },
   { href: "/profile", label: "Settings", icon: "⚙" },
 ];
@@ -34,7 +34,7 @@ export function MvpShell({ children, hideNav = false }: { children: ReactNode; h
       {!hideNav ? <PastelSidebar /> : null}
       {!hideNav ? <MvpTopMenu open={mobileMenuOpen} setOpen={setMobileMenuOpen} /> : null}
       <main
-        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[16.75rem] lg:max-w-[calc(100vw-18rem)] lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))] xl:max-w-[calc(100vw-20rem)]"
+        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[15.75rem] lg:max-w-none lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))]"
         style={hideNav ? { paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } : undefined}
       >
         {children}
@@ -55,7 +55,7 @@ function PastelSidebar() {
   };
 
   return (
-    <aside className="obsidian-panel fixed bottom-4 left-4 top-4 z-40 hidden w-[15.5rem] rounded-[1.65rem] p-4 lg:flex lg:flex-col">
+    <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-[15.25rem] border-r border-white/10 bg-[#17191b]/86 p-4 shadow-[inset_-1px_0_0_rgba(255,255,255,0.025)] backdrop-blur-2xl lg:flex lg:flex-col">
       <BrandLogo className="px-1" />
       <nav className="mt-8 grid gap-1.5">
         {desktopNavItems.map((item) => {
@@ -77,7 +77,7 @@ function PastelSidebar() {
           );
         })}
       </nav>
-      <div className="mt-auto rounded-[1.25rem] border border-white/10 bg-white/[0.035] p-3 text-sm text-[var(--ip-body)]">
+      <div className="mt-auto border-t border-white/10 pt-4 text-sm text-[var(--ip-body)]">
         <p className="minimal-label text-[0.62rem]">Reset</p>
         <p className="mt-2 text-lg text-[var(--ip-ink)]">Inner quiet</p>
         {auth.profile ? (

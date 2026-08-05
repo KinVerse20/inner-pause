@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { BlushCard } from "@/components/morning-blush-ui";
 import { MvpShell } from "@/components/mvp-shell";
 import { chakras } from "@/data/chakras";
 import { getSessionKey, isChakraUnlocked, isSessionUnlocked } from "@/lib/progress";
@@ -40,15 +39,15 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
 
   return (
     <MvpShell>
-      <div className="space-y-4">
+      <div className="space-y-4 lg:space-y-5">
         <header className="text-center">
           <p className="minimal-label text-xs">Chakra</p>
           <h1 className="mt-2 text-[clamp(2.4rem,7vw,4.6rem)] font-medium leading-tight text-[var(--ip-ink)]">Topology</h1>
           <p className="mx-auto mt-2 max-w-xl text-base text-[var(--ip-body)]">Browse all seven centres. Journey locks remain separate from this map.</p>
         </header>
 
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(20rem,0.88fr)_minmax(24rem,1.12fr)] lg:items-start">
-          <BlushCard className="p-4 sm:p-5">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(22rem,0.9fr)_minmax(25rem,1.1fr)] lg:items-start">
+          <section className="relative min-w-0 overflow-hidden border-y border-white/10 bg-white/[0.018] p-3 sm:rounded-[1.1rem] sm:border sm:p-4 lg:min-h-[calc(100dvh-11rem)] lg:border-y lg:bg-transparent">
             <div className="mb-3 text-center">
               <p className="minimal-label text-xs">Energy body</p>
               <p className="mt-2 text-sm text-[var(--ip-muted)]">Tap any node</p>
@@ -68,34 +67,16 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
                     aria-label={`Open ${chakra.name}`}
                   >
                     <span className="relative z-10 text-xs font-semibold">{visualOrder.length - index}</span>
+                    <span className="obsidian-chakra-label">{chakra.name.replace(" Chakra", "")}</span>
                   </button>
                 );
               })}
+              <MobileChakraPanel chakra={selectedChakra} completedCount={completedCount} selectedUnlockedForJourney={selectedUnlockedForJourney} />
             </div>
-          </BlushCard>
+          </section>
 
           <div className="grid min-w-0 gap-3.5">
-            <BlushCard className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="minimal-label text-xs">{sanskrit[selectedChakra.id]}</p>
-                  <h2 className="mt-2 text-4xl font-medium leading-tight text-[var(--ip-ink)]">{selectedChakra.name}</h2>
-                  <p className="mt-3 text-base leading-7 text-[var(--ip-body)]">{selectedChakra.meaning}</p>
-                </div>
-                <span className="shrink-0 rounded-full border border-[rgba(255,138,42,0.38)] px-3 py-1 text-sm text-[var(--gold-light)]">{selectedChakra.frequencyLabel}</span>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Detail label="Association" value={selectedChakra.meaning.split(",")[0] ?? "Balance"} />
-                <Detail label="Intention" value={selectedChakra.purpose} />
-                <Detail label="Recommended" value={selectedChakra.sessions[Math.min(completedCount, 4)]?.name ?? "Sound reset"} />
-                <Detail label="Journey" value={selectedUnlockedForJourney ? `${completedCount} of 5 complete` : "Available in map"} />
-              </div>
-
-              <Link href={`/player?chakraId=${selectedChakra.id}&duration=20`} className="tap-ripple mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[rgba(255,138,42,0.58)] bg-[rgba(244,122,34,0.12)] px-5 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--gold-light)] shadow-[0_0_26px_rgba(244,122,34,0.12)]">
-                Balance
-              </Link>
-            </BlushCard>
+            <DesktopChakraPanel chakra={selectedChakra} completedCount={completedCount} selectedUnlockedForJourney={selectedUnlockedForJourney} />
 
             <div className="grid gap-2">
               {selectedChakra.sessions.map((session, index) => (
@@ -106,6 +87,70 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
         </div>
       </div>
     </MvpShell>
+  );
+}
+
+function MobileChakraPanel({
+  chakra,
+  completedCount,
+  selectedUnlockedForJourney,
+}: {
+  chakra: ChakraDefinition;
+  completedCount: number;
+  selectedUnlockedForJourney: boolean;
+}) {
+  return (
+    <div className="absolute inset-x-3 bottom-[calc(var(--bottom-nav-height)+0.85rem)] z-20 rounded-[1.15rem] border border-[rgba(255,138,42,0.24)] bg-[#202326]/92 p-3 shadow-[0_-18px_48px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:hidden">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="minimal-label text-[0.58rem]">{sanskrit[chakra.id]}</p>
+          <h2 className="mt-1 truncate text-2xl font-medium text-[var(--ip-ink)]">{chakra.name.replace(" Chakra", "")}</h2>
+          <p className="mt-1 text-sm text-[var(--ip-body)]">{chakra.meaning.split(",")[0] ?? "Balance"}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs text-[var(--gold-light)]">{chakra.frequencyLabel}</span>
+      </div>
+      <p className="mt-2 line-clamp-2 text-sm leading-5 text-[var(--ip-body)]">{chakra.purpose}</p>
+      <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-3">
+        <p className="text-xs uppercase tracking-[0.18em] text-[var(--ip-muted)]">{selectedUnlockedForJourney ? `${completedCount} of 5 complete` : "Browse mode"}</p>
+        <Link href={`/player?chakraId=${chakra.id}&duration=20`} className="tap-ripple inline-flex min-h-11 items-center rounded-full border border-[rgba(255,138,42,0.5)] bg-[rgba(244,122,34,0.12)] px-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)]">
+          Open Session
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function DesktopChakraPanel({
+  chakra,
+  completedCount,
+  selectedUnlockedForJourney,
+}: {
+  chakra: ChakraDefinition;
+  completedCount: number;
+  selectedUnlockedForJourney: boolean;
+}) {
+  return (
+    <section className="hidden border-b border-white/10 pb-4 lg:block">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="minimal-label text-xs">{sanskrit[chakra.id]}</p>
+          <h2 className="mt-2 text-4xl font-medium leading-tight text-[var(--ip-ink)]">{chakra.name}</h2>
+          <p className="mt-3 text-base leading-7 text-[var(--ip-body)]">{chakra.meaning}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-[rgba(255,138,42,0.38)] px-3 py-1 text-sm text-[var(--gold-light)]">{chakra.frequencyLabel}</span>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <Detail label="Association" value={chakra.meaning.split(",")[0] ?? "Balance"} />
+        <Detail label="Intention" value={chakra.purpose} />
+        <Detail label="Recommended" value={chakra.sessions[Math.min(completedCount, 4)]?.name ?? "Sound reset"} />
+        <Detail label="Journey" value={selectedUnlockedForJourney ? `${completedCount} of 5 complete` : "Available in map"} />
+      </div>
+
+      <Link href={`/player?chakraId=${chakra.id}&duration=20`} className="tap-ripple mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[rgba(255,138,42,0.58)] bg-[rgba(244,122,34,0.12)] px-5 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--gold-light)] shadow-[0_0_26px_rgba(244,122,34,0.12)]">
+        Balance
+      </Link>
+    </section>
   );
 }
 

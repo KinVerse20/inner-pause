@@ -82,7 +82,7 @@ body {
     rgba(35,37,39,0.84);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.06),
-    0 24px 70px rgba(0,0,0,0.36);
+    0 12px 36px rgba(0,0,0,0.22);
   backdrop-filter: blur(18px);
 }
 
@@ -228,9 +228,10 @@ body {
 
 .obsidian-chakra-body {
   position: relative;
-  min-height: clamp(28rem, 66dvh, 40rem);
+  min-height: clamp(30rem, 68dvh, 38rem);
   display: grid;
   place-items: center;
+  overflow: hidden;
 }
 
 .obsidian-chakra-body::before {
@@ -295,6 +296,25 @@ body {
   border-radius: inherit;
   border: 1px solid rgba(244,122,34,0.42);
   animation: chakra-node-click-ripple 3s ease-out infinite;
+}
+
+.obsidian-chakra-label {
+  position: absolute;
+  left: calc(100% + 0.8rem);
+  top: 50%;
+  width: max-content;
+  max-width: 8rem;
+  transform: translateY(-50%);
+  color: var(--ip-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.76;
+}
+
+.obsidian-chakra-node--active .obsidian-chakra-label {
+  color: var(--gold-light);
+  opacity: 1;
 }
 
 .orbital-track {

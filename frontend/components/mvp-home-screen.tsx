@@ -59,7 +59,7 @@ export function MvpHomeScreen() {
   const state = useMvpState();
   const player = usePlayer();
   const [panelOpen, setPanelOpen] = useState(false);
-  const [selected, setSelected] = useState<"breathe" | "focus" | "release">("focus");
+  const [selected, setSelected] = useState<"calm" | "focus" | "express">("focus");
   const [clockNow, setClockNow] = useState(() => new Date());
   const previewTime = searchParams.get("previewTime");
   const previewDate = useMemo(() => parsePreviewTime(previewTime), [previewTime]);
@@ -85,9 +85,9 @@ export function MvpHomeScreen() {
 
   return (
     <MvpShell>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-0 2xl:grid-cols-[minmax(0,1fr)_18rem]">
         <SunriseScene>
-          <div className="flex min-h-[calc(100dvh-9rem)] flex-col items-center justify-between px-5 py-5 text-center sm:min-h-[38rem] lg:min-h-[calc(100dvh-2.5rem)] lg:px-8 lg:py-7">
+          <div className="flex min-h-[calc(100dvh-9rem)] flex-col items-center justify-between px-4 py-4 text-center sm:min-h-[38rem] lg:min-h-[calc(100dvh-2.5rem)] lg:px-8 lg:py-7">
             <div className="grid w-full grid-cols-[2.75rem_1fr_2.75rem] items-center">
               <button type="button" onClick={() => router.push("/journal?mode=speak")} className="grid h-11 w-11 place-items-center rounded-full text-2xl text-[var(--ip-body)]" aria-label="Open express">☰</button>
               <p className="minimal-label text-center text-xs">Check-In</p>
@@ -135,10 +135,10 @@ export function MvpHomeScreen() {
               <div className="mx-auto mt-3 h-px w-7 bg-[var(--gold-primary)] shadow-[0_0_12px_rgba(255,122,34,0.8)]" />
             </div>
 
-            <div className="grid w-full max-w-sm grid-cols-3 gap-5 pt-4">
-              <CircleAction title="Breathe" icon="♡" selected={selected === "breathe"} onClick={() => { setSelected("breathe"); router.push("/journal?mode=speak"); }} />
-              <CircleAction title="Focus" icon="⊙" selected={selected === "focus"} onClick={() => { setSelected("focus"); router.push("/journal?mode=write"); }} />
-              <CircleAction title="Release" icon="≋" selected={selected === "release"} onClick={() => { setSelected("release"); player.startQuickPlayback({ chakraId: recommended.id, duration: 20 }); }} />
+            <div className="grid w-full max-w-md grid-cols-3 gap-3 pt-4 sm:gap-5">
+              <CircleAction title="Calm Me" shortTitle="Calm" hint="Slow down" icon="♡" selected={selected === "calm"} onClick={() => { setSelected("calm"); player.startQuickPlayback({ chakraId: "heart", moodId: "calm", duration: 10 }); }} />
+              <CircleAction title="Help Me Focus" shortTitle="Focus" hint="Clear your mind" icon="⊙" selected={selected === "focus"} onClick={() => { setSelected("focus"); router.push("/journal?mode=write"); }} />
+              <CircleAction title="Let It Out" shortTitle="Express" hint="Speak or write" icon="≋" selected={selected === "express"} onClick={() => { setSelected("express"); router.push("/journal?mode=speak"); }} />
             </div>
 
             <div className="flex gap-3 pt-3" aria-label="Check-in pages">
@@ -149,11 +149,11 @@ export function MvpHomeScreen() {
           </div>
         </SunriseScene>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:content-center">
+        <aside className="grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-3 lg:hidden 2xl:grid 2xl:grid-cols-1 2xl:content-center 2xl:border-l 2xl:border-t-0 2xl:px-5 2xl:pt-0">
           <SummaryCard title="Calm" value="08:24" onClick={() => player.startQuickPlayback({ chakraId: "heart", moodId: "calm", duration: 20 })} />
           <SummaryCard title="Focus" value="06:12" onClick={() => router.push("/journal?mode=write")} />
           <SummaryCard title="Restore" value={recommended.frequencyLabel} onClick={() => setPanelOpen(true)} />
-        </div>
+        </aside>
       </div>
 
       {panelOpen ? (
@@ -172,11 +172,15 @@ export function MvpHomeScreen() {
 
 function CircleAction({
   title,
+  shortTitle,
+  hint,
   icon,
   selected,
   onClick,
 }: {
   title: string;
+  shortTitle: string;
+  hint: string;
   icon: string;
   selected: boolean;
   onClick: () => void;
@@ -188,17 +192,19 @@ function CircleAction({
       aria-pressed={selected}
       className={`tap-ripple group grid place-items-center gap-3 text-center text-[var(--ip-ink)] transition focus:outline-none focus:ring-2 focus:ring-[var(--gold-primary)] ${selected ? "scale-[1.03]" : ""}`}
     >
-      <span className={`grid h-20 w-20 place-items-center rounded-full border text-3xl shadow-[0_18px_44px_rgba(0,0,0,0.28)] ${selected ? "border-[rgba(255,138,50,0.72)] bg-[rgba(244,122,34,0.08)] text-[var(--gold-light)] shadow-[0_0_34px_rgba(255,122,34,0.18)]" : "border-white/10 bg-white/[0.035] text-[var(--ip-body)]"}`}>
+      <span className={`grid h-16 w-16 place-items-center rounded-full border text-2xl shadow-[0_18px_44px_rgba(0,0,0,0.24)] sm:h-20 sm:w-20 sm:text-3xl ${selected ? "border-[rgba(255,138,50,0.72)] bg-[rgba(244,122,34,0.08)] text-[var(--gold-light)] shadow-[0_0_34px_rgba(255,122,34,0.18)]" : "border-white/10 bg-white/[0.035] text-[var(--ip-body)]"}`}>
         {icon}
       </span>
-      <span className="minimal-label block text-[0.72rem]">{title}</span>
+      <span className="block text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--ip-body)] sm:hidden">{shortTitle}</span>
+      <span className="minimal-label hidden text-[0.72rem] sm:block">{title}</span>
+      <span className="hidden text-xs text-[var(--ip-muted)] sm:block">{hint}</span>
     </button>
   );
 }
 
 function SummaryCard({ title, value, onClick }: { title: string; value: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="obsidian-panel tap-ripple flex min-h-24 items-center gap-4 rounded-[1.3rem] p-4 text-left">
+    <button type="button" onClick={onClick} className="tap-ripple flex min-h-20 items-center gap-4 rounded-[1rem] border border-white/10 bg-white/[0.025] p-4 text-left transition hover:border-[rgba(255,138,50,0.35)]">
       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--gold-light)]">◎</span>
       <span className="min-w-0 flex-1">
         <span className="minimal-label block text-[0.7rem]">{title}</span>
