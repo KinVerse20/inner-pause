@@ -115,7 +115,7 @@ export function QuickPlayerScreen() {
       }
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_5%,rgba(236,169,143,0.35),transparent_18rem),radial-gradient(circle_at_85%_20%,rgba(169,154,200,0.26),transparent_16rem)]" />
-      <main className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
+      <main className="relative mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(0.6rem+env(safe-area-inset-top))] sm:px-6 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="relative z-20 grid grid-cols-[2.75rem_1fr_2.75rem] items-start gap-2 sm:grid-cols-[3rem_1fr_3rem] sm:gap-3">
           <button
             type="button"
@@ -130,7 +130,7 @@ export function QuickPlayerScreen() {
           </button>
 
           <div className="text-center">
-            <h1 className="font-serif text-3xl leading-tight text-[#322d42] sm:text-6xl">{chakra.name}</h1>
+            <h1 className="font-serif text-[clamp(1.8rem,8vw,3.75rem)] leading-tight text-[#322d42]">{chakra.name}</h1>
             <p className="mt-1 text-sm sm:mt-2 sm:text-base text-[#6f687d]">
               {mood?.label ?? "The Inner Pause Music"}
             </p>
@@ -150,7 +150,7 @@ export function QuickPlayerScreen() {
         </div>
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
-          <div className="flex w-full flex-1 flex-col items-center justify-center">
+          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center">
             <ChakraVisual
               chakra={chakra}
               breathLabel={mood?.label ?? "Relax"}
@@ -161,14 +161,14 @@ export function QuickPlayerScreen() {
           </div>
 
           <div
-            className={`w-full max-w-3xl rounded-[1.5rem] border border-white/70 bg-white/72 p-4 shadow-[0_22px_60px_rgba(152,117,139,0.18)] backdrop-blur-2xl transition duration-500 sm:rounded-[1.75rem] sm:p-5 ${
+            className={`quick-player-controls w-full max-w-3xl rounded-[1.5rem] border border-white/70 bg-white/72 p-3 shadow-[0_22px_60px_rgba(152,117,139,0.18)] backdrop-blur-2xl transition duration-500 sm:rounded-[1.75rem] sm:p-5 ${
               controlsVisible || !isPlaying ? "opacity-100" : "opacity-72"
             }`}
             style={{ borderColor: `${chakra.accent}33` }}
           >
-            <div className="mb-4 flex items-center gap-3 sm:mb-5 sm:gap-4">
+            <div className="quick-player-track mb-3 flex items-center gap-3 sm:mb-5 sm:gap-4">
               <div
-                className="grid h-12 w-12 shrink-0 place-items-center rounded-full sm:h-14 sm:w-14"
+                className="quick-player-track-art grid h-12 w-12 shrink-0 place-items-center rounded-full sm:h-14 sm:w-14"
                 style={{
                   background: `radial-gradient(circle, ${chakra.color}66, rgba(15,23,42,0.3))`,
                   boxShadow: `0 0 24px ${chakra.color}66`,
@@ -207,7 +207,7 @@ export function QuickPlayerScreen() {
               <div className="text-center text-sm text-[#6f687d]">Playing continuously</div>
             )}
 
-            <div className="mt-4 grid grid-cols-3 items-center gap-2 sm:mt-5 sm:gap-3">
+            <div className="mt-3 grid grid-cols-3 items-center gap-2 sm:mt-5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -246,7 +246,7 @@ export function QuickPlayerScreen() {
                 stopPlayback();
                 router.replace("/");
               }}
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#f1d6d0] bg-white/70 px-4 py-2 text-sm text-[#a77d97]"
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#f1d6d0] bg-white/70 px-4 py-2 text-sm text-[#a77d97] sm:mt-4"
             >
               End Session
             </button>

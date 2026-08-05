@@ -19,7 +19,7 @@ export function MvpShell({ children, hideNav = false }: { children: ReactNode; h
     <div className="mvp-bg min-h-dvh overflow-x-hidden text-[var(--cream)]">
       {!hideNav ? <MvpTopMenu /> : null}
       <main
-        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(4.2rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[34rem] lg:max-w-[43rem]"
+        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(4.2rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[42rem] lg:max-w-[60rem] xl:max-w-[68rem]"
         style={{ paddingBottom: hideNav ? "calc(1rem + env(safe-area-inset-bottom))" : "var(--page-bottom-padding)" }}
       >
         {children}
@@ -60,7 +60,7 @@ function MvpTopMenu() {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/60 bg-white/66 pt-[env(safe-area-inset-top)] shadow-[0_8px_28px_rgba(213,142,147,0.1)] backdrop-blur-2xl">
-        <div className="mx-auto flex h-14 max-w-[28rem] items-center justify-between px-3.5 sm:px-5 md:max-w-[44rem]">
+        <div className="mx-auto flex h-14 max-w-[28rem] items-center justify-between px-3.5 sm:px-5 md:max-w-[42rem] lg:max-w-[60rem] xl:max-w-[68rem]">
           <button
             type="button"
             onClick={() => setOpen((current) => !current)}
@@ -155,7 +155,7 @@ function MvpBottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--ip-border)] bg-white/90 shadow-[0_-14px_36px_rgba(108,62,244,0.12)] backdrop-blur-2xl">
-      <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 rounded-t-[1.55rem] border border-white/70 bg-white/82 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-14px_42px_rgba(152,117,139,0.16)] backdrop-blur-2xl md:max-w-[34rem]">
+      <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 rounded-t-[1.55rem] border border-white/70 bg-white/82 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-14px_42px_rgba(152,117,139,0.16)] backdrop-blur-2xl md:max-w-[42rem] lg:max-w-[60rem] xl:max-w-[68rem]">
         {navItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (

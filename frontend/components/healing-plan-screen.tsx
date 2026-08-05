@@ -60,42 +60,44 @@ export function HealingPlanScreen() {
 
   return (
     <MvpShell>
-      <div className="space-y-3.5">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(0,0.95fr)_minmax(20rem,1.05fr)] lg:items-start">
         <SunriseScene variant="plan">
-          <div className="min-h-[15rem] px-5 py-6 text-center">
+          <div className="min-h-[clamp(12rem,32dvh,15rem)] px-5 py-5 text-center sm:py-6 lg:min-h-[26rem] lg:flex lg:flex-col lg:justify-center">
             <p className="text-sm text-[#90879d]">Healing Plan</p>
             <h1 className="mt-3 font-serif text-4xl text-[#322d42]">Flow with ease</h1>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#6f687d]">{entry.analysis.understandingSummary ?? entry.analysis.summary}</p>
           </div>
         </SunriseScene>
 
-        <div className="grid gap-2">
-          {actions.map((action, index) => (
-            <HealingActionCard
-              key={action.title}
-              {...action}
-              active={expanded === index}
-              onClick={() => {
-                setExpanded(index);
-                if (index === 0) router.push(`/healing/player?plan=${plan.id}`);
-              }}
-              chakraName={primaryChakra.name.replace(" Chakra", "")}
-            />
-          ))}
-        </div>
-
-        <BlushCard className="p-4">
-          <p className="font-serif text-xl text-[#322d42]">Keep this reflection?</p>
-          <p className="mt-1 text-sm leading-6 text-[#6f687d]">Saving it helps future insights feel more personal.</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <button type="button" onClick={() => saveReflectionToJourney(entry.id)} className="min-h-11 rounded-full bg-[#eca98f] px-4 font-semibold text-white">Save to Journey</button>
-            <button type="button" onClick={() => router.push("/journal")} className="min-h-11 rounded-full border border-white/70 bg-white px-4 font-semibold text-[#a77d97]">New Journal Thought</button>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
+            {actions.map((action, index) => (
+              <HealingActionCard
+                key={action.title}
+                {...action}
+                active={expanded === index}
+                onClick={() => {
+                  setExpanded(index);
+                  if (index === 0) router.push(`/healing/player?plan=${plan.id}`);
+                }}
+                chakraName={primaryChakra.name.replace(" Chakra", "")}
+              />
+            ))}
           </div>
-        </BlushCard>
 
-        <GoldButton className="w-full" onClick={() => router.push(`/healing/player?plan=${plan.id}`)}>
-          Start Reset
-        </GoldButton>
+          <BlushCard className="p-4">
+            <p className="font-serif text-xl text-[#322d42]">Keep this reflection?</p>
+            <p className="mt-1 text-sm leading-6 text-[#6f687d]">Saving it helps future insights feel more personal.</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={() => saveReflectionToJourney(entry.id)} className="min-h-11 rounded-full bg-[#eca98f] px-4 font-semibold text-white">Save to Journey</button>
+              <button type="button" onClick={() => router.push("/journal")} className="min-h-11 rounded-full border border-white/70 bg-white px-4 font-semibold text-[#a77d97]">New Journal Thought</button>
+            </div>
+          </BlushCard>
+
+          <GoldButton className="w-full" onClick={() => router.push(`/healing/player?plan=${plan.id}`)}>
+            Start Reset
+          </GoldButton>
+        </div>
       </div>
     </MvpShell>
   );

@@ -46,65 +46,69 @@ export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string })
           <p className="mt-1 text-sm text-[#6f687d]">Stage {selectedChakra.index + 1} · {completedCount} of 5 complete</p>
         </header>
 
-        <BlushCard className="p-4">
-          <ChakraStonePath
-            stones={chakras.map((chakra) => {
-              const unlocked = isChakraUnlocked(progress, chakra.index);
-              const complete = chakra.sessions.every((session) => progress.completedSessionKeys.includes(getSessionKey(chakra.id, session.id)));
-              const current = chakra.id === currentChakraId(progress);
-              return {
-                key: chakra.id,
-                label: chakra.name,
-                color: stoneColors[chakra.id],
-                completed: complete,
-                current,
-                locked: !unlocked,
-                onClick: () => {
-                  if (!unlocked) return;
-                  setSelectedChakraId(chakra.id);
-                  setExpandedId((currentId) => (currentId === chakra.id ? null : chakra.id));
-                },
-              };
-            })}
-          />
-        </BlushCard>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(15rem,0.8fr)_minmax(22rem,1.2fr)] lg:items-start">
+          <BlushCard className="p-3 sm:p-4">
+            <ChakraStonePath
+              stones={chakras.map((chakra) => {
+                const unlocked = isChakraUnlocked(progress, chakra.index);
+                const complete = chakra.sessions.every((session) => progress.completedSessionKeys.includes(getSessionKey(chakra.id, session.id)));
+                const current = chakra.id === currentChakraId(progress);
+                return {
+                  key: chakra.id,
+                  label: chakra.name,
+                  color: stoneColors[chakra.id],
+                  completed: complete,
+                  current,
+                  locked: !unlocked,
+                  onClick: () => {
+                    if (!unlocked) return;
+                    setSelectedChakraId(chakra.id);
+                    setExpandedId((currentId) => (currentId === chakra.id ? null : chakra.id));
+                  },
+                };
+              })}
+            />
+          </BlushCard>
 
-        <BlushCard className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs text-[#90879d]">Current chakra</p>
-              <h2 className="mt-1 font-serif text-2xl text-[#322d42]">{selectedChakra.name}</h2>
-              <p className="mt-2 text-sm leading-6 text-[#6f687d]">{selectedChakra.meaning}</p>
-            </div>
-            <span className="rounded-full bg-[#f2eaf5] px-3 py-1 text-xs font-semibold text-[#a99ac8]">{selectedUnlocked ? "Open" : "Locked"}</span>
-          </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#eca98f] to-[#d79bb8]" style={{ width: `${(completedCount / 5) * 100}%` }} />
-          </div>
-        </BlushCard>
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5">
+            <BlushCard className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs text-[#90879d]">Current chakra</p>
+                  <h2 className="mt-1 font-serif text-2xl text-[#322d42]">{selectedChakra.name}</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#6f687d]">{selectedChakra.meaning}</p>
+                </div>
+                <span className="rounded-full bg-[#f2eaf5] px-3 py-1 text-xs font-semibold text-[#a99ac8]">{selectedUnlocked ? "Open" : "Locked"}</span>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#eca98f] to-[#d79bb8]" style={{ width: `${(completedCount / 5) * 100}%` }} />
+              </div>
+            </BlushCard>
 
-        {expandedId === selectedChakra.id && selectedUnlocked ? (
-          <div className="grid gap-2">
-            {selectedChakra.sessions.map((session, index) => (
-              <JourneySessionCard
-                key={session.id}
-                chakra={selectedChakra}
-                session={session}
-                progress={progress}
-                index={index}
-              />
-            ))}
+            {expandedId === selectedChakra.id && selectedUnlocked ? (
+              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
+                {selectedChakra.sessions.map((session, index) => (
+                  <JourneySessionCard
+                    key={session.id}
+                    chakra={selectedChakra}
+                    session={session}
+                    progress={progress}
+                    index={index}
+                  />
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={!selectedUnlocked}
+                onClick={() => setExpandedId(selectedChakra.id)}
+                className="min-h-12 w-full rounded-full border border-white/70 bg-white/70 px-4 text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)] disabled:opacity-50"
+              >
+                {selectedUnlocked ? "Open sessions" : "Complete earlier stages to unlock"}
+              </button>
+            )}
           </div>
-        ) : (
-          <button
-            type="button"
-            disabled={!selectedUnlocked}
-            onClick={() => setExpandedId(selectedChakra.id)}
-            className="min-h-12 w-full rounded-full border border-white/70 bg-white/70 px-4 text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)] disabled:opacity-50"
-          >
-            {selectedUnlocked ? "Open sessions" : "Complete earlier stages to unlock"}
-          </button>
-        )}
+        </div>
       </div>
     </MvpShell>
   );
@@ -126,8 +130,8 @@ function JourneySessionCard({
   const content = (
     <div className={`flex items-center gap-3 rounded-[1.25rem] border border-white/64 bg-white/64 p-3 shadow-[0_10px_26px_rgba(152,117,139,0.1)] ${unlocked ? "" : "opacity-48"}`}>
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#fff8f4] text-sm font-semibold text-[#d58e93]">{index + 1}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-serif text-lg text-[#322d42]">{session.name}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-serif text-lg text-[#322d42]">{session.name}</span>
         <span className="block truncate text-sm text-[#6f687d]">{session.durationMinutes} min · {session.instructions}</span>
       </span>
       <span className="text-sm font-semibold text-[#a99ac8]">{completed ? "Done" : unlocked ? "Start" : "Locked"}</span>

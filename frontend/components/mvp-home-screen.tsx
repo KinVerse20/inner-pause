@@ -45,9 +45,9 @@ export function MvpHomeScreen() {
 
   return (
     <MvpShell>
-      <div className="space-y-3.5">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)] lg:items-start">
         <SunriseScene>
-          <div className="flex min-h-[31rem] flex-col items-center justify-between px-5 py-6 text-center">
+          <div className="flex min-h-[clamp(22rem,58dvh,31rem)] flex-col items-center justify-between px-5 py-5 text-center sm:py-6 lg:min-h-[32rem]">
             <div>
               <p className="text-sm font-medium text-[#6f687d]">{greeting()}, {firstName}</p>
               <h1 className="mt-4 font-serif text-4xl leading-tight text-[#322d42]">Find your<br />inner pause</h1>
@@ -62,41 +62,43 @@ export function MvpHomeScreen() {
           </div>
         </SunriseScene>
 
-        <BlushCard className="p-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#fbedee] text-xl text-[#d58e93]">✦</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-[#90879d]">Today’s recommended reset</p>
-              <p className="truncate font-serif text-xl text-[#322d42]">{recommended.name.replace(" Chakra", "")} music</p>
-              <p className="text-sm text-[#6f687d]">{recommended.meaning}</p>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5">
+          <BlushCard className="p-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#fbedee] text-xl text-[#d58e93]">✦</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-[#90879d]">Today’s recommended reset</p>
+                <p className="truncate font-serif text-xl text-[#322d42]">{recommended.name.replace(" Chakra", "")} music</p>
+                <p className="text-sm text-[#6f687d]">{recommended.meaning}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => player.startQuickPlayback({ chakraId: recommended.id, duration: 20 })}
+                className="grid h-11 w-11 place-items-center rounded-full bg-[#eca98f] text-white shadow-[0_12px_28px_rgba(236,169,143,0.28)]"
+                aria-label="Play recommended reset"
+              >
+                ▶
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => player.startQuickPlayback({ chakraId: recommended.id, duration: 20 })}
-              className="grid h-11 w-11 place-items-center rounded-full bg-[#eca98f] text-white shadow-[0_12px_28px_rgba(236,169,143,0.28)]"
-              aria-label="Play recommended reset"
-            >
-              ▶
-            </button>
+          </BlushCard>
+
+          <div className="grid grid-cols-2 gap-3">
+            <BlushCard className="p-4">
+              <p className="text-xs text-[#90879d]">Current streak</p>
+              <p className="mt-1 font-serif text-3xl text-[#322d42]">{Math.max(0, completedPlans)}</p>
+              <p className="text-sm text-[#6f687d]">completed resets</p>
+            </BlushCard>
+            <BlushCard className="p-4">
+              <p className="text-xs text-[#90879d]">Journey progress</p>
+              <p className="mt-1 font-serif text-3xl text-[#322d42]">{savedEntries.length}</p>
+              <p className="text-sm text-[#6f687d]">saved reflections</p>
+            </BlushCard>
           </div>
-        </BlushCard>
 
-        <div className="grid grid-cols-2 gap-3">
-          <BlushCard className="p-4">
-            <p className="text-xs text-[#90879d]">Current streak</p>
-            <p className="mt-1 font-serif text-3xl text-[#322d42]">{Math.max(0, completedPlans)}</p>
-            <p className="text-sm text-[#6f687d]">completed resets</p>
-          </BlushCard>
-          <BlushCard className="p-4">
-            <p className="text-xs text-[#90879d]">Journey progress</p>
-            <p className="mt-1 font-serif text-3xl text-[#322d42]">{savedEntries.length}</p>
-            <p className="text-sm text-[#6f687d]">saved reflections</p>
-          </BlushCard>
+          <Link href={latestPlan ? `/healing?entry=${state.entries.find((entry) => entry.plan?.id === latestPlan.id)?.id}` : "/healing"} className="block rounded-full border border-white/70 bg-white/70 px-5 py-3 text-center text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
+            Open Healing Plan
+          </Link>
         </div>
-
-        <Link href={latestPlan ? `/healing?entry=${state.entries.find((entry) => entry.plan?.id === latestPlan.id)?.id}` : "/healing"} className="block rounded-full border border-white/70 bg-white/70 px-5 py-3 text-center text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
-          Open Healing Plan
-        </Link>
       </div>
 
       {panelOpen ? (

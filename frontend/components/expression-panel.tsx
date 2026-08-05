@@ -178,7 +178,7 @@ export function ExpressionPanel({ compact = false, embedded = false }: { compact
     <section className="space-y-3.5">
       {!panelOpen ? (
         <SunriseScene variant="lake">
-          <div className="flex min-h-[31rem] flex-col items-center justify-between px-5 py-7 text-center">
+          <div className="flex min-h-[clamp(22rem,58dvh,31rem)] flex-col items-center justify-between px-5 py-5 text-center sm:py-7">
             <div>
               <h2 className="font-serif text-3xl leading-tight text-[#322d42]">Let it<br />flow out</h2>
               <p className="mt-2 text-sm text-[#6f687d]">Speak softly or write one thought.</p>
@@ -196,7 +196,7 @@ export function ExpressionPanel({ compact = false, embedded = false }: { compact
           </div>
         </SunriseScene>
       ) : (
-        <div className="rounded-[1.5rem] border border-white/70 bg-white/76 p-4 shadow-[0_16px_42px_rgba(152,117,139,0.13)] backdrop-blur-2xl">
+        <div className="rounded-[1.5rem] border border-white/70 bg-white/76 p-3 shadow-[0_16px_42px_rgba(152,117,139,0.13)] backdrop-blur-2xl sm:p-4 lg:p-5">
           {!embedded ? (
             <div className="mb-3 rounded-[1.25rem] bg-[linear-gradient(180deg,rgba(251,237,232,0.82),rgba(255,255,255,0.62))] p-4 text-center">
               <p className="font-serif text-2xl text-[#322d42]">What wants to be released first?</p>
@@ -229,7 +229,7 @@ export function ExpressionPanel({ compact = false, embedded = false }: { compact
                 value={text}
                 onChange={(event) => setText(event.target.value)}
                 placeholder="Write what happened, what you feel, or what you need."
-                className="min-h-32 w-full resize-y bg-transparent p-1 text-base leading-6 text-[#322d42] outline-none placeholder:text-[#a99ba9]"
+                className="min-h-[9rem] w-full resize-y scroll-mt-24 bg-transparent p-1 text-base leading-6 text-[#322d42] outline-none placeholder:text-[#a99ba9] sm:min-h-32"
               />
             </div>
           </div>

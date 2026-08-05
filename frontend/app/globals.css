@@ -76,7 +76,7 @@ body {
 }
 
 .blush-scene {
-  min-height: 21rem;
+  min-height: clamp(18rem, 52dvh, 31rem);
   background:
     linear-gradient(180deg, rgba(255, 242, 234, 0.96), rgba(251, 237, 232, 0.9) 42%, rgba(242, 234, 245, 0.86));
 }
@@ -87,7 +87,7 @@ body {
 }
 
 .blush-scene-plan {
-  min-height: 14rem;
+  min-height: clamp(12rem, 32dvh, 14rem);
   background:
     radial-gradient(circle at 82% 20%, rgba(236, 169, 143, 0.32), transparent 9rem),
     linear-gradient(135deg, rgba(255,248,244,0.92), rgba(251,237,232,0.9));
@@ -272,8 +272,8 @@ body {
 
 .mvp-meditator {
   position: relative;
-  width: min(44vw, 11.5rem);
-  height: min(44vw, 11.5rem);
+  width: clamp(8rem, 44vw, 11.5rem);
+  height: clamp(8rem, 44vw, 11.5rem);
   border-radius: 9999px;
   background:
     radial-gradient(circle at 50% 38%, rgba(255, 217, 135, 0.22), transparent 18%),
@@ -389,6 +389,10 @@ body {
 
 .chakra-player-shell {
   isolation: isolate;
+}
+
+.chakra-player-shell main {
+  touch-action: manipulation;
 }
 
 .psychedelic-backdrop {
@@ -537,6 +541,74 @@ body {
   justify-content: center;
   padding: 3rem;
   text-align: center;
+}
+
+@media (max-width: 360px) {
+  :root {
+    --bottom-nav-height: 4.05rem;
+    --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.6rem);
+  }
+
+  .blush-action-button {
+    width: 4.4rem;
+    height: 4.4rem;
+  }
+}
+
+@media (max-height: 650px) {
+  .chakra-player-shell .chakra-scene {
+    height: 28svh;
+    min-height: 10rem;
+  }
+
+  .chakra-orb-immersive,
+  .chakra-mandala,
+  .chakra-kaleidoscope {
+    width: min(58vw, 17rem);
+    height: min(58vw, 17rem);
+  }
+
+  .chakra-energy-ring {
+    width: min(72vw, 22rem);
+    height: min(72vw, 22rem);
+  }
+
+  .chakra-lotus {
+    width: min(56vw, 16rem);
+    height: min(56vw, 16rem);
+  }
+
+  .chakra-orb-label {
+    padding: 1.5rem;
+  }
+
+  .chakra-orb-label p:first-child,
+  .chakra-scene-dot {
+    display: none;
+  }
+
+  .quick-player-controls {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .quick-player-track {
+    margin-bottom: 0.45rem;
+  }
+
+  .quick-player-track-art {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .blush-scene {
+    min-height: 31rem;
+  }
+
+  .blush-scene-plan {
+    min-height: 26rem;
+  }
 }
 
 .chakra-energy-ring {

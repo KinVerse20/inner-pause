@@ -300,14 +300,14 @@ function MiniPlayer() {
 
   return (
     <div
-      className="fixed inset-x-0 z-30 px-4"
+      className="fixed inset-x-0 z-30 px-2.5 sm:px-4"
       style={{ bottom: "calc(4.9rem + env(safe-area-inset-bottom))" }}
     >
-      <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-[1.5rem] border border-white/70 bg-white/86 px-4 py-3 shadow-[0_18px_54px_rgba(152,117,139,0.18)] backdrop-blur-xl">
+      <div className="mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1.5 rounded-[1.5rem] border border-white/70 bg-white/86 px-3 py-2.5 shadow-[0_18px_54px_rgba(152,117,139,0.18)] backdrop-blur-xl sm:flex sm:gap-3 sm:px-4 sm:py-3">
         <button
           type="button"
           onClick={() => router.push(player.activePlayback?.route ?? "/player")}
-          className="flex-1 text-left"
+          className="min-w-0 flex-1 text-left"
         >
           <p className="text-sm font-medium text-[#322d42]">{player.activePlayback.chakraName}</p>
           <p className="text-xs text-[#6f687d]">
@@ -317,21 +317,21 @@ function MiniPlayer() {
         <button
           type="button"
           onClick={player.togglePlayback}
-          className="rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-4 py-2 text-sm text-[#a77d97]"
+          className="min-h-10 rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-2.5 py-2 text-xs text-[#a77d97] sm:px-4 sm:text-sm"
         >
           {player.isPlaying ? "Pause" : "Play"}
         </button>
         <button
           type="button"
           onClick={() => router.push(player.activePlayback?.route ?? "/player")}
-          className="rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-4 py-2 text-sm text-[#a77d97]"
+          className="min-h-10 rounded-full border border-[#f1d6d0] bg-[#fff8f4] px-2.5 py-2 text-xs text-[#a77d97] sm:px-4 sm:text-sm"
         >
           Open
         </button>
         <button
           type="button"
           onClick={() => player.stopPlayback()}
-          className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700"
+          className="min-h-10 rounded-full border border-red-200 bg-red-50 px-2.5 py-2 text-xs text-red-700 sm:px-4 sm:text-sm"
         >
           Stop
         </button>

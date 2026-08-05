@@ -28,9 +28,9 @@ export function InsightsScreen() {
 
   return (
     <MvpShell>
-      <div className="space-y-3.5">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,1fr)] lg:items-start">
         <SunriseScene variant="lake">
-          <div className="flex min-h-[30rem] flex-col items-center justify-between px-5 py-6 text-center">
+          <div className="flex min-h-[clamp(22rem,56dvh,30rem)] flex-col items-center justify-between px-5 py-5 text-center sm:py-6 lg:min-h-[30rem]">
             <div>
               <h1 className="font-serif text-3xl text-[#322d42]">Inner Balance</h1>
               <p className="mt-1 text-sm text-[#6f687d]">This week</p>
@@ -48,25 +48,27 @@ export function InsightsScreen() {
           </div>
         </SunriseScene>
 
-        <button type="button" onClick={() => setExploring((value) => !value)} className="min-h-12 w-full rounded-full border border-white/70 bg-white/76 px-4 text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
-          {exploring ? "Hide patterns" : "Explore your patterns"}
-        </button>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3.5">
+          <button type="button" onClick={() => setExploring((value) => !value)} className="min-h-12 w-full rounded-full border border-white/70 bg-white/76 px-4 text-sm font-semibold text-[#a77d97] shadow-[0_12px_30px_rgba(152,117,139,0.12)]">
+            {exploring ? "Hide patterns" : "Explore your patterns"}
+          </button>
 
-        {saved.length < 3 ? (
-          <BlushCard className="p-4">
-            <p className="font-serif text-xl text-[#322d42]">Your patterns will appear as you save more reflections.</p>
-            <p className="mt-2 text-sm leading-6 text-[#6f687d]">No fake metrics are shown. Insights are built from your saved journey.</p>
-          </BlushCard>
-        ) : null}
+          {saved.length < 3 ? (
+            <BlushCard className="p-4">
+              <p className="font-serif text-xl text-[#322d42]">Your patterns will appear as you save more reflections.</p>
+              <p className="mt-2 text-sm leading-6 text-[#6f687d]">No fake metrics are shown. Insights are built from your saved journey.</p>
+            </BlushCard>
+          ) : null}
 
-        {exploring ? (
-          <div className="grid gap-3">
-            <InsightCard title="Emotional patterns" items={countItems(saved.map((entry) => entry.analysis?.emotions[0]?.name ?? "").filter(Boolean)).slice(0, 3).map(([item]) => item)} />
-            <InsightCard title="Common triggers" items={triggerCounts.slice(0, 3).map(([item]) => item)} />
-            <InsightCard title="Improvement areas" items={chakraCounts.slice(0, 3).map(([chakraId]) => chakraMap[chakraId as keyof typeof chakraMap]?.meaning ?? chakraId)} />
-            <InsightCard title="Helpful practices" items={["Breath Flow", "Healing Music", "Journal Thought"]} />
-          </div>
-        ) : null}
+          {exploring ? (
+            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
+              <InsightCard title="Emotional patterns" items={countItems(saved.map((entry) => entry.analysis?.emotions[0]?.name ?? "").filter(Boolean)).slice(0, 3).map(([item]) => item)} />
+              <InsightCard title="Common triggers" items={triggerCounts.slice(0, 3).map(([item]) => item)} />
+              <InsightCard title="Improvement areas" items={chakraCounts.slice(0, 3).map(([chakraId]) => chakraMap[chakraId as keyof typeof chakraMap]?.meaning ?? chakraId)} />
+              <InsightCard title="Helpful practices" items={["Breath Flow", "Healing Music", "Journal Thought"]} />
+            </div>
+          ) : null}
+        </div>
       </div>
     </MvpShell>
   );
