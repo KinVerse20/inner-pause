@@ -143,7 +143,24 @@ export function HealingAudioPlayerScreen() {
             </button>
           </header>
 
-          <div className="grid flex-1 gap-6 py-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center lg:gap-8">
+          <div className="grid flex-1 gap-6 py-5 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-center lg:gap-8">
+            <div className="hidden lg:block">
+              <div className="rounded-[1.6rem] border border-white/10 bg-[rgba(11,15,33,0.46)] p-4 backdrop-blur-xl">
+                <p className="minimal-label text-[0.62rem]">Healing stages</p>
+                <div className="mt-4 grid gap-3">
+                  {ritualStages.map((item, index) => (
+                    <div key={item.key} className={`flex items-start gap-3 ${index === stageIndex ? "text-[var(--gold-light)]" : "text-[var(--ip-body)]"}`}>
+                      <span className={`mt-1 h-9 w-9 rounded-full border ${index === stageIndex ? "border-[rgba(244,122,34,0.5)] bg-[rgba(244,122,34,0.1)]" : "border-white/10 bg-white/[0.035]"}`} />
+                      <div>
+                        <p className="font-serif text-[1.55rem] leading-none">{item.label}</p>
+                        <p className="mt-2 text-sm leading-6">{item.copy}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="grid place-items-center gap-5">
               <RitualOrb
                 stage={reducedMotion ? "integrate" : stage.key}
@@ -159,64 +176,55 @@ export function HealingAudioPlayerScreen() {
                   {block.guidanceText ?? stage.copy}
                 </p>
               </div>
-            </div>
 
-            <div className="obsidian-panel rounded-[1.55rem] p-4 sm:p-5">
-              <p className="minimal-label text-[0.62rem]">Session stages</p>
-              <div className="mt-4 grid gap-2">
-                {ritualStages.map((item, index) => (
-                  <div key={item.key} className={`ritual-stage-pill ${index === stageIndex ? "ritual-stage-pill--active" : ""}`}>
-                    {item.label}
-                  </div>
-                ))}
+              <div className="w-full max-w-3xl rounded-[1.7rem] border border-white/10 bg-[rgba(11,15,33,0.5)] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-5">
+                <div className="h-1 overflow-hidden rounded-full bg-white/12">
+                  <div className="h-full rounded-full bg-[var(--gold-primary)] shadow-[0_0_14px_rgba(255,122,34,0.8)]" style={{ width: `${progress * 100}%` }} />
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-lg text-[var(--ip-body)]">
+                  <span>{formatTime(totalElapsed)}</span>
+                  <span>{formatTime(remaining)}</span>
+                </div>
+
+                {audioError ? (
+                  <p className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+                    Add the MP3 file to the public/audio folder or replace the placeholder audio.
+                  </p>
+                ) : null}
+
+                <div className="mt-5 grid grid-cols-5 items-center gap-2">
+                  <button type="button" disabled={blockIndex === 0} onClick={() => goToBlock(blockIndex - 1)} className="grid min-h-11 place-items-center rounded-full text-2xl text-[var(--ip-body)] disabled:opacity-35" aria-label="Previous block">
+                    ‹
+                  </button>
+                  <button type="button" onClick={() => setElapsedInBlock(0)} className="min-h-11 rounded-full text-[0.68rem] uppercase tracking-[0.18em] text-[var(--ip-body)]">
+                    Restart
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggle}
+                    disabled={audioError}
+                    className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-[rgba(244,122,34,0.52)] bg-[rgba(244,122,34,0.12)] text-3xl text-[var(--gold-light)] shadow-[0_0_36px_rgba(244,122,34,0.18)] disabled:opacity-45"
+                    aria-label={playing ? "Pause" : "Play"}
+                  >
+                    {playing ? "Ⅱ" : "▶"}
+                  </button>
+                  <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="min-h-11 rounded-full text-[0.68rem] uppercase tracking-[0.18em] text-[var(--ip-body)]">
+                    End session
+                  </button>
+                  <button type="button" disabled={blockIndex === plan.blocks.length - 1} onClick={() => goToBlock(blockIndex + 1)} className="grid min-h-11 place-items-center rounded-full text-2xl text-[var(--ip-body)] disabled:opacity-35" aria-label="Next block">
+                    ›
+                  </button>
+                </div>
+
+                <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-[rgba(17,18,20,0.4)] p-4">
+                  <p className="minimal-label text-[0.62rem]">Current block</p>
+                  <p className="mt-2 font-serif text-2xl text-[var(--ip-ink)]">{block.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{block.intention}</p>
+                </div>
+
+                <div className={`ritual-waveform mt-5 ${!playing ? "is-paused" : ""}`} aria-hidden="true" />
               </div>
-
-              <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/12">
-                <div className="h-full rounded-full bg-[var(--gold-primary)] shadow-[0_0_14px_rgba(255,122,34,0.8)]" style={{ width: `${progress * 100}%` }} />
-              </div>
-
-              <div className="mt-3 flex items-center justify-between text-lg text-[var(--ip-body)]">
-                <span>{formatTime(totalElapsed)}</span>
-                <span>{formatTime(remaining)}</span>
-              </div>
-
-              {audioError ? (
-                <p className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-                  Add the MP3 file to the public/audio folder or replace the placeholder audio.
-                </p>
-              ) : null}
-
-              <div className="mt-5 grid grid-cols-5 items-center gap-2">
-                <button type="button" disabled={blockIndex === 0} onClick={() => goToBlock(blockIndex - 1)} className="grid min-h-11 place-items-center rounded-full text-2xl text-[var(--ip-body)] disabled:opacity-35" aria-label="Previous block">
-                  ‹
-                </button>
-                <button type="button" onClick={() => setElapsedInBlock(0)} className="min-h-11 rounded-full text-[0.68rem] uppercase tracking-[0.18em] text-[var(--ip-body)]">
-                  Reset
-                </button>
-                <button
-                  type="button"
-                  onClick={toggle}
-                  disabled={audioError}
-                  className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-[rgba(244,122,34,0.52)] bg-[rgba(244,122,34,0.12)] text-3xl text-[var(--gold-light)] shadow-[0_0_36px_rgba(244,122,34,0.18)] disabled:opacity-45"
-                  aria-label={playing ? "Pause" : "Play"}
-                >
-                  {playing ? "Ⅱ" : "▶"}
-                </button>
-                <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="min-h-11 rounded-full text-[0.68rem] uppercase tracking-[0.18em] text-[var(--ip-body)]">
-                  Close
-                </button>
-                <button type="button" disabled={blockIndex === plan.blocks.length - 1} onClick={() => goToBlock(blockIndex + 1)} className="grid min-h-11 place-items-center rounded-full text-2xl text-[var(--ip-body)] disabled:opacity-35" aria-label="Next block">
-                  ›
-                </button>
-              </div>
-
-              <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-[rgba(17,18,20,0.5)] p-4">
-                <p className="minimal-label text-[0.62rem]">Current block</p>
-                <p className="mt-2 font-serif text-2xl text-[var(--ip-ink)]">{block.title}</p>
-                <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{block.intention}</p>
-              </div>
-
-              <div className={`ritual-waveform mt-5 ${!playing ? "is-paused" : ""}`} aria-hidden="true" />
             </div>
           </div>
         </div>

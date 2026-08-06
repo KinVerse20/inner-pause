@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { RitualProgress, type RitualStageKey } from "@/components/inner-world-ritual-ui";
 
 const navItems = [
   { href: "/", label: "Home", icon: "○" },
@@ -28,19 +29,66 @@ const desktopNavItems = [
 
 export function MvpShell({ children, hideNav = false }: { children: ReactNode; hideNav?: boolean }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const ritualStage = getRitualStage(pathname);
+  const immersiveRoute = Boolean(ritualStage);
+  const showStandardNav = !hideNav && !immersiveRoute;
+  const showRitualHeader = immersiveRoute;
 
   return (
     <div className="mvp-bg min-h-dvh overflow-x-hidden text-[var(--ip-ink)]">
-      {!hideNav ? <PastelSidebar /> : null}
-      {!hideNav ? <MvpTopMenu open={mobileMenuOpen} setOpen={setMobileMenuOpen} /> : null}
+      {showStandardNav ? <PastelSidebar /> : null}
+      {showStandardNav ? <MvpTopMenu open={mobileMenuOpen} setOpen={setMobileMenuOpen} /> : null}
+      {showRitualHeader ? <RitualTopBar current={ritualStage!} /> : null}
       <main
-          className="app-main-shell mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] pt-[calc(4.5rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem] lg:ml-[15.25rem] lg:w-[calc(100%-15.25rem)] lg:max-w-none lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))]"
+        className={`app-main-shell mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] sm:px-5 md:max-w-[44rem] ${
+          showStandardNav
+            ? "pt-[calc(4.5rem+env(safe-area-inset-top))] lg:ml-[15.25rem] lg:w-[calc(100%-15.25rem)] lg:max-w-none lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))]"
+            : showRitualHeader
+              ? "max-w-[96rem] pt-[calc(5.25rem+env(safe-area-inset-top))] lg:px-8 lg:pb-8 lg:pt-[calc(5.5rem+env(safe-area-inset-top))]"
+              : "pt-[calc(1rem+env(safe-area-inset-top))] lg:px-6 lg:pb-6 lg:pt-[calc(1rem+env(safe-area-inset-top))]"
+        }`}
         style={hideNav ? { paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } : undefined}
       >
         {children}
       </main>
-      {!hideNav ? <MvpBottomNav onOpenMenu={() => setMobileMenuOpen(true)} /> : null}
+      {showStandardNav ? <MvpBottomNav onOpenMenu={() => setMobileMenuOpen(true)} /> : null}
     </div>
+  );
+}
+
+function getRitualStage(pathname: string): RitualStageKey | null {
+  if (pathname === "/") return "arrive";
+  if (pathname.startsWith("/journal")) return "express";
+  if (pathname.startsWith("/analysis")) return "witness";
+  if (pathname === "/healing") return "transform";
+  if (pathname.startsWith("/healing/player") || pathname.startsWith("/player")) return "heal";
+  if (pathname.startsWith("/feedback")) return "close";
+  if (pathname.startsWith("/insights")) return "inner-world";
+  return null;
+}
+
+function RitualTopBar({ current }: { current: RitualStageKey }) {
+  return (
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0b1126]/72 pt-[env(safe-area-inset-top)] backdrop-blur-2xl">
+      <div className="mx-auto flex h-16 max-w-[96rem] items-center justify-between gap-4 px-3.5 sm:px-5 lg:h-[4.6rem] lg:px-8">
+        <BrandLogo className="shrink-0" />
+        <div className="hidden min-w-0 flex-1 items-center justify-center lg:flex">
+          <RitualProgress current={current} />
+        </div>
+        <div className="hidden items-center gap-3 lg:flex">
+          <Link href="/insights" className="inline-flex min-h-10 items-center rounded-full border border-white/10 bg-white/[0.035] px-4 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)]">
+            Inner World
+          </Link>
+          <Link href="/profile" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--ip-body)]" aria-label="Profile">
+            ◎
+          </Link>
+        </div>
+        <div className="lg:hidden">
+          <RitualProgress current={current} compact />
+        </div>
+      </div>
+    </header>
   );
 }
 
@@ -263,13 +311,13 @@ export function BrandLogo({
   className?: string;
 }) {
   return (
-    <Link href="/" className={`inline-flex items-center gap-3 ${className}`} aria-label="The Inner Pause home">
+    <Link href="/" className={`inline-flex items-center gap-3 ${className}`} aria-label="The InnerPause home">
       <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-[#232527] shadow-[0_0_24px_rgba(255,138,50,0.12)]">
         <Image src="/branding/innerpause-icon.png" alt="" fill sizes="36px" className="object-cover" priority={compact} />
       </span>
       {!compact ? (
         <span>
-          <span className="block text-xl leading-none text-[var(--ip-ink)]">The Inner Pause</span>
+          <span className="block text-xl leading-none text-[var(--ip-ink)]">The InnerPause</span>
           <span className="mt-1 block text-xs uppercase tracking-[0.32em] text-[var(--gold-muted)]">Pause</span>
         </span>
       ) : null}

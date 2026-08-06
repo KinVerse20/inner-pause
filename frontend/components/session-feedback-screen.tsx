@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { MvpShell } from "@/components/mvp-shell";
-import { RitualBackdrop, RitualOrb, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import { BeforeAfterShift, RitualBackdrop, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { saveFeedback } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
 
@@ -67,43 +67,39 @@ export function SessionFeedbackScreen() {
     <MvpShell hideNav>
       <div className="space-y-5">
         <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] lg:items-center">
-            <div className="grid place-items-center">
-              <RitualOrb stage="integrate" tone={tone} intensity={0.68} label="Closing ritual orb" />
+          <div className="relative z-10 space-y-5">
+            <div className="space-y-2 text-center">
+              <p className="minimal-label text-xs">Close</p>
+              <h1 className="font-serif text-[clamp(2.5rem,7vw,4.6rem)] leading-[0.95] text-[var(--gold-light)]">
+                How do you feel right now?
+              </h1>
+              <p className="text-base leading-7 text-[var(--ip-body)]">Take a moment to notice the shift.</p>
             </div>
 
-            <div className="space-y-5">
-              <p className="minimal-label text-xs">Close</p>
-              <h1 className="font-serif text-[clamp(2.5rem,7vw,4.6rem)] leading-[0.95] text-[var(--ip-ink)]">
-                Carry this with you.
-              </h1>
-              <p className="text-base leading-7 text-[var(--ip-body)]">
-                Notice the difference between how you arrived and how you are leaving.
-              </p>
+            <BeforeAfterShift before={beforeLine} after={afterLine} />
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <RitualWeatherCard title="Before" line={beforeLine} tone={inferWeatherTone(entry.analysis?.summary)} />
-                <RitualWeatherCard title="After" line={afterLine} tone={tone} />
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <RitualWeatherCard title="Before" line={beforeLine} tone={inferWeatherTone(entry.analysis?.summary)} />
+              <RitualWeatherCard title="After" line={afterLine} tone={tone} />
+            </div>
 
-              <div className="rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
-                <p className="minimal-label text-[0.62rem]">How are you feeling right now?</p>
-                <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {feelingOptions.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setFeelingNow(option)}
-                      className={`min-h-12 rounded-full border px-4 text-sm font-semibold uppercase tracking-[0.16em] ${
-                        feelingNow === option
-                          ? "border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] text-[var(--gold-light)]"
-                          : "border-white/10 bg-white/[0.035] text-[var(--ip-body)]"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
+            <div className="rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.5)] p-4 sm:p-5">
+              <p className="minimal-label text-[0.62rem]">How are you feeling right now?</p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {feelingOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setFeelingNow(option)}
+                    className={`min-h-12 rounded-full border px-4 text-sm font-semibold uppercase tracking-[0.16em] ${
+                      feelingNow === option
+                        ? "border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] text-[var(--gold-light)]"
+                        : "border-white/10 bg-white/[0.035] text-[var(--ip-body)]"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -149,4 +145,3 @@ function createTomorrowIntention(trigger?: string, emotion?: string) {
   if (emotion?.toLowerCase().includes("anx")) return "Tomorrow, I will come back to one steady breath.";
   return "Tomorrow, I will move more gently with myself.";
 }
-

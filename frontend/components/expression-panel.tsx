@@ -8,6 +8,7 @@ import { RitualBackdrop, RitualOrb, inferWeatherTone } from "@/components/inner-
 import { createFrontendApiClient } from "@/lib/auth/session";
 import { createJournalEntry, saveAnalysis, savePlan } from "@/lib/mvp-storage";
 import type { EmotionalAnalysis } from "@/lib/mvp-types";
+import { useMvpState } from "@/lib/use-mvp-state";
 
 type SpeechRecognitionEventLike = Event & {
   results: SpeechRecognitionResultList;
@@ -61,6 +62,7 @@ export function ExpressionPanel({
   const [draftForWitness, setDraftForWitness] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const voiceBaseRef = useRef("");
+  const state = useMvpState();
 
   const SpeechRecognition = useMemo<SpeechRecognitionConstructor | null>(() => {
     if (typeof window === "undefined") return null;
@@ -189,6 +191,14 @@ export function ExpressionPanel({
   const intensity = Math.min(1, Math.max(0.3, text.trim().length / 220 + (listening ? 0.28 : 0.08)));
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   const timerText = `${Math.floor(elapsed / 60)}:${`${elapsed % 60}`.padStart(2, "0")}`;
+  const recentReflections = state.entries
+    .filter((entry) => entry.rawText.trim())
+    .slice(0, 3)
+    .map((entry) => ({
+      id: entry.id,
+      title: entry.title || entry.analysis?.emotions[0]?.name || "Reflection",
+      copy: entry.analysis?.summary || entry.rawText.slice(0, 72),
+    }));
 
   if (loading) {
     return <ChakraProcessingScreen draftText={draftForWitness || text} selectedEmotions={selectedEmotions} />;
@@ -200,13 +210,11 @@ export function ExpressionPanel({
         <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,24rem)] lg:items-center">
           <div className="space-y-4">
             <p className="minimal-label text-xs">{mode === "write" ? "Write" : "Speak"}</p>
-            <h2 className="font-serif text-[clamp(2.5rem,8vw,4.4rem)] leading-[0.95] text-[var(--ip-ink)]">
+            <h2 className="font-serif text-[clamp(2.5rem,8vw,4.4rem)] leading-[0.95] text-[var(--gold-light)]">
               {mode === "write" ? "Write to release." : "Speak your heart."}
             </h2>
             <p className="max-w-xl text-base leading-7 text-[var(--ip-body)]">
-              {mode === "write"
-                ? "Let your thoughts land somewhere safe without forcing clarity too early."
-                : "Let what is true come forward. We will hold the shape of it with you."}
+              {mode === "write" ? "Put it down. Let it out." : "We listen, then reflect."}
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -245,6 +253,19 @@ export function ExpressionPanel({
                     : "The space is waiting for your voice."}
               </p>
             </div>
+            {recentReflections.length ? (
+              <div className="hidden w-full max-w-sm rounded-[1.3rem] border border-white/10 bg-[rgba(11,15,33,0.48)] p-4 backdrop-blur-xl lg:block">
+                <p className="minimal-label text-[0.62rem]">Recent reflections</p>
+                <div className="mt-3 grid gap-3">
+                  {recentReflections.map((reflection) => (
+                    <div key={reflection.id} className="rounded-[1rem] border border-white/10 bg-white/[0.03] p-3">
+                      <p className="font-serif text-lg text-[var(--ip-ink)]">{reflection.title}</p>
+                      <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{reflection.copy}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </RitualBackdrop>
@@ -320,4 +341,3 @@ export function ExpressionPanel({
     </div>
   );
 }
-

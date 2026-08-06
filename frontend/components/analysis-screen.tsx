@@ -3,7 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { MvpShell } from "@/components/mvp-shell";
-import { RitualBackdrop, RitualOrb, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import {
+  RitualBackdrop,
+  RitualWeatherCard,
+  TransformStream,
+  WitnessConstellation,
+  inferWeatherTone,
+} from "@/components/inner-world-ritual-ui";
 import { chakraMap } from "@/data/chakras";
 import { savePlan, updateJournalEntry } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
@@ -50,106 +56,74 @@ export function AnalysisScreen() {
     <MvpShell>
       <div className="space-y-5">
         <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(18rem,24rem)] lg:items-center">
-            <div className="space-y-5">
+          <div className="relative z-10 space-y-5">
+            <div className="space-y-2 text-center">
               <p className="minimal-label text-xs">Witness</p>
-              <h1 className="font-serif text-[clamp(2.8rem,8vw,4.8rem)] leading-[0.92] text-[var(--ip-ink)]">
+              <h1 className="font-serif text-[clamp(2.8rem,8vw,4.8rem)] leading-[0.92] text-[var(--gold-light)]">
                 Here&apos;s what we noticed.
               </h1>
-              <p className="text-base leading-7 text-[var(--ip-body)]">Your reflection is becoming visible.</p>
-
-              <div className="emotion-constellation">
-                {analysis.emotions.slice(0, 4).map((emotion, index) => (
-                  <div
-                    key={`${emotion.name}-line`}
-                    className="emotion-constellation__line"
-                    style={{
-                      transform: `translate(-50%, -50%) rotate(${index * 42 - 52}deg)`,
-                      background:
-                        emotion.name.toLowerCase().includes("stress") || emotion.name.toLowerCase().includes("anger")
-                          ? "linear-gradient(90deg,rgba(235,101,38,0.05),rgba(235,101,38,0.92),rgba(235,101,38,0.05))"
-                          : emotion.name.toLowerCase().includes("sad")
-                            ? "linear-gradient(90deg,rgba(87,109,164,0.05),rgba(87,109,164,0.88),rgba(87,109,164,0.05))"
-                            : emotion.name.toLowerCase().includes("confus")
-                              ? "linear-gradient(90deg,rgba(149,109,209,0.05),rgba(149,109,209,0.88),rgba(149,109,209,0.05))"
-                              : "linear-gradient(90deg,rgba(226,192,108,0.05),rgba(226,192,108,0.88),rgba(226,192,108,0.05))",
-                    }}
-                  />
-                ))}
-                {analysis.emotions.slice(0, 4).map((emotion, index) => (
-                  <span
-                    key={`${emotion.name}-node`}
-                    className="emotion-constellation__node"
-                    style={{
-                      left: `${18 + index * 18}%`,
-                      top: `${34 + (index % 2) * 22}%`,
-                      color:
-                        emotion.name.toLowerCase().includes("stress") || emotion.name.toLowerCase().includes("anger")
-                          ? "#eb6526"
-                          : emotion.name.toLowerCase().includes("sad")
-                            ? "#6f84c0"
-                            : emotion.name.toLowerCase().includes("confus")
-                              ? "#956dd1"
-                              : "#e2c06c",
-                      background: "currentColor",
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div className="rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
-                <p className="minimal-label text-[0.62rem]">Emotional mirror</p>
-                <p className="mt-3 font-serif text-[1.55rem] leading-8 text-[var(--ip-ink)]">{witnessLine}</p>
-                <p className="mt-3 text-sm leading-6 text-[var(--ip-body)]">{analysis.understandingSummary ?? analysis.summary}</p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateJournalEntry(entry.id, {
-                      analysis: {
-                        ...analysis,
-                        understandingSummary: analysis.understandingSummary ?? analysis.summary,
-                      },
-                    })
-                  }
-                  className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)]"
-                >
-                  Keep this reflection
-                </button>
-              </div>
+              <p className="text-base leading-7 text-[var(--ip-body)]">Your reflection becomes visible.</p>
             </div>
 
-            <div className="grid place-items-center gap-5">
-              <RitualOrb stage="witness" tone={tone} intensity={0.82} label="Witness constellation orb" />
-              <div className="grid w-full gap-3">
-                {analysis.emotions.slice(0, 4).map((emotion) => (
-                  <RitualWeatherCard
-                    key={emotion.name}
-                    title={emotion.name}
-                    line={emotion.explanation ?? `Intensity ${emotion.intensity}/10`}
-                    tone={inferWeatherTone(emotion.name)}
-                  />
-                ))}
-              </div>
+            <WitnessConstellation emotions={analysis.emotions} />
+
+            <div className="mx-auto max-w-4xl rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.5)] p-4 text-center sm:p-5">
+              <p className="font-serif text-[1.4rem] leading-8 text-[var(--ip-ink)]">{witnessLine}</p>
+            </div>
+
+            <div className="mx-auto text-center">
+              <button
+                type="button"
+                onClick={() =>
+                  updateJournalEntry(entry.id, {
+                    analysis: {
+                      ...analysis,
+                      understandingSummary: analysis.understandingSummary ?? analysis.summary,
+                    },
+                  })
+                }
+                className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)]"
+              >
+                Let us turn this into something lighter.
+              </button>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-4">
+              {analysis.emotions.slice(0, 4).map((emotion) => (
+                <RitualWeatherCard
+                  key={emotion.name}
+                  title={emotion.name}
+                  line={emotion.explanation ?? `Intensity ${emotion.intensity}/10`}
+                  tone={inferWeatherTone(emotion.name)}
+                />
+              ))}
             </div>
           </div>
         </RitualBackdrop>
 
         <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] lg:items-center">
-            <div className="grid place-items-center">
-              <RitualOrb stage="transform" tone={tone} intensity={0.92} label="Transformation orb" />
-            </div>
-
-            <div className="space-y-5">
+          <div className="relative z-10 space-y-5">
+            <div className="space-y-2 text-center">
               <p className="minimal-label text-xs">Transform</p>
-              <h2 className="font-serif text-[clamp(2.4rem,7vw,4.3rem)] leading-[0.95] text-[var(--ip-ink)]">
+              <h2 className="font-serif text-[clamp(2.4rem,7vw,4.3rem)] leading-[0.95] text-[var(--gold-light)]">
                 Let us turn this into something lighter.
               </h2>
               <p className="text-base leading-7 text-[var(--ip-body)]">
                 Your personalised healing journey is taking shape.
               </p>
+            </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+            <TransformStream labels={analysis.emotions.map((emotion) => emotion.name)} />
+
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
+              <div className="rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
+                <p className="text-sm leading-7 text-[var(--ip-body)]">{transformLine}</p>
+                <p className="mt-3 text-sm leading-7 text-[var(--ip-body)]">
+                  Suggested outcome: {analysis.suggestedOutcome}
+                </p>
+              </div>
+
+              <div className="grid gap-3">
                 <RitualWeatherCard
                   title="Dominant current"
                   line={primaryChakra ? `${chakraMap[primaryChakra.chakra].name} is carrying most of the charge.` : `${primaryEmotion} is the strongest signal right now.`}
@@ -161,31 +135,24 @@ export function AnalysisScreen() {
                   tone={tone}
                 />
               </div>
+            </div>
 
-              <div className="rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
-                <p className="text-sm leading-7 text-[var(--ip-body)]">{transformLine}</p>
-                <p className="mt-3 text-sm leading-7 text-[var(--ip-body)]">
-                  Suggested outcome: {analysis.suggestedOutcome}
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={beginHealing}
-                  disabled={analysis.safetyFlag}
-                  className="min-h-12 rounded-full border border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)] disabled:opacity-45"
-                >
-                  Begin healing
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push("/journey")}
-                  className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ip-body)]"
-                >
-                  View topology
-                </button>
-              </div>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={beginHealing}
+                disabled={analysis.safetyFlag}
+                className="min-h-12 rounded-full border border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)] disabled:opacity-45"
+              >
+                Begin healing
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/journey")}
+                className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ip-body)]"
+              >
+                View topology
+              </button>
             </div>
           </div>
         </RitualBackdrop>
@@ -207,4 +174,3 @@ function createWitnessLine(summary: string, trigger: string | undefined, emotion
   }
   return `This is not only ${emotion.toLowerCase()} — it is the story underneath it asking to be witnessed.`;
 }
-

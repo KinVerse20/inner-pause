@@ -1,7 +1,7 @@
 "use client";
 
 import { MvpShell } from "@/components/mvp-shell";
-import { RitualBackdrop, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import { InnerWorldScene, RitualBackdrop, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { chakraMap } from "@/data/chakras";
 import { useMvpState } from "@/lib/use-mvp-state";
 
@@ -24,8 +24,8 @@ export function InsightsScreen() {
           <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-center">
             <div className="space-y-5">
               <p className="minimal-label text-xs">Inner World</p>
-              <h1 className="font-serif text-[clamp(2.7rem,8vw,4.8rem)] leading-[0.95] text-[var(--ip-ink)]">
-                Your inner garden.
+              <h1 className="font-serif text-[clamp(2.7rem,8vw,4.8rem)] leading-[0.95] text-[var(--gold-light)]">
+                Your inner world grows with you.
               </h1>
               <p className="max-w-2xl text-base leading-7 text-[var(--ip-body)]">
                 Each reflection adds a petal. Each healing session adds light. Over time, the patterns you return to begin to form a living memory.
@@ -39,34 +39,7 @@ export function InsightsScreen() {
               </div>
             </div>
 
-            <div className="inner-garden">
-              <div className="inner-garden__stem" />
-              {savedEntries.slice(0, 10).map((entry, index) => (
-                <span
-                  key={entry.id}
-                  className="inner-garden__petal"
-                  style={{
-                    left: `${50 + Math.cos((index / Math.max(savedEntries.length, 1)) * Math.PI * 2) * 18}%`,
-                    top: `${32 + Math.sin((index / Math.max(savedEntries.length, 1)) * Math.PI * 2) * 12}%`,
-                    transform: `translate(-50%, -50%) rotate(${index * 34}deg)`,
-                    animationDelay: `${index * 0.3}s`,
-                  }}
-                />
-              ))}
-              {completedSessions.slice(0, 14).map((entry, index) => (
-                <span
-                  key={`${entry.id}-light`}
-                  className="inner-garden__star"
-                  style={{
-                    left: `${12 + (index * 13) % 76}%`,
-                    top: `${18 + (index * 9) % 62}%`,
-                    animationDelay: `${index * 0.4}s`,
-                  }}
-                />
-              ))}
-              <span className="inner-garden__leaf" style={{ left: "36%", bottom: "16%", transform: "rotate(-24deg)" }} />
-              <span className="inner-garden__leaf" style={{ left: "52%", bottom: "20%", transform: "rotate(24deg)" }} />
-            </div>
+            <InnerWorldScene reflections={savedEntries.length} sessions={completedSessions.length} />
           </div>
         </RitualBackdrop>
 
@@ -123,4 +96,3 @@ function GardenMetric({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
