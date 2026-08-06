@@ -13,7 +13,7 @@ const steps = [
   },
   {
     title: "Understand the emotions beneath your day.",
-    copy: "The Inner Pause identifies key incidents, emotions and traditional chakra themes for review.",
+    copy: "The InnerPause identifies key incidents, emotions and traditional chakra themes for review.",
   },
   {
     title: "Receive a healing journey made for you.",
@@ -86,7 +86,7 @@ export function OnboardingScreen() {
           </div>
 
           <p className="mt-3 text-xs leading-4 text-stone-500">
-            The Inner Pause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
+            The InnerPause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
           </p>
         </div>
       </GlassCard>

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "The Inner Pause",
-    short_name: "The Inner Pause",
+    name: "The InnerPause",
+    short_name: "The InnerPause",
     description: "Guided reflective expression, emotional insight and personalised reset sessions.",
     start_url: "/",
     display: "standalone",

@@ -71,13 +71,13 @@ export function AboutScreen() {
         <BlushCard className="p-5 sm:p-6">
           <h2 className="font-serif text-3xl text-[var(--ip-ink)]">Built with experience and care</h2>
           <p className="mt-4 text-sm leading-7 text-[var(--ip-body)] sm:text-base">
-            The Inner Pause has been shaped by professionals with approximately 15 years of experience working with healing practices, emotional wellness and guided personal transformation.
+            The InnerPause has been shaped by professionals with approximately 15 years of experience working with healing practices, emotional wellness and guided personal transformation.
           </p>
           <p className="mt-4 text-sm leading-7 text-[var(--ip-body)] sm:text-base">
             That experience has been used to create a thoughtful daily practice that combines reflection, sound and personalised guidance in a simple and accessible format.
           </p>
           <p className="mt-4 border-t border-[var(--gold-border-soft)] pt-4 text-sm leading-6 text-[var(--ip-muted)]">
-            Every experience inside The Inner Pause is designed with care, responsibility and respect for the user’s emotional privacy.
+            Every experience inside The InnerPause is designed with care, responsibility and respect for the user’s emotional privacy.
           </p>
         </BlushCard>
 
@@ -93,7 +93,7 @@ export function AboutScreen() {
             Begin Your Journey
           </Link>
           <p className="mx-auto mt-5 max-w-xl text-xs leading-5 text-[var(--ip-muted)]">
-            The Inner Pause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
+            The InnerPause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
           </p>
         </BlushCard>
       </div>

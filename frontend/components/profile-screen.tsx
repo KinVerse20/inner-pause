@@ -112,7 +112,7 @@ export function ProfileScreen() {
         <GlassCard className="p-3.5">
           <h2 className="text-xl text-[var(--ip-ink)]">Pattern memory</h2>
           <p className="mt-2 text-sm leading-5 text-[var(--ip-body)]">
-            Long-term pattern memory is {state.profile.aiMemoryEnabled ? "enabled" : "disabled"}. You can correct or delete patterns from Insights as The Inner Pause learns more.
+            Long-term pattern memory is {state.profile.aiMemoryEnabled ? "enabled" : "disabled"}. You can correct or delete patterns from Insights as The InnerPause learns more.
           </p>
           <button
             type="button"

@@ -18,19 +18,19 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://theinnerpause.app"),
-  title: "The Inner Pause",
-  applicationName: "The Inner Pause",
+  title: "The InnerPause",
+  applicationName: "The InnerPause",
   description: "Guided reflective expression, emotional insight and personalised reset sessions.",
   manifest: "/manifest.webmanifest",
   openGraph: {
-    title: "The Inner Pause",
+    title: "The InnerPause",
     description: "A daily ritual for release, reflection and renewal.",
     images: ["/branding/innerpause-logo.png"],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "The Inner Pause",
+    title: "The InnerPause",
   },
   icons: {
     icon: [

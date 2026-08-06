@@ -207,7 +207,7 @@ function MvpTopMenu({
           </nav>
 
           <div className="flex items-center justify-end gap-2">
-            <Link href="/about" className="hidden h-10 min-w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--gold-light)] transition hover:bg-white/[0.06] lg:grid" aria-label="About The Inner Pause">
+            <Link href="/about" className="hidden h-10 min-w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--gold-light)] transition hover:bg-white/[0.06] lg:grid" aria-label="About The InnerPause">
               ☼
             </Link>
             <Link href="/profile" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[var(--ip-body)] transition hover:bg-white/[0.06]" aria-label="Profile">
