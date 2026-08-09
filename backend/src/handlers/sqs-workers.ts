@@ -1,9 +1,10 @@
 import { createRuntimeServices } from "../runtime/factory.js";
+import type { PrivateDbActionResult } from "../internal/private-db-contract.js";
+import { invokeLambdaJson } from "../runtime/lambda-invoke.js";
 import { readSecretString } from "../runtime/secrets.js";
 import { OpenAiProvider } from "../services/ai-provider.js";
 import { DisabledAudioProvider } from "../services/audio-provider.js";
 import { S3PrivateStorage } from "../storage/s3-storage.js";
-import { AnalysisWorker } from "../workers/analysis-worker.js";
 import { AudioWorker } from "../workers/audio-worker.js";
 
 interface SqsEvent {
@@ -20,6 +21,7 @@ interface WorkerMessage {
   userId?: string;
   type?: "journal_analysis" | "reset_audio" | "notification";
   journalId?: string;
+  journalText?: string;
 }
 
 interface PartialBatchResponse {
@@ -82,6 +84,7 @@ function requireWorkerFields(message: WorkerMessage): RequiredWorkerMessage {
 
 async function processAnalysisMessage(message: RequiredWorkerMessage, messageId: string) {
   if (!message.journalId) throw new Error("Analysis message is missing journalId.");
+  if (!message.journalText) throw new Error("Analysis message is missing journalText.");
   const runtime = createRuntimeServices();
   const apiKey =
     runtime.config.openAiApiKey ??
@@ -89,11 +92,37 @@ async function processAnalysisMessage(message: RequiredWorkerMessage, messageId:
       ? await readSecretString({ region: runtime.config.region, secretArn: runtime.config.openAiApiKeySecretArn, jsonKey: "OPENAI_API_KEY" })
       : undefined);
   if (!apiKey) throw new Error("OPENAI_API_KEY or OPENAI_API_KEY_SECRET_ARN is required for analysis workers.");
-  const worker = new AnalysisWorker(
-    runtime.repository,
-    new OpenAiProvider({ apiKey, model: runtime.config.openAiModel }),
-  );
-  await worker.process({ userId: message.userId, jobId: message.jobId, journalId: message.journalId, requestId: messageId });
+  if (!runtime.config.region || !runtime.config.privateDbLambdaName) {
+    throw new Error("Private database Lambda is not configured for analysis persistence.");
+  }
+
+  const aiProvider = new OpenAiProvider({ apiKey, model: runtime.config.openAiModel });
+  try {
+    const insight = await aiProvider.analyseJournal({ text: message.journalText, requestId: messageId });
+    await invokeLambdaJson<PrivateDbActionResult>({
+      functionName: runtime.config.privateDbLambdaName,
+      region: runtime.config.region,
+      payload: {
+        action: "persistAnalysisResult",
+        userId: message.userId,
+        journalId: message.journalId,
+        jobId: message.jobId,
+        insight,
+      },
+    });
+  } catch (error) {
+    await invokeLambdaJson<PrivateDbActionResult>({
+      functionName: runtime.config.privateDbLambdaName,
+      region: runtime.config.region,
+      payload: {
+        action: "failJob",
+        userId: message.userId,
+        jobId: message.jobId,
+        errorMessage: error instanceof Error ? error.message : "Analysis failed.",
+      },
+    }).catch(() => undefined);
+    throw error;
+  }
 }
 
 async function processAudioMessage(message: RequiredWorkerMessage) {

@@ -1,3 +1,4 @@
+import { authenticatedUserFromClaims } from "../auth/cognito.js";
 import { ApiRouter } from "../routes/router.js";
 import { readConfig } from "../config/env.js";
 import { requestIdFrom, securityHeaders } from "../shared/http.js";
@@ -11,6 +12,11 @@ interface ApiGatewayEvent {
   rawPath?: string;
   headers?: Record<string, string | undefined>;
   body?: string | null;
+  requestContext?: {
+    authorizer?: {
+      claims?: Record<string, unknown>;
+    };
+  };
 }
 
 export async function handler(event: ApiGatewayEvent) {
@@ -23,6 +29,7 @@ export async function handler(event: ApiGatewayEvent) {
     headers,
     body,
     requestId,
+    authenticatedUser: authenticatedUserFromClaims(event.requestContext?.authorizer?.claims ?? null),
   });
 
   return {

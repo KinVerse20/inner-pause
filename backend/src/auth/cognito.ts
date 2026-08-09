@@ -70,3 +70,35 @@ export async function authenticate(headers: Record<string, string | undefined>, 
   if (!match) throw unauthenticated();
   return verifier.verify(match[1]);
 }
+
+export function authenticatedUserFromClaims(claims?: Record<string, unknown> | null): AuthenticatedUser | undefined {
+  if (!claims) return undefined;
+  const subject = readClaimString(claims, "sub");
+  if (!subject) return undefined;
+  const email = readClaimString(claims, "email") ?? `${subject}@cognito.local`;
+  const fullName = readClaimString(claims, "name");
+  const groups = readGroupsClaim(claims["cognito:groups"]);
+  return { id: subject, email, fullName: fullName || undefined, groups };
+}
+
+function readClaimString(claims: Record<string, unknown>, key: string) {
+  const value = claims[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function readGroupsClaim(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((group): group is string => typeof group === "string" && group.trim().length > 0);
+  }
+  if (typeof value !== "string" || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.filter((group): group is string => typeof group === "string" && group.trim().length > 0);
+    }
+  } catch {}
+  return value
+    .split(",")
+    .map((group) => group.trim())
+    .filter(Boolean);
+}

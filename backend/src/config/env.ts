@@ -15,11 +15,12 @@ export interface BackendConfig {
   cognitoClientId?: string;
   audioBucketName?: string;
   databaseSecretArn?: string;
-  databaseProxyEndpoint?: string;
+  databaseEndpoint?: string;
   workQueueUrl?: string;
   analysisQueueUrl?: string;
   audioQueueUrl?: string;
   notificationQueueUrl?: string;
+  privateDbLambdaName?: string;
   databaseUrl?: string;
   databaseSsl: boolean;
   databaseName?: string;
@@ -60,11 +61,12 @@ export function readConfig(env = process.env): BackendConfig {
     cognitoClientId: env.AWS_COGNITO_USER_POOL_CLIENT_ID,
     audioBucketName: env.AWS_AUDIO_BUCKET_NAME,
     databaseSecretArn: env.AWS_DATABASE_SECRET_ARN,
-    databaseProxyEndpoint: env.AWS_DATABASE_PROXY_ENDPOINT,
+    databaseEndpoint: env.AWS_DATABASE_ENDPOINT,
     workQueueUrl: env.AWS_WORK_QUEUE_URL,
     analysisQueueUrl: env.AWS_ANALYSIS_QUEUE_URL,
     audioQueueUrl: env.AWS_AUDIO_QUEUE_URL,
     notificationQueueUrl: env.AWS_NOTIFICATION_QUEUE_URL,
+    privateDbLambdaName: env.AWS_PRIVATE_DB_LAMBDA_NAME,
     databaseUrl: env.DATABASE_URL,
     databaseSsl: env.DATABASE_SSL === "true",
     databaseName: env.DATABASE_NAME,
@@ -109,11 +111,11 @@ export function assertAwsRuntimeConfig(config = readConfig()) {
     ["AWS_COGNITO_USER_POOL_CLIENT_ID", config.cognitoClientId],
     ["AWS_AUDIO_BUCKET_NAME", config.audioBucketName],
     ["AWS_DATABASE_SECRET_ARN", config.databaseSecretArn],
-    ["AWS_DATABASE_PROXY_ENDPOINT", config.databaseProxyEndpoint],
+    ["AWS_DATABASE_ENDPOINT", config.databaseEndpoint],
     ["AWS_ANALYSIS_QUEUE_URL", config.analysisQueueUrl],
     ["AWS_AUDIO_QUEUE_URL", config.audioQueueUrl],
     ["AWS_NOTIFICATION_QUEUE_URL", config.notificationQueueUrl],
-    ["DATABASE_URL or AWS_DATABASE_PROXY_ENDPOINT", config.databaseUrl ?? config.databaseProxyEndpoint],
+    ["DATABASE_URL or AWS_DATABASE_ENDPOINT", config.databaseUrl ?? config.databaseEndpoint],
     ["DATABASE_NAME", config.databaseUrl ? "not-required" : config.databaseName],
     ["DATABASE_USER", config.databaseUrl ? "not-required" : config.databaseUser],
     ["OPENAI_API_KEY or OPENAI_API_KEY_SECRET_ARN", config.aiMode === "openai" ? config.openAiApiKey ?? config.openAiApiKeySecretArn : "not-required"],

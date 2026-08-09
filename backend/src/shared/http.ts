@@ -1,3 +1,4 @@
+import type { AuthenticatedUser } from "../auth/cognito.js";
 import type { ApiErrorBody, ApiSuccess } from "@innerpause/shared";
 import { AppError } from "./errors.js";
 
@@ -7,6 +8,7 @@ export interface HttpRequest {
   headers: Record<string, string | undefined>;
   body?: unknown;
   requestId: string;
+  authenticatedUser?: AuthenticatedUser;
 }
 
 export interface HttpResponse {
@@ -66,4 +68,3 @@ export function securityHeaders() {
 export function requestIdFrom(headers: Record<string, string | undefined>) {
   return headers["x-request-id"] ?? crypto.randomUUID();
 }
-

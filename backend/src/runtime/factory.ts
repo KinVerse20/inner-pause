@@ -20,7 +20,7 @@ export function createRuntimeServices(env = process.env): RuntimeServices {
     config.repositoryMode === "postgres"
       ? new PostgresRepository({
           connectionString: config.databaseUrl,
-          host: config.databaseUrl ? undefined : config.databaseProxyEndpoint,
+          host: config.databaseUrl ? undefined : config.databaseEndpoint,
           port: config.databasePort,
           database: config.databaseName,
           user: config.databaseUser,

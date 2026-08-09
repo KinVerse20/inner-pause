@@ -91,7 +91,8 @@ Backend Lambdas need:
 - `AWS_COGNITO_USER_POOL_CLIENT_ID`
 - `AWS_AUDIO_BUCKET_NAME`
 - `AWS_DATABASE_SECRET_ARN`
-- `AWS_DATABASE_PROXY_ENDPOINT`
+- `AWS_DATABASE_ENDPOINT`
+- `AWS_PRIVATE_DB_LAMBDA_NAME`
 - `AWS_ANALYSIS_QUEUE_URL`
 - `AWS_AUDIO_QUEUE_URL`
 - `AWS_NOTIFICATION_QUEUE_URL`
@@ -158,4 +159,3 @@ npm run destroy
 ```
 
 The audio S3 bucket uses retain policy. Empty and delete it manually only after confirming no needed test files remain.
-

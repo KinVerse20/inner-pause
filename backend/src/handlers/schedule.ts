@@ -1,4 +1,4 @@
-import { createRuntimeServices } from "../runtime/factory.js";
+import { readConfig } from "../config/env.js";
 
 interface EventBridgeScheduledEvent {
   id?: string;
@@ -8,7 +8,7 @@ interface EventBridgeScheduledEvent {
 }
 
 export async function handler(event: EventBridgeScheduledEvent) {
-  const runtime = createRuntimeServices();
+  const config = readConfig();
   console.info("InnerPause schedule handler invoked", {
     eventId: event.id,
     time: event.time,
@@ -16,14 +16,14 @@ export async function handler(event: EventBridgeScheduledEvent) {
     detailType: event["detail-type"],
   });
 
-  if (runtime.config.notificationsMode === "disabled") {
+  if (config.notificationsMode === "disabled") {
     return {
       queued: 0,
       skipped: "Notifications are disabled for this AWS test environment.",
     };
   }
 
-  if (runtime.config.notificationsMode === "whatsapp" && !runtime.config.approvedTestRecipient) {
+  if (config.notificationsMode === "whatsapp" && !config.approvedTestRecipient) {
     throw new Error("Scheduled notification sending requires APPROVED_TEST_RECIPIENT.");
   }
 

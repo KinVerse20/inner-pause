@@ -5,6 +5,7 @@ export interface QueueMessage {
   userId: string;
   type: "journal_analysis" | "reset_audio" | "notification";
   journalId?: string;
+  journalText?: string;
 }
 
 export interface QueueClient {

@@ -23,7 +23,7 @@ Minification: disabled, so first deployment debugging remains practical.
   - `AWS_COGNITO_USER_POOL_ID`
   - `AWS_COGNITO_USER_POOL_CLIENT_ID`
   - `AWS_AUDIO_BUCKET_NAME`
-  - `AWS_DATABASE_PROXY_ENDPOINT`
+  - `AWS_DATABASE_ENDPOINT`
   - `AWS_DATABASE_SECRET_ARN`
   - `DATABASE_NAME`
   - `DATABASE_USER`

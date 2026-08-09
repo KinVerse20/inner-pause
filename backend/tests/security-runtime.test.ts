@@ -21,7 +21,7 @@ test("AWS mode cannot start with mock auth or memory repository", () => {
     AWS_COGNITO_USER_POOL_CLIENT_ID: "client",
     AWS_AUDIO_BUCKET_NAME: "bucket",
     AWS_DATABASE_SECRET_ARN: "arn",
-    AWS_DATABASE_PROXY_ENDPOINT: "proxy",
+    AWS_DATABASE_ENDPOINT: "database.internal",
     AWS_WORK_QUEUE_URL: "queue",
     DATABASE_URL: "postgres://example",
   });
@@ -36,4 +36,3 @@ test("S3 storage rejects unsupported file types and oversize files before signin
   assert.throws(() => storage.validateFile({ mimeType: "audio/mpeg", sizeBytes: 26 * 1024 * 1024, extension: "mp3" }));
   assert.doesNotThrow(() => storage.validateFile({ mimeType: "audio/mpeg", sizeBytes: 1024, extension: "mp3" }));
 });
-

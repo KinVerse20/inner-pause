@@ -47,18 +47,22 @@ export class InnerPauseAwsTestStack extends Stack {
 
     const vpc = new ec2.Vpc(this, "InnerPauseTestVpc", {
       maxAzs: 2,
-      natGateways: 1,
+      natGateways: 0,
       subnetConfiguration: [
         { name: "public", subnetType: ec2.SubnetType.PUBLIC },
-        { name: "private-egress", subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
         { name: "isolated-db", subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       ],
+    });
+
+    vpc.addGatewayEndpoint("InnerPauseS3Endpoint", {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+      subnets: [{ subnetType: ec2.SubnetType.PRIVATE_ISOLATED }],
     });
 
     const databaseSecurityGroup = new ec2.SecurityGroup(this, "DatabaseSecurityGroup", {
       vpc,
       allowAllOutbound: false,
-      description: "Allows database access from Lambda and RDS Proxy only.",
+      description: "Allows database access from private Lambda functions only.",
     });
 
     const lambdaSecurityGroup = new ec2.SecurityGroup(this, "LambdaSecurityGroup", {
@@ -85,15 +89,6 @@ export class InnerPauseAwsTestStack extends Stack {
       securityGroups: [databaseSecurityGroup],
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       removalPolicy: RemovalPolicy.DESTROY,
-    });
-
-    const proxy = database.addProxy("InnerPauseTestRdsProxy", {
-      secrets: [database.secret!],
-      vpc,
-      securityGroups: [databaseSecurityGroup],
-      requireTLS: true,
-      iamAuth: true,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
     });
 
     const userPool = new cognito.UserPool(this, "InnerPauseTestUserPool", {
@@ -191,7 +186,7 @@ export class InnerPauseAwsTestStack extends Stack {
       DATABASE_PORT: "5432",
       DATABASE_SSL: "true",
       DATABASE_IAM_AUTH: "true",
-      AWS_DATABASE_PROXY_ENDPOINT: proxy.endpoint,
+      AWS_DATABASE_ENDPOINT: database.instanceEndpoint.hostname,
       AWS_DATABASE_SECRET_ARN: database.secret!.secretArn,
       AWS_AUDIO_BUCKET_NAME: audioBucket.bucketName,
       AWS_COGNITO_USER_POOL_ID: userPool.userPoolId,
@@ -232,7 +227,45 @@ export class InnerPauseAwsTestStack extends Stack {
       architecture: lambda.Architecture.ARM_64,
       logGroup: apiLogGroup,
       vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [lambdaSecurityGroup],
+      environment: lambdaEnvironment,
+      depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
+      projectRoot: repoRoot,
+      bundling: commonNodeBundling,
+    });
+
+    const internalDbHandler = new nodejs.NodejsFunction(this, "InnerPausePrivateDbHandler", {
+      runtime: lambdaRuntime,
+      entry: path.join(repoRoot, "backend/src/handlers/internal-db.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(20),
+      memorySize: 256,
+      architecture: lambda.Architecture.ARM_64,
+      logGroup: new logs.LogGroup(this, "InnerPausePrivateDbHandlerLogGroup", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+      securityGroups: [lambdaSecurityGroup],
+      environment: lambdaEnvironment,
+      depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
+      projectRoot: repoRoot,
+      bundling: commonNodeBundling,
+    });
+
+    const publicApiHandler = new nodejs.NodejsFunction(this, "InnerPausePublicApiHandler", {
+      runtime: lambdaRuntime,
+      entry: path.join(repoRoot, "backend/src/handlers/public-api.ts"),
+      handler: "handler",
+      timeout: Duration.seconds(20),
+      memorySize: 256,
+      architecture: lambda.Architecture.ARM_64,
+      logGroup: new logs.LogGroup(this, "InnerPausePublicApiHandlerLogGroup", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
       environment: lambdaEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
       projectRoot: repoRoot,
@@ -252,8 +285,6 @@ export class InnerPauseAwsTestStack extends Stack {
       memorySize: 256,
       architecture: lambda.Architecture.ARM_64,
       logGroup: analysisWorkerLogGroup,
-      vpc,
-      securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
       projectRoot: repoRoot,
@@ -272,6 +303,7 @@ export class InnerPauseAwsTestStack extends Stack {
         removalPolicy: RemovalPolicy.DESTROY,
       }),
       vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
@@ -291,6 +323,7 @@ export class InnerPauseAwsTestStack extends Stack {
         removalPolicy: RemovalPolicy.DESTROY,
       }),
       vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
@@ -309,8 +342,6 @@ export class InnerPauseAwsTestStack extends Stack {
         retention: logs.RetentionDays.ONE_MONTH,
         removalPolicy: RemovalPolicy.DESTROY,
       }),
-      vpc,
-      securityGroups: [lambdaSecurityGroup],
       environment: lambdaEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
       projectRoot: repoRoot,
@@ -321,72 +352,70 @@ export class InnerPauseAwsTestStack extends Stack {
     audioWorkerHandler.addEventSource(new eventSources.SqsEventSource(audioQueue, { batchSize: 2, reportBatchItemFailures: true }));
     notificationWorkerHandler.addEventSource(new eventSources.SqsEventSource(notificationQueue, { batchSize: 10, reportBatchItemFailures: true }));
 
-    proxy.grantConnect(apiHandler, "innerpause_admin");
-    proxy.grantConnect(analysisWorkerHandler, "innerpause_admin");
-    proxy.grantConnect(audioWorkerHandler, "innerpause_admin");
-    proxy.grantConnect(notificationWorkerHandler, "innerpause_admin");
-    proxy.grantConnect(scheduleHandler, "innerpause_admin");
-    openAiSecret.grantRead(apiHandler);
+    openAiSecret.grantRead(publicApiHandler);
     openAiSecret.grantRead(analysisWorkerHandler);
-    audioBucket.grantRead(apiHandler);
     audioBucket.grantPut(audioWorkerHandler);
-    analysisQueue.grantSendMessages(apiHandler);
-    audioQueue.grantSendMessages(apiHandler);
-    notificationQueue.grantSendMessages(apiHandler);
+    analysisQueue.grantSendMessages(publicApiHandler);
+    audioQueue.grantSendMessages(publicApiHandler);
     analysisQueue.grantConsumeMessages(analysisWorkerHandler);
     audioQueue.grantConsumeMessages(audioWorkerHandler);
     notificationQueue.grantConsumeMessages(notificationWorkerHandler);
+    internalDbHandler.grantInvoke(publicApiHandler);
+    internalDbHandler.grantInvoke(analysisWorkerHandler);
 
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addEnvironment("AWS_PRIVATE_DB_LAMBDA_NAME", internalDbHandler.functionName);
+    analysisWorkerHandler.addEnvironment("AWS_PRIVATE_DB_LAMBDA_NAME", internalDbHandler.functionName);
+
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadCloudWatchStatus",
         actions: ["cloudwatch:DescribeAlarms", "cloudwatch:GetMetricStatistics", "cloudwatch:ListMetrics"],
         resources: ["*"],
       }),
     );
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadCostExplorer",
         actions: ["ce:GetCostAndUsage"],
         resources: ["*"],
       }),
     );
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadRdsStatus",
         actions: ["rds:DescribeDBInstances", "rds:DescribeDBSnapshots"],
         resources: ["*"],
       }),
     );
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadCognitoStatus",
         actions: ["cognito-idp:ListUsers"],
         resources: [userPool.userPoolArn],
       }),
     );
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadQueueStatus",
         actions: ["sqs:GetQueueAttributes"],
         resources: [deadLetterQueue.queueArn],
       }),
     );
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadS3PublicAccessStatus",
         actions: ["s3:GetBucketPublicAccessBlock", "s3:GetBucketPolicyStatus", "s3:ListBucket"],
         resources: [audioBucket.bucketArn],
       }),
     );
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadAccessAnalyzer",
         actions: ["access-analyzer:ListFindings"],
         resources: ["*"],
       }),
     );
-    apiHandler.addToRolePolicy(
+    publicApiHandler.addToRolePolicy(
       new iam.PolicyStatement({
         sid: "AdminReadBackupStatus",
         actions: ["backup:ListRecoveryPointsByBackupVault"],
@@ -405,12 +434,28 @@ export class InnerPauseAwsTestStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: allowedFrontendOrigins,
         allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowHeaders: ["content-type", "authorization"],
+        allowHeaders: ["content-type", "authorization", "idempotency-key", "x-request-id"],
         allowCredentials: true,
       },
     });
 
-    const lambdaIntegration = new apigateway.LambdaIntegration(apiHandler);
+    const corsOptions: apigateway.CorsOptions = {
+      allowOrigins: allowedFrontendOrigins,
+      allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowHeaders: ["content-type", "authorization", "idempotency-key", "x-request-id"],
+      allowCredentials: true,
+    };
+
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, "InnerPauseApiAuthorizer", {
+      cognitoUserPools: [userPool],
+    });
+    const protectedMethodOptions: apigateway.MethodOptions = {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    };
+
+    const privateLambdaIntegration = new apigateway.LambdaIntegration(apiHandler);
+    const publicLambdaIntegration = new apigateway.LambdaIntegration(publicApiHandler);
     apiHandler.addEnvironment("ADMIN_GROUP_NAME", adminGroup.groupName!);
     apiHandler.addEnvironment("AWS_DATABASE_IDENTIFIER", database.instanceIdentifier);
     apiHandler.addEnvironment("AWS_DEAD_LETTER_QUEUE_URL", deadLetterQueue.queueUrl);
@@ -419,18 +464,40 @@ export class InnerPauseAwsTestStack extends Stack {
     apiHandler.addEnvironment("AWS_API_NAME", "innerpause-aws-test-api");
     apiHandler.addEnvironment("AWS_API_STAGE", "test");
     apiHandler.addEnvironment("AWS_MONTHLY_BUDGET_AMOUNT", "25");
-    api.root.addResource("health").addMethod("GET", lambdaIntegration);
+    publicApiHandler.addEnvironment("ADMIN_GROUP_NAME", adminGroup.groupName!);
+    publicApiHandler.addEnvironment("AWS_DATABASE_IDENTIFIER", database.instanceIdentifier);
+    publicApiHandler.addEnvironment("AWS_DEAD_LETTER_QUEUE_URL", deadLetterQueue.queueUrl);
+    publicApiHandler.addEnvironment("AWS_FRONTEND_URL", frontendUrl);
+    publicApiHandler.addEnvironment("AWS_API_ID", api.restApiId);
+    publicApiHandler.addEnvironment("AWS_API_NAME", "innerpause-aws-test-api");
+    publicApiHandler.addEnvironment("AWS_API_STAGE", "test");
+    publicApiHandler.addEnvironment("AWS_MONTHLY_BUDGET_AMOUNT", "25");
+    api.root.addResource("health").addMethod("GET", publicLambdaIntegration);
     const apiResource = api.root.addResource("api");
     const v1Resource = apiResource.addResource("v1");
+    const v1Health = v1Resource.addResource("health");
+    v1Health.addMethod("GET", publicLambdaIntegration);
+    const analysisResource = v1Resource.addResource("analysis");
+    const analysisQuickResource = analysisResource.addResource("quick");
+    analysisQuickResource.addMethod("POST", publicLambdaIntegration, protectedMethodOptions);
+    const adminResource = v1Resource.addResource("admin");
+    adminResource.addProxy({
+      anyMethod: true,
+      defaultIntegration: publicLambdaIntegration,
+      defaultMethodOptions: protectedMethodOptions,
+      defaultCorsPreflightOptions: corsOptions,
+    });
+    const journalsResource = v1Resource.addResource("journals");
+    const journalIdResource = journalsResource.addResource("{journalId}");
+    const analyseJobResource = journalIdResource.addResource("analyse");
+    analyseJobResource.addMethod("POST", publicLambdaIntegration, protectedMethodOptions);
+    const resetAudioJobResource = journalIdResource.addResource("reset-audio");
+    resetAudioJobResource.addMethod("POST", publicLambdaIntegration, protectedMethodOptions);
     v1Resource.addProxy({
       anyMethod: true,
-      defaultIntegration: lambdaIntegration,
-      defaultCorsPreflightOptions: {
-        allowOrigins: allowedFrontendOrigins,
-        allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowHeaders: ["content-type", "authorization", "idempotency-key", "x-request-id"],
-        allowCredentials: true,
-      },
+      defaultIntegration: privateLambdaIntegration,
+      defaultMethodOptions: protectedMethodOptions,
+      defaultCorsPreflightOptions: corsOptions,
     });
 
     new events.Rule(this, "MorningGuidanceSchedule", {
@@ -456,7 +523,7 @@ export class InnerPauseAwsTestStack extends Stack {
     new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new cdk.CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });
     new cdk.CfnOutput(this, "AudioBucketName", { value: audioBucket.bucketName });
-    new cdk.CfnOutput(this, "DatabaseProxyEndpoint", { value: proxy.endpoint });
+    new cdk.CfnOutput(this, "DatabaseEndpoint", { value: database.instanceEndpoint.hostname });
     new cdk.CfnOutput(this, "DatabaseSecretName", { value: database.secret!.secretName });
     new cdk.CfnOutput(this, "OpenAiSecretName", { value: openAiSecret.secretName });
     new cdk.CfnOutput(this, "AnalysisQueueUrl", { value: analysisQueue.queueUrl });

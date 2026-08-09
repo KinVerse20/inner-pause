@@ -66,7 +66,8 @@ New backend private variables:
 - `AWS_COGNITO_USER_POOL_CLIENT_ID`
 - `AWS_AUDIO_BUCKET_NAME`
 - `AWS_DATABASE_SECRET_ARN`
-- `AWS_DATABASE_PROXY_ENDPOINT`
+- `AWS_DATABASE_ENDPOINT`
+- `AWS_PRIVATE_DB_LAMBDA_NAME`
 - `AWS_WORK_QUEUE_URL`
 - `OPENAI_API_KEY`
 - WhatsApp provider test variables
@@ -80,4 +81,3 @@ New backend private variables:
 - S3 signed URL generation is not complete.
 - AI and audio jobs are not processed through SQS workers yet.
 - Notification provider execution remains a safe stub.
-
