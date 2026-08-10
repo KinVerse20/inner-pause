@@ -2,6 +2,7 @@ import { authenticatedUserFromClaims } from "../auth/cognito.js";
 import { ApiRouter } from "../routes/router.js";
 import { readConfig } from "../config/env.js";
 import { requestIdFrom, securityHeaders } from "../shared/http.js";
+import { corsHeaders } from "../shared/cors.js";
 
 const router = new ApiRouter();
 const config = readConfig();
@@ -37,19 +38,9 @@ export async function handler(event: ApiGatewayEvent) {
     headers: {
       ...response.headers,
       ...securityHeaders(),
-      ...corsHeaders(headers),
+      ...corsHeaders(headers, config.allowedOrigins),
       "x-request-id": requestId,
     },
-  };
-}
-
-function corsHeaders(headers: Record<string, string | undefined>) {
-  const origin = headers.origin;
-  if (!origin || !config.allowedOrigins.includes(origin)) return {};
-  return {
-    "access-control-allow-origin": origin,
-    "access-control-allow-credentials": "true",
-    vary: "origin",
   };
 }
 

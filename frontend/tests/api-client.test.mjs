@@ -26,6 +26,44 @@ test("attaches token, request id and idempotency key", async () => {
   assert.ok(captured.init.headers["x-request-id"]);
 });
 
+test("authenticated me request sends the configured Cognito API token", async () => {
+  let captured;
+  const client = new InnerPauseApiClient({
+    baseUrl: "https://api.example.test/api/v1",
+    getAccessToken: () => "id-token-123",
+    fetchImpl: async (url, init) => {
+      captured = { url, init };
+      return new Response(JSON.stringify({ data: { id: "user-1", email: "user@example.com" }, requestId: "req-me" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  await client.me();
+  assert.equal(captured.url, "https://api.example.test/api/v1/me");
+  assert.equal(captured.init.headers.authorization, "Bearer id-token-123");
+});
+
+test("authenticated quick analysis request sends the configured Cognito API token", async () => {
+  let captured;
+  const client = new InnerPauseApiClient({
+    baseUrl: "https://api.example.test/api/v1",
+    getAccessToken: () => "id-token-456",
+    fetchImpl: async (url, init) => {
+      captured = { url, init };
+      return new Response(JSON.stringify({ data: { analysis: {} }, requestId: "req-analysis" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  await client.analyseText("A safe test reflection");
+  assert.equal(captured.url, "https://api.example.test/api/v1/analysis/quick");
+  assert.equal(captured.init.headers.authorization, "Bearer id-token-456");
+});
+
 test("throws structured errors and calls unauthorised hook", async () => {
   let unauthorised = false;
   const client = new InnerPauseApiClient({

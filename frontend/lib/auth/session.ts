@@ -20,6 +20,11 @@ export function getAccessToken() {
   return window.localStorage.getItem(TOKEN_KEY);
 }
 
+export function getApiToken() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ID_TOKEN_KEY);
+}
+
 export function getRefreshToken() {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem(REFRESH_TOKEN_KEY);
@@ -73,7 +78,7 @@ export function clearFrontendSession() {
 
 export function createFrontendApiClient(onUnauthorised?: () => void) {
   return new InnerPauseApiClient({
-    getAccessToken,
+    getAccessToken: getApiToken,
     onUnauthorised: () => {
       clearFrontendSession();
       onUnauthorised?.();

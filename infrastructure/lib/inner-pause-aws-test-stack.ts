@@ -49,8 +49,14 @@ export class InnerPauseAwsTestStack extends Stack {
       maxAzs: 2,
       natGateways: 0,
       subnetConfiguration: [
-        { name: "public", subnetType: ec2.SubnetType.PUBLIC },
-        { name: "isolated-db", subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+        { name: "public", subnetType: ec2.SubnetType.PUBLIC, cidrMask: 19 },
+        {
+          name: "private-egress",
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          cidrMask: 19,
+          reserved: true,
+        },
+        { name: "isolated-db", subnetType: ec2.SubnetType.PRIVATE_ISOLATED, cidrMask: 19 },
       ],
     });
 
@@ -62,7 +68,7 @@ export class InnerPauseAwsTestStack extends Stack {
     const databaseSecurityGroup = new ec2.SecurityGroup(this, "DatabaseSecurityGroup", {
       vpc,
       allowAllOutbound: false,
-      description: "Allows database access from private Lambda functions only.",
+      description: "Allows database access from Lambda and RDS Proxy only.",
     });
 
     const lambdaSecurityGroup = new ec2.SecurityGroup(this, "LambdaSecurityGroup", {
@@ -81,6 +87,8 @@ export class InnerPauseAwsTestStack extends Stack {
       maxAllocatedStorage: 100,
       databaseName: "innerpause_test",
       credentials: rds.Credentials.fromGeneratedSecret("innerpause_admin"),
+      iamAuthentication: true,
+      applyImmediately: true,
       multiAz: false,
       publiclyAccessible: false,
       storageEncrypted: true,
@@ -181,13 +189,6 @@ export class InnerPauseAwsTestStack extends Stack {
 
     const lambdaEnvironment = {
       INFRASTRUCTURE_PROVIDER: "aws",
-      DATABASE_NAME: "innerpause_test",
-      DATABASE_USER: "innerpause_admin",
-      DATABASE_PORT: "5432",
-      DATABASE_SSL: "true",
-      DATABASE_IAM_AUTH: "true",
-      AWS_DATABASE_ENDPOINT: database.instanceEndpoint.hostname,
-      AWS_DATABASE_SECRET_ARN: database.secret!.secretArn,
       AWS_AUDIO_BUCKET_NAME: audioBucket.bucketName,
       AWS_COGNITO_USER_POOL_ID: userPool.userPoolId,
       AWS_COGNITO_USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
@@ -205,6 +206,18 @@ export class InnerPauseAwsTestStack extends Stack {
       ALLOWED_ORIGINS: allowedFrontendOrigins.join(","),
     };
 
+    const directDatabaseEnvironment = {
+      ...lambdaEnvironment,
+      DATABASE_NAME: "innerpause_test",
+      DATABASE_USER: "innerpause_admin",
+      DATABASE_PORT: database.instanceEndpoint.port.toString(),
+      DATABASE_SSL: "true",
+      DATABASE_IAM_AUTH: "true",
+      AWS_DATABASE_ENDPOINT: database.instanceEndpoint.hostname,
+      AWS_DATABASE_SECRET_ARN: database.secret!.secretArn,
+      AWS_RDS_CA_BUNDLE_PATH: "/var/task/ap-south-1-bundle.pem",
+    };
+
     const apiLogGroup = new logs.LogGroup(this, "InnerPauseApiHandlerLogGroup", {
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: RemovalPolicy.DESTROY,
@@ -218,6 +231,17 @@ export class InnerPauseAwsTestStack extends Stack {
       externalModules: [],
     };
 
+    const directDatabaseBundling: nodejs.BundlingOptions = {
+      ...commonNodeBundling,
+      commandHooks: {
+        beforeBundling: () => [],
+        beforeInstall: () => [],
+        afterBundling: (inputDir, outputDir) => [
+          `cp "${inputDir}/backend/src/certificates/ap-south-1-bundle.pem" "${outputDir}/ap-south-1-bundle.pem"`,
+        ],
+      },
+    };
+
     const apiHandler = new nodejs.NodejsFunction(this, "InnerPauseApiHandler", {
       runtime: lambdaRuntime,
       entry: path.join(repoRoot, "backend/src/handlers/api.ts"),
@@ -229,10 +253,10 @@ export class InnerPauseAwsTestStack extends Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [lambdaSecurityGroup],
-      environment: lambdaEnvironment,
+      environment: directDatabaseEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
       projectRoot: repoRoot,
-      bundling: commonNodeBundling,
+      bundling: directDatabaseBundling,
     });
 
     const internalDbHandler = new nodejs.NodejsFunction(this, "InnerPausePrivateDbHandler", {
@@ -249,10 +273,10 @@ export class InnerPauseAwsTestStack extends Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [lambdaSecurityGroup],
-      environment: lambdaEnvironment,
+      environment: directDatabaseEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
       projectRoot: repoRoot,
-      bundling: commonNodeBundling,
+      bundling: directDatabaseBundling,
     });
 
     const publicApiHandler = new nodejs.NodejsFunction(this, "InnerPausePublicApiHandler", {
@@ -305,10 +329,10 @@ export class InnerPauseAwsTestStack extends Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [lambdaSecurityGroup],
-      environment: lambdaEnvironment,
+      environment: directDatabaseEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
       projectRoot: repoRoot,
-      bundling: commonNodeBundling,
+      bundling: directDatabaseBundling,
     });
 
     const notificationWorkerHandler = new nodejs.NodejsFunction(this, "InnerPauseNotificationWorkerHandler", {
@@ -325,10 +349,10 @@ export class InnerPauseAwsTestStack extends Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       securityGroups: [lambdaSecurityGroup],
-      environment: lambdaEnvironment,
+      environment: directDatabaseEnvironment,
       depsLockFilePath: path.join(repoRoot, "backend/package-lock.json"),
       projectRoot: repoRoot,
-      bundling: commonNodeBundling,
+      bundling: directDatabaseBundling,
     });
 
     const scheduleHandler = new nodejs.NodejsFunction(this, "InnerPauseScheduleHandler", {
@@ -360,6 +384,10 @@ export class InnerPauseAwsTestStack extends Stack {
     analysisQueue.grantConsumeMessages(analysisWorkerHandler);
     audioQueue.grantConsumeMessages(audioWorkerHandler);
     notificationQueue.grantConsumeMessages(notificationWorkerHandler);
+    database.grantConnect(apiHandler, "innerpause_admin");
+    database.grantConnect(internalDbHandler, "innerpause_admin");
+    database.grantConnect(audioWorkerHandler, "innerpause_admin");
+    database.grantConnect(notificationWorkerHandler, "innerpause_admin");
     internalDbHandler.grantInvoke(publicApiHandler);
     internalDbHandler.grantInvoke(analysisWorkerHandler);
 
@@ -438,6 +466,24 @@ export class InnerPauseAwsTestStack extends Stack {
         allowCredentials: true,
       },
     });
+
+    const gatewayCorsResponseHeaders = {
+      "Access-Control-Allow-Origin": `'${frontendUrl}'`,
+      "Access-Control-Allow-Credentials": "'true'",
+      "Access-Control-Allow-Headers": "'Authorization,Content-Type,Idempotency-Key,X-Request-Id'",
+      "Access-Control-Allow-Methods": "'GET,POST,PUT,PATCH,DELETE,OPTIONS'",
+      Vary: "'Origin'",
+    };
+    const gatewayCorsResponses: Array<[string, apigateway.ResponseType]> = [
+      ["Default4xxCorsResponse", apigateway.ResponseType.DEFAULT_4XX],
+      ["Default5xxCorsResponse", apigateway.ResponseType.DEFAULT_5XX],
+      ["UnauthorizedCorsResponse", apigateway.ResponseType.UNAUTHORIZED],
+      ["AccessDeniedCorsResponse", apigateway.ResponseType.ACCESS_DENIED],
+      ["MissingAuthenticationTokenCorsResponse", apigateway.ResponseType.MISSING_AUTHENTICATION_TOKEN],
+    ];
+    for (const [id, type] of gatewayCorsResponses) {
+      api.addGatewayResponse(id, { type, responseHeaders: gatewayCorsResponseHeaders });
+    }
 
     const corsOptions: apigateway.CorsOptions = {
       allowOrigins: allowedFrontendOrigins,

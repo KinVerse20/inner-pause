@@ -1,17 +1,17 @@
 import type { AdminDashboardProvider } from "../services/admin-dashboard.js";
 import { AwsAdminDashboardProvider } from "../services/admin-dashboard.js";
-import { CognitoJwtVerifier, authenticatedUserFromClaims, authenticate, type AuthenticatedUser } from "../auth/cognito.js";
+import { authenticatedUserFromClaims, type AuthenticatedUser } from "../auth/cognito.js";
 import { readConfig } from "../config/env.js";
 import type { PrivateDbActionResult } from "../internal/private-db-contract.js";
 import { SqsQueueClient } from "../jobs/sqs-queue.js";
 import { invokeLambdaJson } from "../runtime/lambda-invoke.js";
 import { readSecretString } from "../runtime/secrets.js";
 import { createAiQuickAnalysis } from "../services/quick-analysis.js";
-import { forbidden, notFound } from "../shared/errors.js";
+import { forbidden, notFound, unauthenticated } from "../shared/errors.js";
 import { fail, ok, requestIdFrom, securityHeaders } from "../shared/http.js";
+import { corsHeaders } from "../shared/cors.js";
 
 const config = readConfig();
-const verifier = new CognitoJwtVerifier(config);
 const adminProvider = new AwsAdminDashboardProvider(config);
 const queue =
   config.region && (config.analysisQueueUrl || config.audioQueueUrl || config.notificationQueueUrl || config.workQueueUrl)
@@ -182,10 +182,10 @@ async function handleAdminRoute(
   throw notFound("Endpoint");
 }
 
-async function resolveAuthenticatedUser(event: ApiGatewayEvent, headers: Record<string, string | undefined>) {
+async function resolveAuthenticatedUser(event: ApiGatewayEvent, _headers: Record<string, string | undefined>) {
   const trusted = authenticatedUserFromClaims(event.requestContext?.authorizer?.claims ?? null);
   if (trusted) return trusted;
-  return authenticate(headers, verifier);
+  throw unauthenticated();
 }
 
 async function resolveOpenAiApiKey() {
@@ -216,19 +216,9 @@ function respond(response: ReturnType<typeof ok>, headers: Record<string, string
     headers: {
       ...response.headers,
       ...securityHeaders(),
-      ...corsHeaders(headers),
+      ...corsHeaders(headers, config.allowedOrigins),
       "x-request-id": requestId,
     },
-  };
-}
-
-function corsHeaders(headers: Record<string, string | undefined>) {
-  const origin = headers.origin;
-  if (!origin || !config.allowedOrigins.includes(origin)) return {};
-  return {
-    "access-control-allow-origin": origin,
-    "access-control-allow-credentials": "true",
-    vary: "origin",
   };
 }
 

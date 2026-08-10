@@ -107,7 +107,7 @@ export class FrontendCognitoAuthService {
 
     const result = response.AuthenticationResult;
 
-    if (!result?.AccessToken) {
+    if (!result?.AccessToken || !result.IdToken) {
       if (response.ChallengeName === "NEW_PASSWORD_REQUIRED") {
         throw new Error(
           "This account uses a temporary password. Delete this test user from Cognito and create the account again through The InnerPause app.",
@@ -120,7 +120,7 @@ export class FrontendCognitoAuthService {
         );
       }
 
-      throw new Error("Cognito did not return a session.");
+      throw new Error("Cognito did not return a complete session.");
     }
 
     return {
@@ -148,7 +148,7 @@ export class FrontendCognitoAuthService {
 
     const result = response.AuthenticationResult;
 
-    if (!result?.AccessToken) {
+    if (!result?.AccessToken || !result.IdToken) {
       throw new Error("Could not refresh session.");
     }
 

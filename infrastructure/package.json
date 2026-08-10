@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
+    "test": "npm run synth -- --quiet >/dev/null && node --test tests/*.test.mjs",
     "synth": "cdk synth",
     "diff": "cdk diff",
     "diff:safe": "bash ../scripts/cdk-diff-safe.sh",
