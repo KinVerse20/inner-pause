@@ -1,4 +1,5 @@
 import { ChakraDefinition, ChakraId, MoodValue, QuickPlayDuration, RelaxMoodDefinition } from "@/lib/types";
+import { getChakraFrequencyLabel } from "@/lib/chakra-audio";
 
 const sessionTemplates = [
   {
@@ -39,7 +40,7 @@ const chakraBase = [
     name: "Root Chakra",
     meaning: "Grounding, safety and belonging",
     purpose: "Settle the body, feel supported and return to steadiness.",
-    frequencyLabel: "396 Hz",
+    frequencyLabel: getChakraFrequencyLabel("root"),
     color: "#C4473A",
     accent: "#F1B27A",
     glow: "rgba(196,71,58,0.45)",
@@ -58,7 +59,7 @@ const chakraBase = [
     name: "Sacral Chakra",
     meaning: "Flow, feeling and creativity",
     purpose: "Loosen tension, welcome feeling and restore creative motion.",
-    frequencyLabel: "417 Hz",
+    frequencyLabel: getChakraFrequencyLabel("sacral"),
     color: "#E67A2E",
     accent: "#F6D98D",
     glow: "rgba(230,122,46,0.45)",
@@ -77,7 +78,7 @@ const chakraBase = [
     name: "Solar Plexus Chakra",
     meaning: "Confidence, will and clarity",
     purpose: "Strengthen inner resolve and reconnect with personal direction.",
-    frequencyLabel: "528 Hz",
+    frequencyLabel: getChakraFrequencyLabel("solar-plexus"),
     color: "#E0A72F",
     accent: "#FBEAA7",
     glow: "rgba(224,167,47,0.45)",
@@ -96,7 +97,7 @@ const chakraBase = [
     name: "Heart Chakra",
     meaning: "Compassion, balance and connection",
     purpose: "Open gently to warmth, forgiveness and emotional balance.",
-    frequencyLabel: "639 Hz",
+    frequencyLabel: getChakraFrequencyLabel("heart"),
     color: "#4F9B63",
     accent: "#C9E7B0",
     glow: "rgba(79,155,99,0.45)",
@@ -115,7 +116,7 @@ const chakraBase = [
     name: "Throat Chakra",
     meaning: "Expression, honesty and resonance",
     purpose: "Release pressure and make room for a clear inner voice.",
-    frequencyLabel: "741 Hz",
+    frequencyLabel: getChakraFrequencyLabel("throat"),
     color: "#4B7DD6",
     accent: "#B8D7F8",
     glow: "rgba(75,125,214,0.45)",
@@ -134,7 +135,7 @@ const chakraBase = [
     name: "Third Eye Chakra",
     meaning: "Insight, reflection and intuition",
     purpose: "Create inner stillness and notice what becomes clear.",
-    frequencyLabel: "852 Hz",
+    frequencyLabel: getChakraFrequencyLabel("third-eye"),
     color: "#6D57C8",
     accent: "#D6C6FF",
     glow: "rgba(109,87,200,0.45)",
@@ -153,7 +154,7 @@ const chakraBase = [
     name: "Crown Chakra",
     meaning: "Presence, spaciousness and peace",
     purpose: "Rest in spacious awareness and end the journey with quiet peace.",
-    frequencyLabel: "963 Hz",
+    frequencyLabel: getChakraFrequencyLabel("crown"),
     color: "#9A68D2",
     accent: "#F2DCF8",
     glow: "rgba(154,104,210,0.45)",

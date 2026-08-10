@@ -6,6 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { MvpShell } from "@/components/mvp-shell";
 import { RitualBackdrop, RitualOrb, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { chakraMap } from "@/data/chakras";
+import {
+  chakraSoundStyles,
+  getChakraAudioPath,
+  getChakraSoundStyleLabel,
+  type ChakraSoundStyle,
+} from "@/lib/chakra-audio";
 import { updatePlan } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
 
@@ -21,6 +27,17 @@ const ritualStages = [
   { key: "integrate", label: "Integrate", copy: "Let the whole scene become quieter and balanced." },
 ] as const;
 
+function prepareAndPlayAudio(audio: HTMLAudioElement, audioPath: string, shouldLoad: boolean) {
+  if (shouldLoad) {
+    audio.src = audioPath;
+    audio.loop = true;
+    audio.currentTime = 0;
+    audio.load();
+  }
+
+  return audio.play();
+}
+
 export function HealingAudioPlayerScreen() {
   const router = useRouter();
   const planId = useSearchParams().get("plan");
@@ -28,14 +45,24 @@ export function HealingAudioPlayerScreen() {
   const entry = state.entries.find((item) => item.plan?.id === planId);
   const plan = entry?.plan;
   const audioRef = useRef<HTMLAudioElement>(null);
+  const loadedAudioPathRef = useRef<string | null>(null);
   const [blockIndex, setBlockIndex] = useState(plan?.lastPlaybackPosition.blockIndex ?? 0);
   const [elapsedInBlock, setElapsedInBlock] = useState(plan?.lastPlaybackPosition.elapsedSeconds ?? 0);
   const [playing, setPlaying] = useState(false);
   const [audioError, setAudioError] = useState(false);
+  const [playbackNotice, setPlaybackNotice] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [soundStyle, setSoundStyle] = useState<ChakraSoundStyle | null>(null);
+  const [draftSoundStyle, setDraftSoundStyle] = useState<ChakraSoundStyle | null>(null);
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const [soundPickerOpen, setSoundPickerOpen] = useState(true);
 
   const block = plan?.blocks[blockIndex];
   const chakra = block ? chakraMap[block.chakraId] : null;
+  const selectedChakras = plan
+    ? [...new Set(plan.blocks.map((item) => item.chakraId))].map((chakraId) => chakraMap[chakraId])
+    : [];
+  const activeAudioPath = block && soundStyle ? getChakraAudioPath(block.chakraId, soundStyle) : null;
   const totalElapsed = !plan
     ? 0
     : plan.blocks.slice(0, blockIndex).reduce((sum, item) => sum + item.durationMinutes * 60, 0) + elapsedInBlock;
@@ -61,16 +88,18 @@ export function HealingAudioPlayerScreen() {
   }, []);
 
   useEffect(() => {
-    if (!audioRef.current || !block) return;
-    audioRef.current.src = block.audioPath;
-    audioRef.current.loop = true;
-    audioRef.current.currentTime = 0;
+    if (!sessionStarted || !activeAudioPath || loadedAudioPathRef.current === activeAudioPath) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    loadedAudioPathRef.current = activeAudioPath;
     setAudioError(false);
-    audioRef.current.play().then(() => setPlaying(true)).catch(() => {
-      setAudioError(true);
+    setPlaybackNotice(null);
+    prepareAndPlayAudio(audio, activeAudioPath, true).then(() => setPlaying(true)).catch(() => {
       setPlaying(false);
+      setPlaybackNotice("The sound is ready. Tap play when you are ready to begin.");
     });
-  }, [block]);
+  }, [activeAudioPath, sessionStarted]);
 
   useEffect(() => {
     if (!playing || !block || !plan) return;
@@ -116,13 +145,37 @@ export function HealingAudioPlayerScreen() {
       setPlaying(false);
       return;
     }
-    audioRef.current.play().then(() => setPlaying(true)).catch(() => setAudioError(true));
+    audioRef.current.play().then(() => {
+      setPlaying(true);
+      setPlaybackNotice(null);
+    }).catch(() => {
+      setPlaying(false);
+      setPlaybackNotice("This sound could not start. Please try again.");
+    });
   };
 
   const goToBlock = (index: number) => {
     if (!plan || index < 0 || index >= plan.blocks.length) return;
     setBlockIndex(index);
     setElapsedInBlock(0);
+  };
+
+  const applySoundStyle = () => {
+    if (!draftSoundStyle || !block) return;
+    const audioPath = getChakraAudioPath(block.chakraId, draftSoundStyle);
+    setSoundStyle(draftSoundStyle);
+    setSessionStarted(true);
+    setSoundPickerOpen(false);
+    setAudioError(false);
+    setPlaybackNotice(null);
+
+    if (audioRef.current) {
+      loadedAudioPathRef.current = audioPath;
+      prepareAndPlayAudio(audioRef.current, audioPath, true).then(() => setPlaying(true)).catch(() => {
+        setPlaying(false);
+        setPlaybackNotice("The sound is ready. Tap play when you are ready to begin.");
+      });
+    }
   };
 
   return (
@@ -137,6 +190,7 @@ export function HealingAudioPlayerScreen() {
               <p className="minimal-label text-xs">Heal</p>
               <h1 className="mt-2 font-serif text-[clamp(2rem,5vw,4rem)] text-[var(--ip-ink)]">{chakra.name.replace(" Chakra", "")}</h1>
               <p className="text-sm text-[var(--ip-body)]">{stage.label} • {block.frequencyLabel}</p>
+              {soundStyle ? <p className="mt-1 text-xs text-[var(--gold-light)]">{getChakraSoundStyleLabel(soundStyle)}</p> : null}
             </div>
             <button type="button" onClick={() => router.push(`/feedback?plan=${plan.id}`)} className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-xl text-[var(--ip-body)]" aria-label="End session">
               ≡
@@ -189,7 +243,13 @@ export function HealingAudioPlayerScreen() {
 
                 {audioError ? (
                   <p className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-                    Add the MP3 file to the public/audio folder or replace the placeholder audio.
+                    This {chakra.name} {soundStyle ? getChakraSoundStyleLabel(soundStyle) : "audio"} file is unavailable. Choose another sound or check the matching file in public/audio/chakras/{chakra.frequencyLabel.replace(" Hz", "")}.
+                  </p>
+                ) : null}
+
+                {playbackNotice && !audioError ? (
+                  <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-sm text-[var(--ip-body)]">
+                    {playbackNotice}
                   </p>
                 ) : null}
 
@@ -218,7 +278,19 @@ export function HealingAudioPlayerScreen() {
                 </div>
 
                 <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-[rgba(17,18,20,0.4)] p-4">
-                  <p className="minimal-label text-[0.62rem]">Current block</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="minimal-label text-[0.62rem]">Current block</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftSoundStyle(soundStyle);
+                        setSoundPickerOpen(true);
+                      }}
+                      className="min-h-10 rounded-full border border-white/10 bg-white/[0.035] px-4 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)]"
+                    >
+                      Change sound
+                    </button>
+                  </div>
                   <p className="mt-2 font-serif text-2xl text-[var(--ip-ink)]">{block.title}</p>
                   <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{block.intention}</p>
                 </div>
@@ -228,7 +300,69 @@ export function HealingAudioPlayerScreen() {
             </div>
           </div>
         </div>
-        <audio ref={audioRef} preload="auto" onError={() => setAudioError(true)} />
+        {soundPickerOpen ? (
+          <div className="absolute inset-0 z-30 grid min-h-dvh place-items-center overflow-y-auto bg-[rgba(6,10,24,0.9)] px-4 py-[calc(1.25rem+env(safe-area-inset-top))] backdrop-blur-xl">
+            <section className="w-full max-w-2xl rounded-[1.8rem] border border-[rgba(244,122,34,0.28)] bg-[rgba(11,15,33,0.94)] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.45)] sm:p-7" aria-labelledby="sound-picker-title">
+              <p className="minimal-label text-xs">Your healing sound</p>
+              <h2 id="sound-picker-title" className="mt-3 font-serif text-[clamp(2.3rem,7vw,4rem)] leading-none text-[var(--ip-ink)]">
+                What would you like to listen to?
+              </h2>
+              <p className="mt-4 text-sm leading-6 text-[var(--ip-body)]">
+                Choose once for this session. The same sound will follow {selectedChakras.length > 1 ? "each selected chakra" : "your selected chakra"} at its correct frequency.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2" aria-label="Selected chakra frequencies">
+                {selectedChakras.map((item) => (
+                  <span key={item.id} className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-xs text-[var(--ip-body)]">
+                    {item.name.replace(" Chakra", "")} · {item.frequencyLabel}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                {chakraSoundStyles.map((style) => {
+                  const selected = draftSoundStyle === style.id;
+                  return (
+                    <button
+                      key={style.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setDraftSoundStyle(style.id)}
+                      className={`min-h-16 rounded-[1.2rem] border px-4 text-left transition ${selected ? "border-[rgba(244,122,34,0.72)] bg-[rgba(244,122,34,0.16)] text-[var(--gold-light)]" : "border-white/10 bg-white/[0.035] text-[var(--ip-body)] hover:border-white/20 hover:bg-white/[0.06]"}`}
+                    >
+                      <span className="font-serif text-xl sm:text-2xl">{style.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                {sessionStarted ? (
+                  <button type="button" onClick={() => setSoundPickerOpen(false)} className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-6 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--ip-body)]">
+                    Keep current sound
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={!draftSoundStyle}
+                  onClick={applySoundStyle}
+                  className="min-h-12 rounded-full border border-[rgba(244,122,34,0.58)] bg-[rgba(244,122,34,0.14)] px-6 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {sessionStarted ? "Apply sound" : "Begin healing"}
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
+        <audio
+          ref={audioRef}
+          preload="auto"
+          onError={() => {
+            setAudioError(true);
+            setPlaying(false);
+            setPlaybackNotice(null);
+          }}
+        />
       </RitualBackdrop>
     </MvpShell>
   );
