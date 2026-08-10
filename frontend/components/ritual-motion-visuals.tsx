@@ -9,9 +9,17 @@ import type { ChakraId } from "@/lib/types";
 
 const particlePalette = ["#76c8ed", "#8e7bec", "#cf78c7", "#ef8b6c", "#e9bf65", "#55cba9"];
 
-export function BreathingRipple({ label = "Breathe in", active = true }: { label?: string; active?: boolean }) {
+export function BreathingRipple({
+  label = "Breathe in",
+  active = true,
+  className = "",
+}: {
+  label?: string;
+  active?: boolean;
+  className?: string;
+}) {
   return (
-    <div className={`breath-ripple ${active ? "is-active" : "is-paused"}`} aria-label="Breathing ripple">
+    <div className={`breath-ripple ${active ? "is-active" : "is-paused"} ${className}`.trim()} aria-label="Breathing ripple">
       <span className="breath-ripple__aura" />
       {Array.from({ length: 6 }).map((_, index) => (
         <span key={`ring-${index}`} className="breath-ripple__ring" style={{ "--ring-index": index } as CSSProperties} />
