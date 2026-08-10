@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { MvpShell } from "@/components/mvp-shell";
 import { BeforeAfterShift, RitualBackdrop, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import { CompletionBloom } from "@/components/ritual-motion-visuals";
 import { saveFeedback } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
 
@@ -68,22 +69,23 @@ export function SessionFeedbackScreen() {
       <div className="space-y-5">
         <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           <div className="relative z-10 space-y-5">
-            <div className="space-y-2 text-center">
+            <CompletionBloom />
+            <div className="completion-content-reveal space-y-2 text-center">
               <p className="minimal-label text-xs">Close</p>
               <h1 className="font-serif text-[clamp(2.5rem,7vw,4.6rem)] leading-[0.95] text-[var(--gold-light)]">
-                How do you feel right now?
+                Session complete.
               </h1>
-              <p className="text-base leading-7 text-[var(--ip-body)]">Take a moment to notice the shift.</p>
+              <p className="text-base leading-7 text-[var(--ip-body)]">You&apos;ve taken a mindful pause. Take a moment to notice the shift.</p>
             </div>
 
-            <BeforeAfterShift before={beforeLine} after={afterLine} />
+            <div className="completion-content-reveal"><BeforeAfterShift before={beforeLine} after={afterLine} /></div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <RitualWeatherCard title="Before" line={beforeLine} tone={inferWeatherTone(entry.analysis?.summary)} />
               <RitualWeatherCard title="After" line={afterLine} tone={tone} />
             </div>
 
-            <div className="rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.5)] p-4 sm:p-5">
+            <div className="completion-content-reveal rounded-[1.45rem] border border-white/10 bg-[rgba(17,18,20,0.5)] p-4 sm:p-5">
               <p className="minimal-label text-[0.62rem]">How are you feeling right now?</p>
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {feelingOptions.map((option) => (

@@ -19,6 +19,13 @@ export const chakraSoundStyles = [
 
 export type ChakraSoundStyle = (typeof chakraSoundStyles)[number]["id"];
 
+export const chakraSoundVisualModes = {
+  rain: "rain",
+  forest: "forest",
+  piano: "piano",
+  ambient: "ambient",
+} as const satisfies Record<ChakraSoundStyle, ChakraSoundStyle>;
+
 export function getChakraFrequency(chakraId: ChakraId) {
   return chakraFrequencies[chakraId];
 }
@@ -29,6 +36,10 @@ export function getChakraFrequencyLabel(chakraId: ChakraId) {
 
 export function getChakraSoundStyleLabel(style: ChakraSoundStyle) {
   return chakraSoundStyles.find((item) => item.id === style)?.label ?? style;
+}
+
+export function getChakraSoundVisualMode(style: ChakraSoundStyle) {
+  return chakraSoundVisualModes[style];
 }
 
 export function getChakraAudioPath(chakraId: ChakraId, style: ChakraSoundStyle) {

@@ -41,7 +41,7 @@ export function MvpShell({ children, hideNav = false }: { children: ReactNode; h
       {showStandardNav ? <MvpTopMenu open={mobileMenuOpen} setOpen={setMobileMenuOpen} /> : null}
       {showRitualHeader ? <RitualTopBar current={ritualStage!} /> : null}
       <main
-        className={`app-main-shell mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] sm:px-5 md:max-w-[44rem] ${
+        className={`app-main-shell ${immersiveRoute ? "ritual-page-transition" : ""} mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pb-[var(--page-bottom-padding)] sm:px-5 md:max-w-[44rem] ${
           showStandardNav
             ? "pt-[calc(4.5rem+env(safe-area-inset-top))] lg:ml-[15.25rem] lg:w-[calc(100%-15.25rem)] lg:max-w-none lg:px-6 lg:pb-6 lg:pt-[calc(1.25rem+env(safe-area-inset-top))]"
             : showRitualHeader

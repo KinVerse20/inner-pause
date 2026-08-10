@@ -205,10 +205,10 @@ export function ExpressionPanel({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="journal-motion-flow space-y-4">
       <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6">
         <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,24rem)] lg:items-center">
-          <div className="space-y-4">
+          <div className="journal-prompt-enter space-y-4">
             <p className="minimal-label text-xs">{mode === "write" ? "Write" : "Speak"}</p>
             <h2 className="font-serif text-[clamp(2.5rem,8vw,4.4rem)] leading-[0.95] text-[var(--gold-light)]">
               {mode === "write" ? "Write to release." : "Speak your heart."}
@@ -287,7 +287,7 @@ export function ExpressionPanel({
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="Your words will settle here as you speak..."
-            className="mt-4 min-h-44 w-full resize-none rounded-[1.25rem] border border-white/10 bg-black/20 p-4 text-lg leading-8 text-[var(--ip-ink)] outline-none placeholder:text-[rgba(170,166,161,0.45)]"
+            className="journal-input-enter mt-4 min-h-44 w-full resize-none rounded-[1.25rem] border border-white/10 bg-black/20 p-4 text-lg leading-8 text-[var(--ip-ink)] outline-none placeholder:text-[rgba(170,166,161,0.45)]"
           />
         </div>
       ) : (
@@ -307,7 +307,7 @@ export function ExpressionPanel({
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="Start with what feels hardest to carry..."
-            className="mt-4 min-h-[min(50dvh,26rem)] w-full resize-none rounded-[1.25rem] border border-white/10 bg-black/20 p-5 text-xl leading-9 text-[var(--ip-ink)] outline-none placeholder:text-[rgba(170,166,161,0.42)]"
+            className="journal-input-enter mt-4 min-h-[min(50dvh,26rem)] w-full resize-none rounded-[1.25rem] border border-white/10 bg-black/20 p-5 text-xl leading-9 text-[var(--ip-ink)] outline-none placeholder:text-[rgba(170,166,161,0.42)]"
           />
           <div className="mt-3 flex items-center justify-between gap-3 text-sm text-[var(--ip-muted)]">
             <span>{words} words</span>

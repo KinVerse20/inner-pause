@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { MvpShell } from "@/components/mvp-shell";
-import { RitualBackdrop, RitualOrb, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import { RitualBackdrop, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { usePlayer } from "@/components/player-provider";
+import { BreathingRipple } from "@/components/ritual-motion-visuals";
 import { chakraMap } from "@/data/chakras";
 import { useMvpState } from "@/lib/use-mvp-state";
 
@@ -62,13 +63,9 @@ export function MvpHomeScreen() {
 
             <div className="hidden lg:block" />
             <div className="grid place-items-center">
-              <RitualOrb
-                stage={opening ? "arrive-opening" : "arrive"}
-                tone={weatherTone}
-                intensity={0.76}
-                label="Inner world arrival orb"
-                className="w-[min(84vw,34rem)] lg:w-[min(42vw,36rem)]"
-              />
+              <div className={opening ? "breath-ripple-opening" : ""}>
+                <BreathingRipple label={opening ? "Arriving" : "Breathe in"} />
+              </div>
             </div>
             <div className="hidden lg:block" />
 

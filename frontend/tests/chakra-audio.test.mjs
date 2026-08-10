@@ -6,8 +6,10 @@ import { fileURLToPath } from "node:url";
 const {
   chakraFrequencies,
   chakraSoundStyles,
+  chakraSoundVisualModes,
   getChakraAudioPath,
   getChakraFrequencyLabel,
+  getChakraSoundVisualMode,
 } = await import("../lib/chakra-audio.ts");
 
 const expectedFrequencies = {
@@ -60,4 +62,17 @@ test("uses one selected style consistently across a multi-chakra session", () =>
 test("changing the style keeps the chakra frequency unchanged", () => {
   assert.equal(getChakraAudioPath("crown", "rain"), "/audio/chakras/963/rain_963Hz.mp3");
   assert.equal(getChakraAudioPath("crown", "ambient"), "/audio/chakras/963/ambient_963Hz.mp3");
+});
+
+test("maps every sound choice to its matching healing visualizer", () => {
+  assert.deepEqual(chakraSoundVisualModes, {
+    rain: "rain",
+    forest: "forest",
+    piano: "piano",
+    ambient: "ambient",
+  });
+
+  for (const style of chakraSoundStyles) {
+    assert.equal(getChakraSoundVisualMode(style.id), style.id);
+  }
 });

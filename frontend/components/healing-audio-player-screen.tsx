@@ -4,7 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { MvpShell } from "@/components/mvp-shell";
-import { RitualBackdrop, RitualOrb, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import { RitualBackdrop, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import { HealingVisualizer, SoundStyleTileVisual } from "@/components/ritual-motion-visuals";
 import { chakraMap } from "@/data/chakras";
 import {
   chakraSoundStyles,
@@ -168,6 +169,7 @@ export function HealingAudioPlayerScreen() {
     setSoundPickerOpen(false);
     setAudioError(false);
     setPlaybackNotice(null);
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
 
     if (audioRef.current) {
       loadedAudioPathRef.current = audioPath;
@@ -216,14 +218,16 @@ export function HealingAudioPlayerScreen() {
             </div>
 
             <div className="grid place-items-center gap-5">
-              <RitualOrb
-                stage={reducedMotion ? "integrate" : stage.key}
-                tone={tone}
-                active={playing}
-                intensity={Math.max(0.45, 0.5 + progress * 0.45)}
-                label={`${stage.label} ritual orb`}
-                className="w-[min(82vw,30rem)] lg:w-[min(40vw,32rem)]"
-              />
+              {soundStyle ? (
+                <HealingVisualizer
+                  chakraId={chakra.id}
+                  soundStyle={soundStyle}
+                  active={playing && !reducedMotion}
+                  stage={stage.key}
+                />
+              ) : (
+                <div className="h-[min(72vw,25rem)] w-[min(72vw,25rem)]" aria-hidden="true" />
+              )}
               <div className="max-w-xl text-center">
                 <p className="minimal-label text-[0.68rem]">{stage.label}</p>
                 <p className="mt-3 text-sm leading-7 text-[var(--ip-body)]">
@@ -253,7 +257,7 @@ export function HealingAudioPlayerScreen() {
                   </p>
                 ) : null}
 
-                <div className="mt-5 grid grid-cols-5 items-center gap-2">
+                <div className="healing-player-controls mt-5 grid grid-cols-5 items-center gap-2">
                   <button type="button" disabled={blockIndex === 0} onClick={() => goToBlock(blockIndex - 1)} className="grid min-h-11 place-items-center rounded-full text-2xl text-[var(--ip-body)] disabled:opacity-35" aria-label="Previous block">
                     ‹
                   </button>
@@ -301,8 +305,8 @@ export function HealingAudioPlayerScreen() {
           </div>
         </div>
         {soundPickerOpen ? (
-          <div className="absolute inset-0 z-30 grid min-h-dvh place-items-center overflow-y-auto bg-[rgba(6,10,24,0.9)] px-4 py-[calc(1.25rem+env(safe-area-inset-top))] backdrop-blur-xl">
-            <section className="w-full max-w-2xl rounded-[1.8rem] border border-[rgba(244,122,34,0.28)] bg-[rgba(11,15,33,0.94)] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.45)] sm:p-7" aria-labelledby="sound-picker-title">
+          <div className={`sound-picker-overlay fixed inset-0 z-[70] grid min-h-dvh overflow-y-auto bg-[rgba(6,10,24,0.76)] px-4 backdrop-blur-md ${sessionStarted ? "is-change-sound" : "place-items-center py-[calc(1.25rem+env(safe-area-inset-top))]"}`}>
+            <section className={`sound-picker-sheet w-full max-w-2xl border border-[rgba(244,122,34,0.28)] bg-[rgba(11,15,33,0.96)] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.45)] sm:p-7 ${sessionStarted ? "mt-auto rounded-t-[1.8rem] pb-[calc(1.25rem+env(safe-area-inset-bottom))]" : "rounded-[1.8rem]"}`} aria-labelledby="sound-picker-title" role="dialog" aria-modal="true">
               <p className="minimal-label text-xs">Your healing sound</p>
               <h2 id="sound-picker-title" className="mt-3 font-serif text-[clamp(2.3rem,7vw,4rem)] leading-none text-[var(--ip-ink)]">
                 What would you like to listen to?
@@ -328,9 +332,13 @@ export function HealingAudioPlayerScreen() {
                       type="button"
                       aria-pressed={selected}
                       onClick={() => setDraftSoundStyle(style.id)}
-                      className={`min-h-16 rounded-[1.2rem] border px-4 text-left transition ${selected ? "border-[rgba(244,122,34,0.72)] bg-[rgba(244,122,34,0.16)] text-[var(--gold-light)]" : "border-white/10 bg-white/[0.035] text-[var(--ip-body)] hover:border-white/20 hover:bg-white/[0.06]"}`}
+                      className={`sound-style-option min-h-32 overflow-hidden rounded-[1.2rem] border p-3 text-left transition ${selected ? "is-selected border-[rgba(126,116,247,0.82)] bg-[rgba(97,77,190,0.2)] text-white" : "border-white/10 bg-white/[0.035] text-[var(--ip-body)] hover:border-white/20 hover:bg-white/[0.06]"}`}
                     >
-                      <span className="font-serif text-xl sm:text-2xl">{style.label}</span>
+                      <SoundStyleTileVisual style={style.id} />
+                      <span className="mt-2 flex items-center justify-between gap-2 font-serif text-lg sm:text-xl">
+                        {style.label}
+                        <span className="sound-style-option__check" aria-hidden="true">✓</span>
+                      </span>
                     </button>
                   );
                 })}

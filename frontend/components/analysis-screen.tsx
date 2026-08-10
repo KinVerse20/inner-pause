@@ -10,6 +10,7 @@ import {
   WitnessConstellation,
   inferWeatherTone,
 } from "@/components/inner-world-ritual-ui";
+import { ChakraResultsReveal } from "@/components/ritual-motion-visuals";
 import { chakraMap } from "@/data/chakras";
 import { savePlan, updateJournalEntry } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
@@ -98,6 +99,14 @@ export function AnalysisScreen() {
                 />
               ))}
             </div>
+
+            <div className="pt-2 text-center">
+              <p className="minimal-label text-xs">Your chakra balance</p>
+              <p className="mt-2 text-sm text-[var(--ip-body)]">
+                {analysis.chakraAssociations.length} {analysis.chakraAssociations.length === 1 ? "chakra is" : "chakras are"} asking for gentle attention.
+              </p>
+            </div>
+            <ChakraResultsReveal chakraIds={analysis.chakraAssociations.map((item) => item.chakra)} />
           </div>
         </RitualBackdrop>
 
