@@ -43,17 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function restore() {
       try {
         const existing = readFrontendProfile();
-        if (existing) setProfile(existing);
+        if (!existing) return;
+
         const refreshToken = getRefreshToken();
         if (refreshToken && isFrontendSessionExpired()) {
           const refreshed = await getService().refresh(refreshToken);
-          if (existing) setFrontendSession(refreshed.accessToken, existing, { ...refreshed, refreshToken });
+          setFrontendSession(refreshed.accessToken, existing, { ...refreshed, refreshToken });
         }
         const api = createFrontendApiClient(() => {
           clearFrontendSession();
           setProfile(null);
         });
-        const user = await api.me().catch(() => null);
+        const user = await api.me();
         if (active && user) {
           setFrontendSession(localStorage.getItem("innerpause-aws-access-token") ?? "", user, {
             idToken: localStorage.getItem("innerpause-aws-id-token") ?? undefined,
@@ -62,6 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           setProfile(user);
         }
+      } catch {
+        clearFrontendSession();
+        if (active) setProfile(null);
       } finally {
         if (active) setLoading(false);
       }

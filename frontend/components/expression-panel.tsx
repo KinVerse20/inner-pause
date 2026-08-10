@@ -59,6 +59,7 @@ export function ExpressionPanel({ initialMode = "speak" }: { initialMode?: "spea
   const [draftForWitness, setDraftForWitness] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const voiceBaseRef = useRef("");
+  const submissionInFlightRef = useRef(false);
 
   const SpeechRecognition = useMemo<SpeechRecognitionConstructor | null>(() => {
     if (typeof window === "undefined") return null;
@@ -165,8 +166,9 @@ export function ExpressionPanel({ initialMode = "speak" }: { initialMode?: "spea
   };
 
   const submit = async () => {
-    if (!validateText()) return;
+    if (!validateText() || submissionInFlightRef.current) return;
 
+    submissionInFlightRef.current = true;
     stopVoice();
     setLoading(true);
     setError("");
@@ -188,6 +190,7 @@ export function ExpressionPanel({ initialMode = "speak" }: { initialMode?: "spea
       savePlan(entry.id);
       window.setTimeout(() => router.push(`/analysis?entry=${entry.id}`), 1400);
     } catch (caught) {
+      submissionInFlightRef.current = false;
       setLoading(false);
       setError(caught instanceof Error ? caught.message : "We could not prepare your emotional insight right now.");
     }
@@ -398,9 +401,6 @@ function ExpressionInfoPopover({
         <p className="minimal-label">What this does</p>
         <h3 id="expression-info-title">{definition.label}</h3>
         <p>{definition.text}</p>
-        <ul>
-          {definition.points.map((point) => <li key={point}>{point}</li>)}
-        </ul>
       </section>
     </div>
   );

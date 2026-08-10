@@ -200,14 +200,30 @@ export class InnerPauseApiClient {
       });
 
       const text = await response.text();
-      const payload = text ? (JSON.parse(text) as ApiSuccess<T> | ApiErrorBody) : undefined;
+      let payload: ApiSuccess<T> | ApiErrorBody | undefined;
+      if (text) {
+        try {
+          payload = JSON.parse(text) as ApiSuccess<T> | ApiErrorBody;
+        } catch {
+          payload = undefined;
+        }
+      }
 
       if (!response.ok) {
         const errorBody = payload && "error" in payload ? payload.error : undefined;
+        const gatewayMessage = payload && "message" in payload && typeof payload.message === "string"
+          ? payload.message
+          : undefined;
         const error = new ApiClientError({
           status: response.status,
-          code: errorBody?.code ?? "INTERNAL_ERROR",
-          message: errorBody?.message ?? "The request could not be completed.",
+          code: errorBody?.code ?? (response.status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR"),
+          message:
+            errorBody?.message ??
+            (response.status === 401
+              ? "Your session has expired. Please sign in again."
+              : response.status === 403
+                ? "You do not have permission to complete this request."
+                : gatewayMessage ?? "The request could not be completed."),
           requestId: errorBody?.requestId ?? response.headers.get("x-request-id") ?? requestId,
           details: errorBody?.details,
         });

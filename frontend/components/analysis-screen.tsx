@@ -1,24 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { MvpShell } from "@/components/mvp-shell";
-import {
-  RitualBackdrop,
-  RitualWeatherCard,
-  TransformStream,
-  WitnessConstellation,
-  inferWeatherTone,
-} from "@/components/inner-world-ritual-ui";
+import { RitualBackdrop, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { ChakraResultsReveal } from "@/components/ritual-motion-visuals";
 import { chakraMap } from "@/data/chakras";
-import { savePlan, updateJournalEntry } from "@/lib/mvp-storage";
+import { savePlan } from "@/lib/mvp-storage";
+import type { EmotionalAnalysis } from "@/lib/mvp-types";
 import { useMvpState } from "@/lib/use-mvp-state";
 
 export function AnalysisScreen() {
   const router = useRouter();
   const entryId = useSearchParams().get("entry");
   const state = useMvpState();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const entry = state.entries.find((item) => item.id === entryId);
   const analysis = entry?.analysis;
 
@@ -42,144 +39,124 @@ export function AnalysisScreen() {
   const tone = inferWeatherTone(
     `${analysis.emotions.map((item) => item.name).join(" ")} ${analysis.triggers.join(" ")} ${analysis.summary}`,
   );
-  const primaryEmotion = analysis.emotions[0]?.name ?? "Reflective";
-  const primaryChakra = analysis.chakraAssociations[0];
-  const secondaryChakra = analysis.chakraAssociations[1];
-  const witnessLine = createWitnessLine(analysis.summary, analysis.triggers[0], primaryEmotion);
-  const transformLine = analysis.healingApproachSummary ?? "Your difficult material is being gathered into a gentler sequence.";
+  const chakraIds = analysis.chakraAssociations.map((item) => item.chakra);
+  const summary = createConciseSummary(analysis);
 
   const beginHealing = () => {
-    savePlan(entry.id);
-    router.push(`/healing?entry=${entry.id}`);
+    const plan = entry.plan ?? savePlan(entry.id);
+    if (!plan) return;
+    router.push(`/healing/player?plan=${plan.id}`);
   };
 
   return (
     <MvpShell>
-      <div className="space-y-5">
-        <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div className="relative z-10 space-y-5">
-            <div className="space-y-2 text-center">
-              <p className="minimal-label text-xs">Witness</p>
-              <h1 className="font-serif text-[clamp(2.8rem,8vw,4.8rem)] leading-[0.92] text-[var(--gold-light)]">
-                Here&apos;s what we noticed.
-              </h1>
-              <p className="text-base leading-7 text-[var(--ip-body)]">Your reflection becomes visible.</p>
-            </div>
+      <RitualBackdrop tone={tone} className="analysis-summary-screen">
+        <div className="analysis-summary-layout">
+          <header className="analysis-summary-heading ritual-content-enter">
+            <p className="minimal-label">Your reflection</p>
+            <h1>Here&apos;s what we noticed</h1>
+          </header>
 
-            <WitnessConstellation emotions={analysis.emotions} />
-
-            <div className="mx-auto max-w-4xl rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.5)] p-4 text-center sm:p-5">
-              <p className="font-serif text-[1.4rem] leading-8 text-[var(--ip-ink)]">{witnessLine}</p>
-            </div>
-
-            <div className="mx-auto text-center">
-              <button
-                type="button"
-                onClick={() =>
-                  updateJournalEntry(entry.id, {
-                    analysis: {
-                      ...analysis,
-                      understandingSummary: analysis.understandingSummary ?? analysis.summary,
-                    },
-                  })
-                }
-                className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)]"
-              >
-                Let us turn this into something lighter.
-              </button>
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-4">
-              {analysis.emotions.slice(0, 4).map((emotion) => (
-                <RitualWeatherCard
-                  key={emotion.name}
-                  title={emotion.name}
-                  line={emotion.explanation ?? `Intensity ${emotion.intensity}/10`}
-                  tone={inferWeatherTone(emotion.name)}
-                />
-              ))}
-            </div>
-
-            <div className="pt-2 text-center">
-              <p className="minimal-label text-xs">Your chakra balance</p>
-              <p className="mt-2 text-sm text-[var(--ip-body)]">
-                {analysis.chakraAssociations.length} {analysis.chakraAssociations.length === 1 ? "chakra is" : "chakras are"} asking for gentle attention.
-              </p>
-            </div>
-            <ChakraResultsReveal chakraIds={analysis.chakraAssociations.map((item) => item.chakra)} />
+          <div className="analysis-theme-list" aria-label="Emotions in your reflection">
+            {analysis.emotions.slice(0, 4).map((emotion, index) => (
+              <span key={emotion.name} style={{ "--theme-delay": `${index * 120}ms` } as React.CSSProperties}>
+                {emotion.name}
+              </span>
+            ))}
           </div>
-        </RitualBackdrop>
 
-        <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          <div className="relative z-10 space-y-5">
-            <div className="space-y-2 text-center">
-              <p className="minimal-label text-xs">Transform</p>
-              <h2 className="font-serif text-[clamp(2.4rem,7vw,4.3rem)] leading-[0.95] text-[var(--gold-light)]">
-                Let us turn this into something lighter.
-              </h2>
-              <p className="text-base leading-7 text-[var(--ip-body)]">
-                Your personalised healing journey is taking shape.
-              </p>
-            </div>
+          <div className="analysis-summary-visual">
+            <ChakraResultsReveal chakraIds={chakraIds} />
+          </div>
 
-            <TransformStream labels={analysis.emotions.map((emotion) => emotion.name)} />
+          <p className="analysis-summary-copy">{summary}</p>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-              <div className="rounded-[1.4rem] border border-white/10 bg-[rgba(17,18,20,0.56)] p-4 sm:p-5">
-                <p className="text-sm leading-7 text-[var(--ip-body)]">{transformLine}</p>
-                <p className="mt-3 text-sm leading-7 text-[var(--ip-body)]">
-                  Suggested outcome: {analysis.suggestedOutcome}
-                </p>
+          <div className="analysis-summary-actions">
+            <button
+              type="button"
+              aria-expanded={detailsOpen}
+              aria-controls="analysis-details"
+              onClick={() => setDetailsOpen((open) => !open)}
+              className="analysis-summary-button is-secondary"
+            >
+              Read More
+            </button>
+            <button
+              type="button"
+              onClick={beginHealing}
+              disabled={analysis.safetyFlag}
+              className="analysis-summary-button is-primary"
+            >
+              Begin Healing
+            </button>
+          </div>
+
+          {analysis.safetyFlag ? (
+            <p className="analysis-safety-note" role="alert">
+              A guided healing session is paused for this reflection. Please choose immediate, trusted support if you feel unsafe.
+            </p>
+          ) : null}
+
+          {detailsOpen ? (
+            <section id="analysis-details" className="analysis-details" aria-label="Detailed emotional insight">
+              <div>
+                <p className="minimal-label">What may be happening</p>
+                <p>{analysis.understandingSummary ?? analysis.summary}</p>
               </div>
 
-              <div className="grid gap-3">
-                <RitualWeatherCard
-                  title="Dominant current"
-                  line={primaryChakra ? `${chakraMap[primaryChakra.chakra].name} is carrying most of the charge.` : `${primaryEmotion} is the strongest signal right now.`}
-                  tone={tone}
-                />
-                <RitualWeatherCard
-                  title="Secondary thread"
-                  line={secondaryChakra ? `${chakraMap[secondaryChakra.chakra].name} is close behind.` : "A quieter second layer is also present."}
-                  tone={tone}
-                />
+              <div className="analysis-detail-grid">
+                {analysis.chakraAssociations.map((association) => {
+                  const chakra = chakraMap[association.chakra];
+                  return (
+                    <article key={association.chakra}>
+                      <span className="analysis-detail-dot" style={{ background: chakra.color }} aria-hidden="true" />
+                      <div>
+                        <h2>{chakra.name}</h2>
+                        <p>{association.reason}</p>
+                        <p className="analysis-detail-support">
+                          {association.sessionSupport ?? `The suggested practice supports ${chakra.meaning.toLowerCase()}.`}
+                        </p>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
-            </div>
 
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={beginHealing}
-                disabled={analysis.safetyFlag}
-                className="min-h-12 rounded-full border border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)] disabled:opacity-45"
-              >
-                Begin healing
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/journey")}
-                className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ip-body)]"
-              >
-                View topology
-              </button>
-            </div>
-          </div>
-        </RitualBackdrop>
-      </div>
+              {analysis.healingApproachSummary ? (
+                <div>
+                  <p className="minimal-label">Why this healing path</p>
+                  <p>{analysis.healingApproachSummary}</p>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+        </div>
+      </RitualBackdrop>
     </MvpShell>
   );
 }
 
-function createWitnessLine(summary: string, trigger: string | undefined, emotion: string) {
-  const lower = summary.toLowerCase();
-  if (/(tired|exhausted|drained)/.test(lower)) {
-    return "You were not only tired today — you were tired of having to stay strong.";
-  }
-  if (/(anxious|pressure|worry)/.test(lower) || trigger?.toLowerCase().includes("pressure")) {
-    return "There is a strain here that feels older than this one moment alone.";
-  }
-  if (/(sad|grief|lonely)/.test(lower)) {
-    return "This feels like sadness that has been holding itself together for too long.";
-  }
-  return `This is not only ${emotion.toLowerCase()} — it is the story underneath it asking to be witnessed.`;
+export function createConciseSummary(analysis: EmotionalAnalysis) {
+  const emotionNames = analysis.emotions.slice(0, 3).map((emotion) => emotion.name.toLowerCase());
+  const chakraNames = analysis.chakraAssociations
+    .slice(0, 2)
+    .map((association) => chakraMap[association.chakra].name.replace(" Chakra", ""));
+  const emotions = joinNaturally(emotionNames) || "a mix of emotions";
+  const chakras = joinNaturally(chakraNames) || "your energy centres";
+  const trigger = shortPhrase(analysis.triggers[0]);
+  const context = trigger ? ` around ${trigger}` : "";
+
+  return `You seem to be carrying ${emotions}${context}. This is showing most strongly around your ${chakras}${chakraNames.length ? ` chakra${chakraNames.length > 1 ? "s" : ""}` : ""}.`;
+}
+
+function shortPhrase(value: string | undefined) {
+  if (!value) return "";
+  const words = value.trim().replace(/[.!?]+$/, "").split(/\s+/).slice(0, 10);
+  return words.join(" ").toLowerCase();
+}
+
+function joinNaturally(items: string[]) {
+  if (items.length < 2) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`;
 }

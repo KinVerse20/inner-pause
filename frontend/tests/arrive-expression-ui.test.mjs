@@ -29,10 +29,21 @@ test("shared expression screen supports both approved modes", () => {
 });
 
 test("expression action definitions contain the approved copy", () => {
-  assert.equal(expressionActions.insight.label, "Get AI insight");
+  assert.equal(expressionActions.insight.label, "Understand what I’m feeling");
   assert.equal(expressionActions.private.label, "Save as private release");
   assert.equal(expressionActions.reset.label, "Start over");
-  assert.deepEqual(expressionActions.insight.points, ["Identifies emotions", "Maps affected chakras", "Suggests a healing path"]);
+  assert.equal(
+    expressionActions.insight.text,
+    "Reads what you’ve expressed, identifies the emotions showing up, maps the affected chakras and suggests a healing path.",
+  );
+  assert.equal(
+    expressionActions.private.text,
+    "Saves what you’ve expressed privately without analysing it. Use this when you simply want to let something out.",
+  );
+  assert.equal(
+    expressionActions.reset.text,
+    "Clears the current entry and gives you a fresh space to begin again.",
+  );
 });
 
 test("insight analyses, private save does not, and start over clears input", () => {
@@ -42,6 +53,7 @@ test("insight analyses, private save does not, and start over clears input", () 
 
   assert.match(submit, /api\.analyseText/);
   assert.match(submit, /saveMode: "temporary_analysis"/);
+  assert.match(submit, /submissionInFlightRef\.current/);
   assert.match(savePrivate, /saveMode: "journal_without_analysis"/);
   assert.doesNotMatch(savePrivate, /analyseText|saveAnalysis|savePlan/);
   assert.match(startOver, /setText\(""\)/);

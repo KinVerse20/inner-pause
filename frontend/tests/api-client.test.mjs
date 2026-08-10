@@ -88,6 +88,49 @@ test("throws structured errors and calls unauthorised hook", async () => {
   assert.equal(unauthorised, true);
 });
 
+test("maps an API Gateway 401 to a clear expired-session error", async () => {
+  let unauthorised = false;
+  const client = new InnerPauseApiClient({
+    baseUrl: "https://api.example.test/api/v1",
+    getAccessToken: () => "expired-token",
+    onUnauthorised: () => {
+      unauthorised = true;
+    },
+    fetchImpl: async () =>
+      new Response(JSON.stringify({ message: "Unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      }),
+  });
+
+  await assert.rejects(
+    () => client.analyseText("A safe test reflection"),
+    (error) => {
+      assert.equal(error.status, 401);
+      assert.equal(error.code, "UNAUTHENTICATED");
+      assert.equal(error.message, "Your session has expired. Please sign in again.");
+      return true;
+    },
+  );
+  assert.equal(unauthorised, true);
+});
+
+test("handles a non-JSON gateway failure without a parsing crash", async () => {
+  const client = new InnerPauseApiClient({
+    baseUrl: "https://api.example.test/api/v1",
+    fetchImpl: async () => new Response("upstream unavailable", { status: 502 }),
+  });
+
+  await assert.rejects(
+    () => client.analyseText("A safe test reflection"),
+    (error) => {
+      assert.equal(error.status, 502);
+      assert.equal(error.message, "The request could not be completed.");
+      return true;
+    },
+  );
+});
+
 test("admin overview request uses protected admin endpoint", async () => {
   let captured;
   const client = new InnerPauseApiClient({
