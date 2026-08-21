@@ -1,17 +1,25 @@
 "use client";
 
 import { createHealingPlan } from "@/lib/healing-engine";
-import { EmotionalAnalysis, HealingPlan, HealingPlanCustomisation, HealingProfile, JournalEntry, MvpState, SaveMode, SessionFeedback } from "@/lib/mvp-types";
+import { EmotionalAnalysis, HealingPlan, HealingPlanCustomisation, HealingProfile, JournalEntry, MvpState, Reminder, SaveMode, SessionFeedback } from "@/lib/mvp-types";
 
 const MVP_KEY = "chakra-healing-mvp";
 const MVP_USER_KEY = "innerpause-current-user-id";
 const MVP_EVENT = "chakra-healing-mvp-change";
+
+const defaultReminders: Reminder[] = [
+  { id: "morning-pause", label: "Morning Pause", time: "08:00", days: "Weekdays", enabled: true },
+  { id: "midday-reset", label: "Midday Reset", time: "13:00", days: "Weekdays", enabled: true },
+  { id: "evening-wind-down", label: "Evening Wind Down", time: "21:30", days: "Daily", enabled: true },
+];
 
 const defaultProfile: HealingProfile = {
   fullName: "",
   email: "",
   phone: "",
   onboardingCompleted: false,
+  concerns: [],
+  dailyGoal: "",
   preferredSessionDuration: 20,
   preferredVoice: "Soft guide",
   preferredMusicStyle: "Cosmic ambient",
@@ -21,6 +29,7 @@ const defaultProfile: HealingProfile = {
   aiMemoryEnabled: true,
   morningGuidanceEnabled: false,
   guidanceTime: "08:00",
+  reminders: defaultReminders,
 };
 
 export const defaultMvpState: MvpState = {
@@ -166,6 +175,32 @@ export function updateJournalEntry(entryId: string, updates: Partial<JournalEntr
 export function deleteJournalEntry(entryId: string) {
   const state = readMvpState();
   writeMvpState({ ...state, entries: state.entries.filter((entry) => entry.id !== entryId) });
+}
+
+export function toggleFavouriteEntry(entryId: string) {
+  const state = readMvpState();
+  const entries = state.entries.map((entry) => (entry.id === entryId ? { ...entry, favourite: !entry.favourite } : entry));
+  writeMvpState({ ...state, entries });
+}
+
+export function addReminder(reminder: Omit<Reminder, "id">) {
+  const state = readMvpState();
+  const reminders = [...state.profile.reminders, { ...reminder, id: id() }];
+  writeMvpState({ ...state, profile: { ...state.profile, reminders } });
+}
+
+export function toggleReminder(reminderId: string) {
+  const state = readMvpState();
+  const reminders = state.profile.reminders.map((reminder) =>
+    reminder.id === reminderId ? { ...reminder, enabled: !reminder.enabled } : reminder,
+  );
+  writeMvpState({ ...state, profile: { ...state.profile, reminders } });
+}
+
+export function removeReminder(reminderId: string) {
+  const state = readMvpState();
+  const reminders = state.profile.reminders.filter((reminder) => reminder.id !== reminderId);
+  writeMvpState({ ...state, profile: { ...state.profile, reminders } });
 }
 
 export function saveAnalysis(entryId: string, analysis: EmotionalAnalysis) {

@@ -35,9 +35,19 @@ type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 const emotionChips = ["Anxious", "Angry", "Sad", "Overwhelmed", "Hurt", "Confused", "Tired", "Calm", "Something else"];
 
-export function ExpressionPanel({ compact = false, embedded = false }: { compact?: boolean; embedded?: boolean }) {
+export function ExpressionPanel({
+  compact = false,
+  embedded = false,
+  initialText = "",
+  autoStartVoice = false,
+}: {
+  compact?: boolean;
+  embedded?: boolean;
+  initialText?: string;
+  autoStartVoice?: boolean;
+}) {
   const router = useRouter();
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [listening, setListening] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -131,6 +141,14 @@ export function ExpressionPanel({ compact = false, embedded = false }: { compact
     setPaused(true);
     setListening(false);
   };
+
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (!autoStartVoice || autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    startVoice();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartVoice]);
 
   const toggleEmotion = (emotion: string) => {
     setSelectedEmotions((current) => (current.includes(emotion) ? current.filter((item) => item !== emotion) : [...current, emotion]));

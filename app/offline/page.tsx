@@ -7,7 +7,7 @@ export default function OfflinePage() {
         <div className="h-24 w-24 rounded-full border border-amber-200/30 bg-[radial-gradient(circle,_rgba(251,191,36,0.3),_rgba(251,191,36,0.05)_55%,_transparent_72%)] shadow-[0_0_80px_rgba(251,191,36,0.2)]" />
         <h1 className="mt-8 text-3xl font-semibold tracking-tight text-white">You are offline.</h1>
         <p className="mt-4 max-w-md text-sm leading-7 text-slate-300">
-          Previously opened Chakra music may still be available.
+          Previously opened pauses and sounds may still be available.
         </p>
         <Link
           href="/"

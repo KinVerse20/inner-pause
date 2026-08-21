@@ -72,7 +72,7 @@ export function AnalysisScreen() {
         </GlassCard>
 
         <section className="space-y-2">
-          <h2 className="px-1 font-serif text-xl text-[var(--ip-ink)]">Chakra Themes</h2>
+          <h2 className="px-1 font-serif text-xl text-[var(--ip-ink)]">Emotional Themes</h2>
           {analysis.chakraAssociations.map((item) => {
             const chakra = chakraMap[item.chakra];
             return (

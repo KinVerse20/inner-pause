@@ -5,11 +5,13 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 
+// 4-tab IA (Design 6 redesign). Express (/journal) is intentionally not a
+// tab: it's reached via CTAs on the Pause home screen, not persistent nav.
+// Journey temporarily points at /history until Phase 4 merges Insights in.
 const navItems = [
-  { href: "/", label: "Home", icon: "⌂" },
-  { href: "/journal", label: "Express", icon: "✎" },
+  { href: "/", label: "Pause", icon: "⌂" },
+  { href: "/practice", label: "Practice", icon: "◈" },
   { href: "/history", label: "Journey", icon: "♧" },
-  { href: "/insights", label: "Insights", icon: "▥" },
   { href: "/profile", label: "You", icon: "♙" },
 ];
 
@@ -53,7 +55,7 @@ function MvpBottomNav() {
   const pathname = usePathname();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--ip-border)] bg-white/90 shadow-[0_-14px_36px_rgba(108,62,244,0.12)] backdrop-blur-2xl">
-      <div className="mx-auto grid max-w-[28rem] grid-cols-5 gap-1 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[44rem]">
+      <div className="mx-auto grid max-w-[28rem] grid-cols-4 gap-1 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[44rem]">
         {navItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
@@ -84,26 +86,48 @@ export function GoldButton({
   return (
     <button
       {...props}
-      className={`min-h-11 rounded-full border border-purple-400/30 bg-[linear-gradient(135deg,var(--ip-purple-2),var(--ip-purple))] px-4 py-2.5 font-semibold text-white shadow-[0_12px_24px_rgba(108,62,244,0.22)] transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={`min-h-11 rounded-full border border-[var(--ip-gold-border)] bg-[linear-gradient(135deg,var(--ip-gold-2),var(--ip-gold))] px-4 py-2.5 font-semibold text-[#241b10] shadow-[var(--ip-shadow-md)] transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
     >
       {children}
     </button>
   );
 }
 
+// Category tones for Design 6 tiles/cards (Sleep, Reset, Focus, Confidence,
+// Calm). Backed by the --ip-cat-* tokens in app/globals.css. Optional and
+// additive: GlassCard renders identically to before when `tone` is omitted.
+export type CategoryTone = "sleep" | "reset" | "focus" | "confidence" | "calm" | "release";
+
+const categoryToneVars: Record<CategoryTone, { bg: string; border: string; accent: string }> = {
+  sleep: { bg: "var(--ip-cat-sleep-soft)", border: "var(--ip-cat-sleep)", accent: "var(--ip-cat-sleep)" },
+  reset: { bg: "var(--ip-cat-reset-soft)", border: "var(--ip-cat-reset)", accent: "var(--ip-cat-reset)" },
+  focus: { bg: "var(--ip-cat-focus-soft)", border: "var(--ip-cat-focus)", accent: "var(--ip-cat-focus)" },
+  confidence: { bg: "var(--ip-cat-confidence-soft)", border: "var(--ip-cat-confidence)", accent: "var(--ip-cat-confidence)" },
+  calm: { bg: "var(--ip-cat-calm-soft)", border: "var(--ip-cat-calm)", accent: "var(--ip-cat-calm)" },
+  release: { bg: "var(--ip-cat-release-soft)", border: "var(--ip-cat-release)", accent: "var(--ip-cat-release)" },
+};
+
+export function categoryToneStyle(tone?: CategoryTone): React.CSSProperties | undefined {
+  if (!tone) return undefined;
+  const vars = categoryToneVars[tone];
+  return { backgroundColor: vars.bg, borderColor: vars.border, ["--ip-tile-color" as string]: vars.accent };
+}
+
 export function GlassCard({
   children,
   className = "",
   style,
+  tone,
 }: {
   children: ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  tone?: CategoryTone;
 }) {
   return (
     <section
       className={`rounded-[1.25rem] border border-[var(--ip-border)] bg-[var(--ip-card)] shadow-[0_14px_34px_rgba(108,62,244,0.09)] backdrop-blur-xl ${className}`}
-      style={style}
+      style={{ ...categoryToneStyle(tone), ...style }}
     >
       {children}
     </section>

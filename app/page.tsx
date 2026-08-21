@@ -1,5 +1,5 @@
-import { MvpHomeScreen } from "@/components/mvp-home-screen";
+import { PauseHomeScreen } from "@/components/pause-home-screen";
 
 export default function HomePage() {
-  return <MvpHomeScreen />;
+  return <PauseHomeScreen />;
 }

@@ -1,5 +1,11 @@
-import { MvpHistoryScreen } from "@/components/mvp-history-screen";
+import { Suspense } from "react";
+
+import { MvpJourneyScreen } from "@/components/mvp-journey-screen";
 
 export default function HistoryPage() {
-  return <MvpHistoryScreen />;
+  return (
+    <Suspense>
+      <MvpJourneyScreen />
+    </Suspense>
+  );
 }

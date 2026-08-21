@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="ip-icon-maskable-title">
+  <title id="ip-icon-maskable-title">Inner Pause maskable app icon (Android adaptive — mark kept within the ~66% safe zone)</title>
+  <rect width="512" height="512" fill="#1D1B4C"/>
+  <g transform="translate(100,100) scale(1.3)">
+    <circle cx="106" cy="112" r="86" stroke="#4338CA" stroke-width="3" fill="none" opacity="0.5"/>
+    <circle cx="134" cy="110" r="84" stroke="#7C6AED" stroke-width="3.5" fill="none" opacity="0.65"/>
+    <circle cx="112" cy="134" r="82" stroke="#C4B5FD" stroke-width="4" fill="none" opacity="0.8"/>
+    <circle cx="128" cy="128" r="80" stroke="#F8FAFC" stroke-width="4.5" fill="none" opacity="0.95"/>
+    <rect x="94" y="82" width="18" height="76" rx="9" fill="#F8FAFC"/>
+    <rect x="128" y="82" width="18" height="76" rx="9" fill="#F8FAFC"/>
+  </g>
+</svg>

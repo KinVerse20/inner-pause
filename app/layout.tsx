@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { PlayerProvider } from "@/components/player-provider";
 import { PwaRegistration } from "@/components/pwa-registration";
+import { AccountInvitationGate } from "@/components/account-invitation-gate";
 import { AuthSessionSync } from "@/components/auth-session-sync";
+import { EntryGate } from "@/components/entry-gate";
+import { ThemeApplier } from "@/components/theme-applier";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,6 +15,14 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Approved typeface per docs/BRAND_IDENTITY.md §5 — additive alongside the
+// existing Geist variable so not-yet-rebuilt screens are unaffected. Used
+// via --ds-font-sans (app/globals.css) by the new design-system screens.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -41,8 +52,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f8f4ff",
-  colorScheme: "light",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf6f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0b14" },
+  ],
+  colorScheme: "light dark",
   viewportFit: "cover",
 };
 
@@ -54,12 +68,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[var(--background)] text-[var(--foreground)] flex flex-col">
         <PlayerProvider>
           <AuthSessionSync />
+          <EntryGate />
+          <ThemeApplier />
           {children}
+          <AccountInvitationGate />
           <PwaRegistration />
         </PlayerProvider>
       </body>

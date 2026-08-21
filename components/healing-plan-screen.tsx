@@ -107,7 +107,7 @@ export function HealingPlanScreen() {
                   <div className="flex items-center gap-3">
                     <ChakraBadge chakraId={block.chakraId} />
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 font-serif text-xl text-[var(--ip-ink)]">{chakra.name.replace(" Chakra", "")}</p>
+                      <p className="line-clamp-1 font-serif text-xl text-[var(--ip-ink)]">{block.title}</p>
                       <p className="line-clamp-1 text-sm text-[var(--ip-body)]">{block.intention}</p>
                     </div>
                     <div className="text-right">

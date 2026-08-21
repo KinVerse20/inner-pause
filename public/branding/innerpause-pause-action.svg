@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="ip-pause-action-title">
+  <title id="ip-pause-action-title">Inner Pause — center Pause navigation action</title>
+  <defs>
+    <radialGradient id="ip-pause-action-bg" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#5546D6"/>
+      <stop offset="100%" stop-color="#3B2FA8"/>
+    </radialGradient>
+  </defs>
+  <circle cx="120" cy="120" r="120" fill="url(#ip-pause-action-bg)"/>
+  <g transform="translate(34,34) scale(0.717)">
+    <circle cx="106" cy="112" r="86" stroke="#C4B5FD" stroke-width="3.5" fill="none" opacity="0.55"/>
+    <circle cx="134" cy="110" r="84" stroke="#C4B5FD" stroke-width="4" fill="none" opacity="0.75"/>
+    <circle cx="112" cy="134" r="82" stroke="#F8FAFC" stroke-width="4.5" fill="none" opacity="0.85"/>
+    <circle cx="128" cy="128" r="80" stroke="#F8FAFC" stroke-width="5" fill="none" opacity="1"/>
+    <rect x="94" y="82" width="18" height="76" rx="9" fill="#F8FAFC"/>
+    <rect x="128" y="82" width="18" height="76" rx="9" fill="#F8FAFC"/>
+  </g>
+</svg>

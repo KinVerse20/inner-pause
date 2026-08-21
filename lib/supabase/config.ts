@@ -9,4 +9,4 @@ export function assertSupabaseBrowserConfig() {
   return { supabaseUrl, supabaseAnonKey };
 }
 
-export const authConfirmRedirectTo = "https://chakra-healing-app-three.vercel.app/auth/confirm";
+export const authConfirmRedirectTo = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://theinnerpause.app"}/auth/confirm`;

@@ -26,7 +26,6 @@ export function AuthSessionSync() {
       upsertProfile({
         fullName: session.user.user_metadata?.full_name ?? session.user.user_metadata?.name ?? "",
         email: session.user.email ?? "",
-        onboardingCompleted: true,
       });
     };
 
@@ -42,7 +41,6 @@ export function AuthSessionSync() {
       upsertProfile({
         fullName: session.user.user_metadata?.full_name ?? session.user.user_metadata?.name ?? "",
         email: session.user.email ?? "",
-        onboardingCompleted: true,
       });
     });
 

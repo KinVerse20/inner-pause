@@ -6,8 +6,15 @@ import { AppPageHeader } from "@/components/chakra-path-ui";
 import { ExpressionPanel } from "@/components/expression-panel";
 import { MvpShell } from "@/components/mvp-shell";
 
-export function JournalEntryScreen() {
+export function JournalEntryScreen({
+  initialContext,
+  autoStartVoice = false,
+}: {
+  initialContext?: string;
+  autoStartVoice?: boolean;
+}) {
   const router = useRouter();
+  const initialText = initialContext ? `${initialContext} — ` : "";
 
   return (
     <MvpShell>
@@ -30,7 +37,7 @@ export function JournalEntryScreen() {
           )}
         />
 
-        <ExpressionPanel />
+        <ExpressionPanel initialText={initialText} autoStartVoice={autoStartVoice} />
       </div>
     </MvpShell>
   );

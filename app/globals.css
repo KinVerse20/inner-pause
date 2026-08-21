@@ -16,19 +16,389 @@
   --purple-primary: #7c3aed;
   --purple-glow: #a78bfa;
   --blue-primary: #6d5dfc;
-  --ip-bg: #f8f7ff;
-  --ip-bg-soft: #f3f0ff;
-  --ip-card: rgba(255, 255, 255, 0.86);
+  /* Roadmap v1 theme foundation (docs/PRODUCT_ROADMAP.md #5) — light is the
+     default, warmer than the original lavender-tint; dark (below) restores
+     the actual brand mark's near-black/violet/gold palette. */
+  --ip-bg: #faf6f0;
+  --ip-bg-soft: #f5efe6;
+  --ip-card: rgba(255, 252, 247, 0.7);
   --ip-purple: #6c3ef4;
   --ip-purple-2: #7b4dff;
-  --ip-ink: #1e245a;
-  --ip-body: #37406f;
-  --ip-muted: #6d6996;
-  --ip-lavender: #ede8ff;
-  --ip-border: rgba(108, 62, 244, 0.12);
-  --ip-border-strong: rgba(108, 62, 244, 0.24);
+  --ip-gold: #b8933e;
+  --ip-gold-2: #d4b05c;
+  --ip-gold-border: rgba(184, 147, 62, 0.35);
+  --ip-ink: #2b2420;
+  --ip-body: #5c5248;
+  --ip-muted: #8a7f72;
+  --ip-lavender: #f0e9dc;
+  --ip-border: #e8dfd3;
+  --ip-border-strong: rgba(43, 36, 32, 0.24);
+  /* Neutral that --ip-tile-* color-mixes blend toward; swapped to black in
+     dark mode so category tiles don't wash out against a dark card. */
+  --ip-mix-base: #ffffff;
   --bottom-nav-height: 4.25rem;
   --page-bottom-padding: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 0.75rem);
+
+  /* Design 6 — category palette (Pause tab tiles, Practice paths) */
+  --ip-cat-sleep: #5b6b9e;
+  --ip-cat-sleep-soft: #eceeff;
+  --ip-cat-reset: #4f9b8c;
+  --ip-cat-reset-soft: #e7f6f3;
+  --ip-cat-focus: #c98a4b;
+  --ip-cat-focus-soft: #fdf1e3;
+  --ip-cat-confidence: #b4587a;
+  --ip-cat-confidence-soft: #fbe9ee;
+  --ip-cat-calm: #8577c9;
+  --ip-cat-calm-soft: #eef0ff;
+  --ip-cat-release: #5b9e7e;
+  --ip-cat-release-soft: #e8f5ee;
+
+  /* Design 6 — elevation scale (soft, layered shadows for cards/tiles) */
+  --ip-shadow-sm: 0 6px 16px rgba(108, 62, 244, 0.08);
+  --ip-shadow-md: 0 14px 34px rgba(108, 62, 244, 0.1);
+  --ip-shadow-lg: 0 24px 60px rgba(108, 62, 244, 0.14);
+}
+
+/* Dark mode — system-preference only (no manual toggle in v1, per
+   docs/PRODUCT_ROADMAP.md #5). Matches public/branding/innerpause-icon.png
+   (near-black, violet lotus, gold linework) instead of contradicting it. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0e0b14;
+    --foreground: #f3ede3;
+
+    --ip-bg: #0e0b14;
+    --ip-bg-soft: #150f1e;
+    --ip-card: rgba(40, 28, 58, 0.55);
+    --ip-purple: #9b7fe8;
+    --ip-purple-2: #b39ff0;
+    --ip-gold: #d4af5a;
+    --ip-gold-2: #e8c878;
+    --ip-gold-border: rgba(212, 175, 90, 0.4);
+    --ip-ink: #f3ede3;
+    --ip-body: #c9bfb2;
+    --ip-muted: #8f8579;
+    --ip-lavender: rgba(212, 175, 90, 0.12);
+    --ip-border: rgba(201, 162, 39, 0.18);
+    --ip-border-strong: rgba(212, 175, 90, 0.32);
+    --ip-mix-base: #000000;
+
+    --ip-cat-sleep: #7c8cc4;
+    --ip-cat-sleep-soft: rgba(124, 140, 196, 0.16);
+    --ip-cat-reset: #6bc0b0;
+    --ip-cat-reset-soft: rgba(107, 192, 176, 0.16);
+    --ip-cat-focus: #e0a868;
+    --ip-cat-focus-soft: rgba(224, 168, 104, 0.16);
+    --ip-cat-confidence: #d47b9c;
+    --ip-cat-confidence-soft: rgba(212, 123, 156, 0.16);
+    --ip-cat-calm: #a79ae8;
+    --ip-cat-calm-soft: rgba(167, 154, 232, 0.16);
+    --ip-cat-release: #7fc4a4;
+    --ip-cat-release-soft: rgba(127, 196, 164, 0.16);
+
+    --ip-shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.35);
+    --ip-shadow-md: 0 14px 34px rgba(0, 0, 0, 0.4);
+    --ip-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .mvp-bg {
+    background:
+      radial-gradient(circle at 50% -8%, rgba(212, 175, 90, 0.1), transparent 19rem),
+      radial-gradient(circle at 88% 9%, rgba(155, 127, 232, 0.16), transparent 18rem),
+      linear-gradient(180deg, #0e0b14, #120d1a 58%, #0a0810);
+  }
+
+  .mvp-bg::before {
+    background-image:
+      radial-gradient(circle, rgba(212, 175, 90, 0.16) 0 1px, transparent 1.5px),
+      radial-gradient(circle, rgba(155, 127, 232, 0.14) 0 1px, transparent 1.5px);
+    opacity: 0.4;
+  }
+
+  .soft-input {
+    border-color: var(--ip-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ip-ink);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .soft-input::placeholder {
+    color: rgba(201, 191, 178, 0.55);
+  }
+
+  .soft-pill {
+    border-color: var(--ip-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ip-ink);
+  }
+}
+
+/* ============================================================================
+   DESIGN SYSTEM v1 — colors and typeface now LOCKED per docs/BRAND_IDENTITY.md
+   (founder-approved Harmony Form identity). Structural values (radius,
+   shadow, motion timing) remain governed by docs/DESIGN_SYSTEM.md. Additive
+   only: does not replace the legacy --ip-* tokens other, not-yet-rebuilt
+   screens still use. Currently consumed by: components/pause-shell.tsx,
+   components/pause-home-screen.tsx, components/moments-screen.tsx,
+   components/pause-icons.tsx.
+   ============================================================================ */
+:root {
+  /* Color roles — light is the default experience (BRAND_IDENTITY.md §4.2) */
+  --ds-bg: #faf7f2;
+  --ds-surface: #ffffff;
+  --ds-surface-raised: #ffffff;
+  --ds-border: #cbd5e1;
+  --ds-text: #0f172a;
+  --ds-text-secondary: #334155;
+  /* Locked Neutral 500. Measures ~4.5:1 against --ds-bg — a floor, not a
+     default (BRAND_IDENTITY.md §4.3): fine at 14px-medium and above, prefer
+     --ds-text-secondary for anything smaller. */
+  --ds-text-muted: #64748b;
+  --ds-accent: #4338ca;
+  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 10%, var(--ds-bg));
+  --ds-accent-on: #f8fafc;
+  --ds-accent-secondary: #7c6aed;
+  --ds-success: #4f8f6d;
+  --ds-warning: #c98a4b;
+  --ds-error: #b4483f;
+  --ds-chakra: #7c6aed;
+
+  /* Right Now outcome tints — icon accents only, never full tile backgrounds
+     (DESIGN_SYSTEM.md §11). Four brand-derived families
+     (BRAND_IDENTITY.md §4.4): violet (Sleep/Calm), muted green
+     (Reset/Release), gold (Focus), rose (Confidence). */
+  --ds-outcome-sleep: #7c6aed;
+  --ds-outcome-reset: #6b9080;
+  --ds-outcome-focus: #c98a4b;
+  --ds-outcome-confidence: #b4587a;
+  --ds-outcome-calm: #7c6aed;
+  --ds-outcome-release: #6b9080;
+
+  --ds-radius-sm: 0.85rem;
+  --ds-radius-md: 1.15rem;
+  --ds-radius-lg: 1.6rem;
+
+  --ds-shadow-raised: 0 10px 28px rgba(29, 27, 76, 0.08);
+
+  --ds-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ds-duration-micro: 120ms;
+  --ds-duration-base: 260ms;
+  --ds-duration-slow: 520ms;
+
+  --ds-font-sans: var(--font-inter), var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ds-bg: #1d1b4c;
+    --ds-surface: #262357;
+    --ds-surface-raised: #2c2860;
+    --ds-border: rgba(196, 181, 253, 0.18);
+    --ds-text: #f8fafc;
+    --ds-text-secondary: #c4b5fd;
+    --ds-text-muted: #9c93c4;
+    --ds-accent: #7c6aed;
+    --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 16%, var(--ds-bg));
+    --ds-accent-on: #f8fafc;
+    --ds-accent-secondary: #c4b5fd;
+    --ds-success: #6cae8b;
+    --ds-warning: #e0a868;
+    --ds-error: #d97b70;
+    --ds-chakra: #c4b5fd;
+
+    --ds-outcome-sleep: #a692ea;
+    --ds-outcome-reset: #8fb5a3;
+    --ds-outcome-focus: #e0a868;
+    --ds-outcome-confidence: #d47b9c;
+    --ds-outcome-calm: #a692ea;
+    --ds-outcome-release: #8fb5a3;
+
+    --ds-shadow-raised: 0 10px 28px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* You -> Preferences -> Theme (docs/PRODUCT_FLOW.md §27): an explicit
+   Light/Dark choice overrides the OS-level prefers-color-scheme default
+   above. "System" (the default) sets neither attribute, so the
+   @media block continues to decide. Values mirror the media-query block
+   exactly — components/theme-applier.tsx sets data-theme from
+   lib/preferences-store.ts. */
+:root[data-theme="dark"] {
+  --ds-bg: #1d1b4c;
+  --ds-surface: #262357;
+  --ds-surface-raised: #2c2860;
+  --ds-border: rgba(196, 181, 253, 0.18);
+  --ds-text: #f8fafc;
+  --ds-text-secondary: #c4b5fd;
+  --ds-text-muted: #9c93c4;
+  --ds-accent: #7c6aed;
+  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 16%, var(--ds-bg));
+  --ds-accent-on: #f8fafc;
+  --ds-accent-secondary: #c4b5fd;
+  --ds-success: #6cae8b;
+  --ds-warning: #e0a868;
+  --ds-error: #d97b70;
+  --ds-chakra: #c4b5fd;
+
+  --ds-outcome-sleep: #a692ea;
+  --ds-outcome-reset: #8fb5a3;
+  --ds-outcome-focus: #e0a868;
+  --ds-outcome-confidence: #d47b9c;
+  --ds-outcome-calm: #a692ea;
+  --ds-outcome-release: #8fb5a3;
+
+  --ds-shadow-raised: 0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="light"] {
+  --ds-bg: #faf7f2;
+  --ds-surface: #ffffff;
+  --ds-surface-raised: #ffffff;
+  --ds-border: #cbd5e1;
+  --ds-text: #0f172a;
+  --ds-text-secondary: #334155;
+  --ds-text-muted: #64748b;
+  --ds-accent: #4338ca;
+  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 10%, var(--ds-bg));
+  --ds-accent-on: #f8fafc;
+  --ds-accent-secondary: #7c6aed;
+  --ds-success: #4f8f6d;
+  --ds-warning: #c98a4b;
+  --ds-error: #b4483f;
+  --ds-chakra: #7c6aed;
+
+  --ds-outcome-sleep: #7c6aed;
+  --ds-outcome-reset: #6b9080;
+  --ds-outcome-focus: #c98a4b;
+  --ds-outcome-confidence: #b4587a;
+  --ds-outcome-calm: #7c6aed;
+  --ds-outcome-release: #6b9080;
+
+  --ds-shadow-raised: 0 10px 28px rgba(29, 27, 76, 0.08);
+}
+
+/* Quiet, continuous "breathing" rhythm — an early, restrained preview of the
+   Pause visual identity (DESIGN_SYSTEM.md §8/§10), used at ambient/backdrop
+   scale only, never as a decorative centerpiece. */
+.ds-breathe {
+  animation: ds-breathe 7s ease-in-out infinite;
+}
+
+@keyframes ds-breathe {
+  0%, 100% { transform: scale(0.97); opacity: 0.6; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+
+.ds-tap {
+  transition: transform var(--ds-duration-micro) var(--ds-ease), background-color var(--ds-duration-base) var(--ds-ease), border-color var(--ds-duration-base) var(--ds-ease), opacity var(--ds-duration-base) var(--ds-ease);
+}
+
+.ds-tap:active {
+  transform: scale(0.97);
+}
+
+/* Harmony Form playback visual (components/harmony-form-visual.tsx) — the
+   Pause player's core visual form (DESIGN_SYSTEM.md §8, BRAND_IDENTITY.md
+   §9). Each ring breathes on its own slow, staggered rhythm — no bounce, no
+   elastic overshoot, ease-in-out only. Central pause bars are never
+   animated, so they stay recognizable at a glance. */
+.harmony-form-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: harmony-breathe 6.5s ease-in-out infinite;
+}
+
+.harmony-form-ring--1 { animation-delay: -1.6s; }
+.harmony-form-ring--2 { animation-delay: -3.2s; }
+.harmony-form-ring--3 { animation-delay: -4.8s; }
+
+/* Subtle, honest "audio responsiveness": a slightly livelier breathing
+   rhythm while actually playing, never a literal amplitude-driven
+   visualizer (DESIGN_SYSTEM.md §8's "felt more than seen"). */
+.harmony-form--playing .harmony-form-ring {
+  animation-duration: 4.5s;
+}
+
+@keyframes harmony-breathe {
+  0%, 100% { transform: scale(0.965); }
+  50% { transform: scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .harmony-form-ring {
+    animation: none !important;
+  }
+}
+
+.ds-outcome-icon {
+  background: color-mix(in srgb, var(--ds-outcome-color, var(--ds-accent)) 14%, var(--ds-surface));
+  color: var(--ds-outcome-color, var(--ds-accent));
+}
+
+/* Moments — mode-select atmosphere cards (components/moments-screen.tsx).
+   Full-bleed gradient identity per mode instead of a white tile, per the
+   Moments v2 design handoff. Colors are sourced from BRAND_IDENTITY.md
+   §4.4's tint families (gold/Coming up, muted green/Happening now) and,
+   for "Just happened," the exact locked violet ramp (§4.1) rather than new
+   arbitrary hues. Constant across light/dark theme — this is an atmosphere
+   layer, not surface-role UI, so it does not participate in the --ds-*
+   theme swap. */
+.moment-atmosphere {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 7.15rem;
+  border-radius: var(--ds-radius-lg);
+  overflow: hidden;
+  text-align: left;
+}
+
+.moment-atmosphere-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  min-height: 7.15rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.moment-atmosphere--before {
+  background:
+    radial-gradient(9rem 9rem at 88% 118%, rgba(255, 243, 221, 0.55), transparent 70%),
+    linear-gradient(0deg, rgba(74, 45, 10, 0.42) 0%, rgba(74, 45, 10, 0) 58%),
+    linear-gradient(160deg, #fcf2e3 0%, #f6e9d9 30%, #e0a868 65%, #c98a4b 100%);
+  box-shadow: 0 14px 28px -18px rgba(120, 80, 30, 0.45);
+}
+
+.moment-atmosphere--during {
+  background:
+    radial-gradient(10rem 5.5rem at 8% 96%, rgba(242, 251, 245, 0.5), transparent 70%),
+    linear-gradient(0deg, rgba(15, 40, 28, 0.42) 0%, rgba(15, 40, 28, 0) 58%),
+    linear-gradient(160deg, #edf3ee 0%, #c3ddce 40%, #8fb5a3 70%, #6b9080 100%);
+  box-shadow: 0 14px 28px -18px rgba(30, 60, 45, 0.4);
+}
+
+.moment-atmosphere--after {
+  background:
+    radial-gradient(7.5rem 7.5rem at 90% 6%, rgba(244, 241, 255, 0.5), transparent 70%),
+    linear-gradient(0deg, rgba(15, 10, 45, 0.48) 0%, rgba(15, 10, 45, 0) 56%),
+    linear-gradient(160deg, #e1dbf5 0%, #c4b5fd 32%, #7c6aed 66%, #4338ca 88%, #1d1b4c 100%);
+  box-shadow: 0 14px 28px -18px rgba(20, 16, 50, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-breathe {
+    animation: none !important;
+  }
+  .ds-tap {
+    transition: none !important;
+  }
+  .ds-tap:active {
+    transform: none;
+  }
 }
 
 @theme inline {
@@ -87,6 +457,69 @@ body {
     linear-gradient(115deg, transparent, rgba(236, 72, 153, 0.16), transparent);
   filter: blur(12px);
   animation: mvp-wave 18s ease-in-out infinite alternate;
+}
+
+/* Design 6 — organic blob shapes & category gradients.
+   Not yet consumed by any component (Phase 0 groundwork); safe to keep
+   unused until Phase 2+ screens opt in. */
+.ip-blob-shape {
+  border-radius: 62% 38% 55% 45% / 48% 42% 58% 52%;
+}
+
+.ip-blob-float {
+  animation: ip-blob-morph 16s ease-in-out infinite;
+}
+
+.ip-tile-gradient {
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--ip-tile-color, var(--ip-purple)) 32%, var(--ip-mix-base, white) 68%) 0%, transparent 60%),
+    linear-gradient(160deg, color-mix(in srgb, var(--ip-tile-color, var(--ip-purple)) 16%, var(--ip-mix-base, white) 84%), color-mix(in srgb, var(--ip-tile-color, var(--ip-purple)) 6%, var(--ip-mix-base, white) 94%));
+}
+
+.ip-tile-icon {
+  background: color-mix(in srgb, var(--ip-tile-color, var(--ip-purple)) 20%, var(--ip-mix-base, white) 80%);
+  color: var(--ip-tile-color, var(--ip-purple));
+}
+
+@keyframes ip-blob-morph {
+  0%,
+  100% {
+    border-radius: 62% 38% 55% 45% / 48% 42% 58% 52%;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    border-radius: 45% 55% 38% 62% / 55% 48% 52% 45%;
+    transform: scale(1.03) rotate(2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ip-blob-float {
+    animation: none !important;
+  }
+}
+
+/* Waveform-as-face session visual (components/waveform-face.tsx) */
+.wf-bar {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wf-bounce 2.4s ease-in-out infinite;
+}
+
+@keyframes wf-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.82);
+  }
+  50% {
+    transform: scaleY(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-bar {
+    animation: none !important;
+  }
 }
 
 .soft-input {

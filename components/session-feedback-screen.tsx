@@ -5,7 +5,15 @@ import { useState } from "react";
 
 import { GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
 import { saveFeedback } from "@/lib/mvp-storage";
+import { pauseCategories } from "@/lib/pause-categories";
 import { useMvpState } from "@/lib/use-mvp-state";
+
+const quickMoods = [
+  { emoji: "😌", label: "Much calmer" },
+  { emoji: "🙂", label: "A little calmer" },
+  { emoji: "😐", label: "About the same" },
+  { emoji: "😕", label: "More unsettled" },
+];
 
 export function SessionFeedbackScreen() {
   const router = useRouter();
@@ -22,6 +30,8 @@ export function SessionFeedbackScreen() {
   const [uncomfortable, setUncomfortable] = useState("");
   const [feelingNow, setFeelingNow] = useState("A little calmer");
   const [saving, setSaving] = useState(false);
+  const [quickNote, setQuickNote] = useState("");
+  const [checkedIn, setCheckedIn] = useState(false);
 
   if (!entry || !plan) {
     return (
@@ -32,6 +42,87 @@ export function SessionFeedbackScreen() {
   }
 
   const before = entry.emotionalIntensityBefore;
+  const isQuickPause = entry.saveMode === "reset_only";
+  const currentCategory = pauseCategories.find((category) => category.chakraId === plan.blocks[0]?.chakraId);
+  const suggestedCategory = pauseCategories.find((category) => category.id !== currentCategory?.id) ?? pauseCategories[0];
+
+  const submitQuickPause = () => {
+    if (saving) return;
+    setSaving(true);
+    saveFeedback(plan.id, {
+      emotionalIntensityAfter: Math.max(1, before - 2),
+      bodyTensionAfter: 4,
+      mentalCalmnessAfter: 7,
+      helpfulSection: plan.blocks[0]?.title ?? "",
+      wouldRepeat: true,
+      reflection: quickNote ? `${feelingNow}: ${quickNote}` : feelingNow,
+      createdAt: new Date().toISOString(),
+    });
+    setSaving(false);
+    setCheckedIn(true);
+  };
+
+  if (isQuickPause && !checkedIn) {
+    return (
+      <MvpShell hideNav>
+        <div className="mx-auto max-w-xl space-y-3.5">
+          <SectionTitle title="How do you feel now?" />
+
+          <GlassCard tone={currentCategory?.tone} className="p-4">
+            <div className="grid grid-cols-4 gap-2">
+              {quickMoods.map((mood) => (
+                <button
+                  key={mood.label}
+                  type="button"
+                  onClick={() => setFeelingNow(mood.label)}
+                  aria-label={mood.label}
+                  className={`grid min-h-14 place-items-center rounded-2xl border text-2xl ${feelingNow === mood.label ? "border-purple-300 bg-purple-100" : "border-[var(--ip-border)] bg-white/70"}`}
+                >
+                  {mood.emoji}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={quickNote}
+              onChange={(event) => setQuickNote(event.target.value)}
+              placeholder="Add a note (optional)"
+              className="mt-3 min-h-16 w-full rounded-2xl border border-[var(--ip-border)] bg-white/70 p-3 text-sm text-[var(--ip-ink)] placeholder:text-[var(--ip-muted)]"
+            />
+          </GlassCard>
+
+          <GoldButton className="w-full" disabled={saving} onClick={submitQuickPause}>
+            {saving ? "Saving..." : "Done"}
+          </GoldButton>
+        </div>
+      </MvpShell>
+    );
+  }
+
+  if (isQuickPause && checkedIn) {
+    return (
+      <MvpShell hideNav>
+        <div className="mx-auto max-w-xl space-y-3.5 text-center">
+          <SectionTitle title="Great job! 🎉" copy="Would you like to continue your practice?" />
+
+          <GlassCard tone={suggestedCategory.tone} className="p-4 text-left">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--ip-muted)]">Practice {suggestedCategory.label}</p>
+            <p className="mt-1 font-serif text-lg text-[var(--ip-ink)]">{suggestedCategory.tagline}</p>
+            <button
+              type="button"
+              onClick={() => router.push(`/pause/${suggestedCategory.id}`)}
+              className="mt-3 flex min-h-11 w-full items-center justify-center rounded-full border border-purple-400/30 bg-[linear-gradient(135deg,var(--ip-purple-2),var(--ip-purple))] px-4 py-2.5 font-semibold text-white"
+            >
+              Continue
+            </button>
+          </GlassCard>
+
+          <button type="button" onClick={() => router.push("/")} className="min-h-11 w-full rounded-full border border-[var(--ip-border)] text-[var(--ip-ink)]">
+            Return Home
+          </button>
+        </div>
+      </MvpShell>
+    );
+  }
 
   const submit = () => {
     if (saving) return;

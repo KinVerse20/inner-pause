@@ -36,3 +36,15 @@ export const emotionalAnalysisSchema = z.object({
 });
 
 export type EmotionalAnalysisSchema = z.infer<typeof emotionalAnalysisSchema>;
+
+// Tell Inner Pause routing (docs/TECHNICAL_ARCHITECTURE.md §9) — deliberately
+// minimal compared to emotionalAnalysisSchema above: the only job here is
+// picking one of the six Right Now outcomes for genuinely ambiguous free
+// text, not a full emotional analysis.
+export const tellRoutingSchema = z.object({
+  pauseCategoryId: z.enum(["sleep", "reset", "focus", "confidence", "calm", "release"]),
+  confidence: z.number().min(0).max(1),
+  rationale: z.string().min(1),
+});
+
+export type TellRoutingSchema = z.infer<typeof tellRoutingSchema>;

@@ -110,7 +110,6 @@ export function AuthScreen() {
       upsertProfile({
         fullName: user.user_metadata?.full_name ?? user.user_metadata?.name ?? name,
         email: user.email ?? email,
-        onboardingCompleted: true,
       });
 
       fetch("/api/profile", {

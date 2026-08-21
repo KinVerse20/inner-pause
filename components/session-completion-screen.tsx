@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
 import { chakraMap, moods } from "@/data/chakras";
 import { completeSession, getMoodShift, getSessionPoints, isSessionUnlocked } from "@/lib/progress";
 import { writeProgress } from "@/lib/storage";
@@ -36,7 +37,7 @@ export function SessionCompletionScreen({
 
   useEffect(() => {
     if (hydrated && (!chakra || !session || !allowed)) {
-      router.replace("/journey");
+      router.replace("/practice");
     }
   }, [allowed, chakra, hydrated, router, session]);
 
@@ -60,74 +61,66 @@ export function SessionCompletionScreen({
   const basePoints = getSessionPoints(session.durationMinutes);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50">
-      <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center px-4 py-8 sm:px-6">
-        <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">{chakra.name}</p>
-          <h1 className="mt-3 text-3xl font-semibold">Your practice is complete.</h1>
-          <p className="mt-3 text-slate-300">
-            You earned {basePoints + 5} energy points.
+    <MvpShell hideNav>
+      <div className="mx-auto max-w-xl">
+        <GlassCard className="p-5">
+          <p className="text-xs uppercase tracking-[0.24em]" style={{ color: chakra.color }}>
+            {chakra.frequencyLabel} · {chakra.name.replace(" Chakra", "")}
           </p>
+          <h1 className="mt-2 font-serif text-2xl text-[var(--ip-ink)]">Your practice is complete.</h1>
+          <p className="mt-2 text-sm text-[var(--ip-body)]">You earned {basePoints + 5} energy points.</p>
 
           {!saved ? (
             <>
-              <h2 className="mt-6 text-xl font-semibold">How do you feel now?</h2>
-              <div className="mt-4 grid gap-3">
+              <h2 className="mt-5 font-serif text-xl text-[var(--ip-ink)]">How do you feel now?</h2>
+              <div className="mt-3 grid gap-2">
                 {moods.map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => setMoodAfter(option.value)}
-                    className={`rounded-[1.5rem] border px-4 py-4 text-left transition ${
+                    className={`min-h-12 rounded-2xl border px-4 text-left transition ${
                       moodAfter === option.value
-                        ? "border-amber-200/25 bg-amber-200/10 text-amber-50"
-                        : "border-white/10 bg-slate-950/45 text-slate-200 hover:bg-white/5"
+                        ? "border-purple-300 bg-purple-100 text-[var(--ip-purple)]"
+                        : "border-[var(--ip-border)] bg-white/70 text-[var(--ip-ink)] hover:bg-white"
                     }`}
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={finishSession}
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-amber-300 to-orange-200 px-5 py-3 text-sm font-medium text-slate-950"
-              >
+              <GoldButton className="mt-4 w-full" onClick={finishSession}>
                 Save Progress
-              </button>
+              </GoldButton>
             </>
           ) : (
             <>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/45 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Mood change</p>
-                  <p className="mt-2 text-lg font-medium">
+              <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                <div className="rounded-2xl border border-[var(--ip-border)] bg-white/70 p-3">
+                  <p className="text-xs uppercase tracking-[0.15em] text-[var(--ip-muted)]">Mood change</p>
+                  <p className="mt-1.5 font-medium text-[var(--ip-ink)]">
                     {moodShift > 0 ? `Improved by ${moodShift} step${moodShift > 1 ? "s" : ""}` : moodShift < 0 ? `Lower by ${Math.abs(moodShift)} step${Math.abs(moodShift) > 1 ? "s" : ""}` : "Steady"}
                   </p>
                 </div>
-                <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/45 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Updated totals</p>
-                  <p className="mt-2 text-sm text-slate-200">
+                <div className="rounded-2xl border border-[var(--ip-border)] bg-white/70 p-3">
+                  <p className="text-xs uppercase tracking-[0.15em] text-[var(--ip-muted)]">Updated totals</p>
+                  <p className="mt-1.5 text-sm text-[var(--ip-body)]">
                     {activeProgress.totalMinutes} meditation minutes • {activeProgress.energyPoints} energy points
                   </p>
                 </div>
               </div>
-              <p className="mt-5 text-sm text-slate-300">
+              <p className="mt-4 text-sm text-[var(--ip-body)]">
                 {activeProgress.badges.includes(chakra.badge)
                   ? `Badge earned: ${chakra.badge}.`
                   : "Your next session is now available if this chakra is still in progress."}
               </p>
-              <button
-                type="button"
-                onClick={() => router.replace("/progress")}
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-white/90 px-5 py-3 text-sm font-medium text-slate-950"
-              >
+              <GoldButton className="mt-4 w-full" onClick={() => router.replace("/history")}>
                 View Rewards and Progress
-              </button>
+              </GoldButton>
             </>
           )}
-        </section>
-      </main>
-    </div>
+        </GlassCard>
+      </div>
+    </MvpShell>
   );
 }

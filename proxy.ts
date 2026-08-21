@@ -1,7 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+// The locked product rule is "no mandatory signup before first value" —
+// not just locally (where these env vars are empty and this whole file
+// no-ops below), but structurally, so a future deploy with real Supabase
+// keys doesn't silently reinstate a sign-in wall across the entire app.
+// Every route the core product actually uses (Home, Pause, Practice,
+// Journey, You, Moments, Tell, Entry) has to stay public; only
+// genuinely remote-only actions (Pass, Calendar, Gift a Pause —
+// docs/TECHNICAL_ARCHITECTURE.md §12.6) are meant to ever require auth,
+// and none of those are implemented against real Supabase yet either.
 const publicRoutes = [
+  "/",
+  "/entry",
+  "/pause",
+  "/practice",
+  "/journey",
+  "/profile",
+  "/moments",
+  "/tell",
   "/auth",
   "/auth/confirm",
   "/auth/reset-password",
@@ -19,7 +36,8 @@ function isPublicPath(pathname: string) {
     pathname.startsWith("/branding/") ||
     pathname.startsWith("/audio/") ||
     pathname.startsWith("/api/analyze") ||
-    pathname.startsWith("/api/profile/signup")
+    pathname.startsWith("/api/profile/signup") ||
+    pathname.startsWith("/api/tell-interpret")
   );
 }
 
