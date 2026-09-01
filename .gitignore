@@ -44,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# graphify (local knowledge-graph tool output/cache, not app code)
+/graphify-out/
