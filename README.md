@@ -9,7 +9,7 @@ Brand line: **Heal Within. Live Aligned.**
 - Three-step onboarding
 - Home dashboard
 - Journal entry with text, save modes, intensity before session, and mock voice capture
-- Server-side `/api/analyze` route with Zod validation
+- Server-side analysis and Tell routing on the separate backend (`backend/`, `/api/analyze` and `/api/tell-interpret`)
 - Deterministic fallback insight when `OPENAI_API_KEY` is missing
 - Emotional insight review/edit flow
 - Safety interruption for crisis-like wording
@@ -26,35 +26,52 @@ Brand line: **Heal Within. Live Aligned.**
 
 ## Local development
 
+This repo is split into three packages:
+
+```text
+frontend/   Next.js UI (port 3000)
+backend/    API server (port 4000)
+shared/     schemas and deterministic routing used by both
+```
+
 ```bash
 npm install
 npm run dev
 ```
 
-Open:
+That starts the API and the UI together. Open:
 
 ```text
 http://localhost:3000
 ```
 
+The UI keeps calling `/api/*` on the same origin. Next.js rewrites those requests to the backend (`API_URL`, default `http://localhost:4000`).
+
+Run one side only:
+
+```bash
+npm run dev:frontend
+npm run dev:backend
+```
+
 ## Environment variables
 
-Copy `.env.example` to `.env.local` and fill only the services you want to enable.
+Copy `.env.example` to `.env.local` at the repo root. Both apps read it: the backend loads `../.env.local`, and the frontend Next config loads the same file.
 
 Required for the optional external insight service:
 
 ```text
+API_URL=http://localhost:4000
 OPENAI_API_KEY
 OPENAI_MODEL
 NEXT_PUBLIC_APP_URL
 ```
 
-Required for Supabase production persistence/auth:
+Required for MongoDB auth and accounts:
 
 ```text
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
+MONGODB_URI
+AUTH_SECRET
 ```
 
 Optional provider placeholders:
@@ -72,61 +89,53 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 STRIPE_WEBHOOK_SECRET
 ```
 
-## Supabase setup
+## MongoDB setup
 
-Migration:
+Auth accounts are stored in MongoDB (`users` collection) using `MONGODB_URI`. The database name in the URI is used as-is. No SQL migrations are required.
+
+Copy `.env.example` to `.env.local` and set:
 
 ```text
-supabase/migrations/202608020001_chakra_healing_mvp.sql
+MONGODB_URI
+AUTH_SECRET
 ```
-
-It creates:
-
-- `profiles`
-- `journal_entries`
-- `emotional_analyses`
-- `healing_sessions`
-- `session_feedback`
-- `user_patterns`
-- `morning_guidance`
-- `audio_tracks`
-- `subscriptions`
-
-The migration includes foreign keys, indexes, updated-at triggers, RLS, ownership policies, and seed audio-track records.
 
 ## Audio files
 
 The MVP uses existing reusable local files:
 
 ```text
-public/audio/root.mp3
-public/audio/sacral.mp3
-public/audio/solar-plexus.mp3
-public/audio/heart.mp3
-public/audio/throat.mp3
-public/audio/third-eye.mp3
-public/audio/crown.mp3
+frontend/public/audio/root.mp3
+frontend/public/audio/sacral.mp3
+frontend/public/audio/solar-plexus.mp3
+frontend/public/audio/heart.mp3
+frontend/public/audio/throat.mp3
+frontend/public/audio/third-eye.mp3
+frontend/public/audio/crown.mp3
 ```
 
 Current MP3s should be treated as placeholder/development audio unless you have production licenses. Replace them with licensed production audio before commercial launch.
 
 ## Deployment
 
-1. Push the repository to GitHub or connect the project directly to Vercel.
-2. Add environment variables in Vercel Project Settings.
-3. Run Supabase migrations against the production Supabase project.
-4. Upload licensed audio to the intended storage location or keep files in `public/audio`.
-5. Deploy with Vercel.
+The UI and API are separate apps.
 
-Build command:
+Frontend (Vercel or Amplify):
 
-```bash
-npm run build
-```
+1. Set the project root to the repository root so workspaces resolve.
+2. Build command: `npm run build`
+3. Output: `frontend/.next`
+4. Set `API_URL` to the deployed backend origin.
+
+Backend:
+
+1. Run `npm run start -w @inner-pause/backend` (or deploy the `backend/` package).
+2. Set `PORT`, `FRONTEND_ORIGIN`, `MONGODB_URI`, `AUTH_SECRET`, and `OPENAI_API_KEY` if used.
+
+Auth cookie exchange stays on the frontend at `/auth/confirm`. All other `/api/*` routes live on the backend.
 
 ## Mocked until credentials are supplied
 
-- Supabase auth/database client wiring
 - Google OAuth and password reset email delivery
 - WhatsApp delivery provider
 - Billing provider

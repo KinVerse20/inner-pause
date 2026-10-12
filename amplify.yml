@@ -6,13 +6,12 @@ frontend:
         - npm ci
     build:
       commands:
-        - npm run build
-  artifacts:
-    baseDirectory: .next
-    files:
-      - "**/*"
+        - npm run build -w @inner-pause/frontend
+    artifacts:
+      baseDirectory: frontend/.next
+      files:
+        - "**/*"
   cache:
     paths:
       - node_modules/**/*
-      - .next/cache/**/*
-
+      - frontend/.next/cache/**/*

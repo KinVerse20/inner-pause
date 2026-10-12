@@ -16,11 +16,13 @@
 
 # next.js
 /.next/
+/frontend/.next/
 /out/
 **/cdk.out
 
 # production
 /build
+/backend/dist
 
 # misc
 .DS_Store
