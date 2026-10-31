@@ -1,6 +1,7 @@
 "use client";
 
 import type { BigMomentMode, TellInterpretation } from "@inner-pause/shared";
+import { createId } from "@/lib/id";
 
 // Local persistence for Tell Inner Pause's expressive input — the "Journal
 // material" described in docs/PRODUCT_FLOW.md §23/§37 and
@@ -81,7 +82,7 @@ export function createTellEntry(input: {
   linkedPracticeSessionId?: string;
 }): TellEntry {
   const entry: TellEntry = {
-    id: crypto.randomUUID(),
+    id: createId(),
     text: input.text,
     source: input.source,
     chips: input.chips,

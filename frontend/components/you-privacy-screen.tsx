@@ -16,6 +16,8 @@ import {
   setPatternAnalysisConsent,
   type DataSummary,
 } from "@/lib/privacy-controls";
+import { getAccount } from "@/lib/account-store";
+import { deleteServerAccount } from "@/lib/auth-client";
 import { listTellEntries, type TellEntry } from "@/lib/tell-storage";
 
 // You -> Data & Privacy (docs/PRODUCT_FLOW.md §35): "Your Inner Pause
@@ -52,8 +54,25 @@ export function YouPrivacyScreen() {
   };
 
   const handleDeleteAccount = () => {
-    if (!window.confirm("Delete your account and all local Inner Pause data on this device? This can't be undone.")) return;
-    void deleteAllLocalData().then(() => router.push("/"));
+    const signedIn = Boolean(getAccount());
+    const question = signedIn
+      ? "Delete your account, including any active Pass, and all Inner Pause data on this device? This can't be undone."
+      : "Delete all Inner Pause data on this device? This can't be undone.";
+    if (!window.confirm(question)) return;
+    void (async () => {
+      // The account on the server goes first: if that can't happen (offline,
+      // say), nothing is deleted and nothing pretends it was.
+      if (signedIn) {
+        try {
+          await deleteServerAccount();
+        } catch (error) {
+          window.alert(`Your account couldn't be deleted right now. ${error instanceof Error ? error.message : ""} Please try again when you're online.`);
+          return;
+        }
+      }
+      await deleteAllLocalData();
+      router.push("/");
+    })();
   };
 
   return (
@@ -130,7 +149,7 @@ export function YouPrivacyScreen() {
                 </div>
               ))}
             </div>
-            <p className="px-1 text-[0.72rem]" style={{ color: "var(--ds-text-muted)" }}>
+            <p className="px-1 text-[0.75rem]" style={{ color: "var(--ds-text-muted)" }}>
               Every entry can be deleted from Journey → Journal too.
             </p>
           </section>
@@ -142,7 +161,7 @@ export function YouPrivacyScreen() {
             <button
               type="button"
               onClick={handleDeleteJourneyData}
-              className="ds-tap text-[0.88rem] font-semibold"
+              className="ds-tap -my-2.5 flex min-h-11 items-center text-[0.88rem] font-semibold"
               style={{ color: "var(--ds-error)" }}
             >
               Delete all Journey data
@@ -154,7 +173,7 @@ export function YouPrivacyScreen() {
             <button
               type="button"
               onClick={handleDeleteAccount}
-              className="ds-tap text-[0.88rem] font-semibold"
+              className="ds-tap -my-2.5 flex min-h-11 items-center text-[0.88rem] font-semibold"
               style={{ color: "var(--ds-error)" }}
             >
               Delete account

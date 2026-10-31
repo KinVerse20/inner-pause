@@ -1,5 +1,7 @@
 "use client";
 
+import { createId } from "@/lib/id";
+
 // You -> Help/About -> "Help us build Pause better" (docs/PRODUCT_FLOW.md
 // §28): local-only capture so the control is genuinely functional without
 // standing up a real feedback backend in this slice — a dev-safe substitute
@@ -29,7 +31,7 @@ function readAll(): FeedbackEntry[] {
 }
 
 export function submitFeedback(kind: FeedbackKind, message: string): FeedbackEntry {
-  const entry: FeedbackEntry = { id: crypto.randomUUID(), kind, message, createdAt: new Date().toISOString() };
+  const entry: FeedbackEntry = { id: createId(), kind, message, createdAt: new Date().toISOString() };
   if (isBrowser()) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([entry, ...readAll()]));
   }

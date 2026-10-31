@@ -1,6 +1,7 @@
 import { createFallbackAnalysis, emotionalAnalysisSchema } from "@inner-pause/shared";
 import { Hono } from "hono";
 
+import { readJsonObject, stringField } from "../http";
 import { completeOpenAiJson } from "../openai";
 
 export const analyzeRoutes = new Hono();
@@ -8,8 +9,8 @@ export const analyzeRoutes = new Hono();
 analyzeRoutes.post("/", async (c) => {
   let textForFallback = "";
   try {
-    const body = (await c.req.json()) as { text?: string };
-    const text = body.text?.trim();
+    const body = await readJsonObject(c);
+    const text = stringField(body?.text, 20_000);
     if (!text) {
       return c.json({ error: "Reflection text is required." }, 400);
     }

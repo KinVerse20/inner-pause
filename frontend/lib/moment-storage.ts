@@ -2,6 +2,7 @@
 
 import type { BigMomentMode } from "@/lib/big-moment-engine";
 import type { PauseFeedback } from "@/lib/pause-storage";
+import { createId } from "@/lib/id";
 
 // Local persistence for the BigMoment entity (docs/TECHNICAL_ARCHITECTURE.md
 // §4: "A named meaningful event... optionally calendar-linked, hosting
@@ -73,7 +74,7 @@ export function createMomentRecord(input: {
   returnToMe: ReturnToMeState;
 }): MomentRecord {
   const record: MomentRecord = {
-    id: crypto.randomUUID(),
+    id: createId(),
     mode: input.mode,
     situationId: input.situationId,
     situationLabel: input.situationLabel,

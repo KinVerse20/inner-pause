@@ -1,18 +1,18 @@
 import {
   CHECK_IN_CONTENT,
-  SKILL_ARRIVAL_GUIDANCE,
-  SKILL_DEFAULT_CATEGORY,
   getCoreArc,
   getOngoingPool,
+  getSkillArrivalGuidance,
+  getSkillDefaultCategory,
   type CheckInTier,
   type PracticeActivity,
   type PracticeSessionContent,
 } from "@/lib/practice-content";
 import type { PauseCategoryId } from "@/lib/pause-categories";
 import { composeRightNowPause, type PauseDefinition } from "@/lib/pause-engine";
-import { practiceSkillMap, type PracticeSkillId } from "@/lib/practice-skills";
+import { isBuiltInSkillId, skillLabel, type PracticeSkillId } from "@/lib/practice-skills";
 import type { PracticeSessionRecord } from "@/lib/practice-storage";
-import { buildThemePlaybackCues } from "@/lib/session-content";
+import { GENERIC_GUIDANCE_LINES, buildGuidanceLinePlaybackCues, buildThemePlaybackCues } from "@/lib/session-content";
 
 // Practice reuses the Core Pause engine exactly as Big Moments does
 // (lib/big-moment-engine.ts) — composeRightNowPause resolves the sound
@@ -76,11 +76,11 @@ export function resolvePracticeSession(skillId: PracticeSkillId, sessionNumber: 
   return {
     sessionNumber,
     phase: "ongoing",
-    title: `${practiceSkillMap[skillId].label} — Continued Practice`,
+    title: `${skillLabel(skillId)} — Continued Practice`,
     // Skill-specific, not a generic shared line (Practice Completion pass
     // §8) — the same arrival copy the Core Arc's own sessions default to.
-    arrivalGuidance: SKILL_ARRIVAL_GUIDANCE[skillId],
-    categoryId: SKILL_DEFAULT_CATEGORY[skillId],
+    arrivalGuidance: getSkillArrivalGuidance(skillId),
+    categoryId: getSkillDefaultCategory(skillId),
     durationSeconds: ONGOING_DURATION_SECONDS,
     activity,
   };
@@ -95,7 +95,7 @@ export function composePracticeSessionPause(
   return {
     ...base,
     pauseType: "practice",
-    title: `${practiceSkillMap[skillId].label} — ${resolved.title}`,
+    title: `${skillLabel(skillId)} — ${resolved.title}`,
     durationSeconds: resolved.durationSeconds,
     // The session's own Arrival + "I'm ready" (components/practice-session-screen.tsx)
     // already served Arrive's purpose (docs/PRODUCT_FLOW.md §18's single
@@ -107,7 +107,10 @@ export function composePracticeSessionPause(
     // Skill-toned playback content (docs/PRODUCT_FLOW.md §18), not the
     // underlying Right Now category's cues — e.g. a Presence session reads
     // as Presence, not as whichever category it happens to be mapped to.
-    playbackCues: buildThemePlaybackCues(skillId, base.chakraName, base.frequencyLabel),
+    // Admin-created courses have no authored theme lines of their own.
+    playbackCues: isBuiltInSkillId(skillId)
+      ? buildThemePlaybackCues(skillId, base.chakraName, base.frequencyLabel)
+      : buildGuidanceLinePlaybackCues(GENERIC_GUIDANCE_LINES, base.chakraName, base.frequencyLabel),
     returnTo,
   };
 }

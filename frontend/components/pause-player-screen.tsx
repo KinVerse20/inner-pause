@@ -14,6 +14,10 @@ import {
   type PauseFeedback,
   type PauseRecord,
 } from "@/lib/pause-storage";
+import { getPreferences } from "@/lib/preferences-store";
+import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
+import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
+import { useTunedSound } from "@/lib/use-tuned-sound";
 
 // docs/PRODUCT_FLOW.md §4/§7: the center Pause action's "Get comfortable"
 // transition is a fixed, brief moment — not a duration-scaled Arrive, and
@@ -23,6 +27,21 @@ const COMFORTABLE_SECONDS = 5;
 // docs/PRODUCT_FLOW.md §10: a brief, quiet closing beat between playback
 // ending and the check-in question — never a hard cut.
 const CLOSING_BEAT_MS = 2600;
+
+// A Pause's sound swells in gently rather than starting at full level, and
+// eases back in after being paused.
+const SOUND_FADE_IN_SECONDS = 10;
+const SOUND_RESUME_FADE_SECONDS = 1.5;
+
+// …and fades out over its final stretch instead of stopping. Sleep gets a
+// long, slow fade so the end of the Pause never wakes anyone.
+const SOUND_FADE_OUT_SECONDS = 10;
+const SLEEP_FADE_OUT_SECONDS = 45;
+
+function soundFadeOutSeconds(record: PauseRecord) {
+  const seconds = record.outcomeId === "sleep" ? SLEEP_FADE_OUT_SECONDS : SOUND_FADE_OUT_SECONDS;
+  return Math.min(seconds, Math.floor(record.durationSeconds / 4));
+}
 
 type Phase = "transition" | "playing" | "closing" | "checkin";
 type CheckinStage = "question" | "same-options" | "not-better-options" | "acknowledged";
@@ -57,6 +76,60 @@ export function PausePlayerScreen() {
   const [notBetterStreak, setNotBetterStreak] = useState(false);
   const [checkinStage, setCheckinStage] = useState<CheckinStage>("question");
   const [acknowledgedText, setAcknowledgedText] = useState("");
+  // You -> Preferences -> Ambient sound and Frequency. Read after mount:
+  // preferences live in localStorage, which the server render can't see
+  // (same reasoning as components/you-preferences-screen.tsx).
+  const [frequencyOn, setFrequencyOn] = useState(false);
+  const [ambientOn, setAmbientOn] = useState(true);
+  useEffect(() => {
+    const preferences = getPreferences();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFrequencyOn(preferences.soundToneLayerEnabled);
+    setAmbientOn(preferences.soundAmbientEnabled);
+  }, []);
+
+  // Dev-only frequency tester overrides (DevFrequencyTester below): a
+  // chosen frequency replaces the Pause's own, and tuning can be switched
+  // off to compare against the original recording.
+  const [devToneHz, setDevToneHz] = useState<number | null>(null);
+  const [devTuningOff, setDevTuningOff] = useState(false);
+
+  // What a Pause plays: the sound the admin uploaded for its card (river,
+  // rain…, chosen on the card's screen), tuned to the Pause's frequency so
+  // the sound itself resonates at it — no separate tone. Normally that's
+  // the file the server rendered (tuned, levelled, seamlessly looped, with
+  // the card's volume applied); until it's ready, or while the dev tester
+  // picks another frequency, the original is tuned live instead
+  // (lib/use-tuned-sound.ts). The built-in chakra track (record.audioPath)
+  // is no longer played. A Pause with no uploaded sound — or with Ambient
+  // sound switched off — plays a soft tone at the frequency instead.
+  const originalUrl = ambientOn ? (record?.ambientSoundUrl ?? null) : null;
+  const pauseHz = record ? parseFrequencyHz(record.frequencyLabel) : null;
+  const targetHz = devToneHz ?? (frequencyOn ? pauseHz : null);
+  // Rendered files come as AAC and Opus (lib/render-format.ts). If one
+  // can't play, the player falls back: AAC → Opus → the original, tuned
+  // live (handleAudioError). The original also covers a Pause started
+  // before its sound was re-rendered, whose files have since been replaced.
+  const [aacFailed, setAacFailed] = useState(false);
+  const [renderFailed, setRenderFailed] = useState(false);
+  const rendering =
+    devToneHz !== null || renderFailed || !ambientOn
+      ? null
+      : ((frequencyOn && !devTuningOff ? record?.ambientTunedUrl : record?.ambientPlainUrl) ?? null);
+  const renderedUrl = rendering ? (aacFailed ? webmUrl(rendering) : playableRenderUrl(rendering)) : null;
+  const soundUrl = renderedUrl ?? originalUrl;
+
+  // Both follow playback exactly: audible only while the Pause is actually
+  // playing and unmuted, fading out with the closing beat.
+  useToneLayer(originalUrl ? null : targetHz, phase === "playing" && playing && !muted);
+  const tunedSound = useTunedSound(audioRef, {
+    enabled: Boolean(originalUrl) && !renderedUrl,
+    frequencyHz: renderedUrl || devTuningOff ? null : targetHz,
+    // A rendered file already carries the card's volume and level.
+    volume: renderedUrl ? 1 : (record?.ambientVolume ?? 1),
+    muted,
+    trimDb: renderedUrl ? 0 : (record?.ambientGainDb ?? 0),
+  });
 
   // One-time read from an external system (localStorage) on mount/id
   // change — there's no async boundary to defer into, since the read
@@ -89,24 +162,89 @@ export function PausePlayerScreen() {
 
   // Start playback on entering the playing phase.
   useEffect(() => {
-    if (phase !== "playing" || !record || !audioRef.current) return;
+    if (phase !== "playing" || !record) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAudioError(false);
     const audio = audioRef.current;
-    audio.src = record.audioPath;
+    if (!soundUrl || !audio) {
+      // Tone only: there is no file to load, so the Pause clock starts now.
+      setPlaying(true);
+      return;
+    }
+    audio.src = soundUrl;
     audio.loop = true;
     audio.currentTime = 0;
-    audio.muted = muted;
-    setAudioError(false);
+    tunedSound.resume();
+    tunedSound.fadeIn(SOUND_FADE_IN_SECONDS);
+    const startedWith = audio.src;
     audio
       .play()
       .then(() => setPlaying(true))
       .catch(() => {
+        // Already retrying with another file (handleAudioError).
+        if (audio.src !== startedWith) return;
         setAudioError(true);
         setPlaying(false);
       });
-    // Only re-run when entering "playing" for a given record — muted is
-    // applied via toggleMute directly on the element, not by restarting.
+    // Only re-run when entering "playing" for a given record — volume and
+    // mute are applied by useTunedSound, not by restarting.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, record]);
+
+  // Switching between the rendered file and the live original mid-Pause
+  // (a rendering became the choice, or the dev tester took over) carries on
+  // from the same point.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (phase !== "playing" || !audio || !soundUrl || !audio.src) return;
+    if (audio.src === new URL(soundUrl, window.location.href).href) return;
+    const wasPlaying = !audio.paused;
+    const at = audio.currentTime;
+    audio.src = soundUrl;
+    audio.currentTime = at;
+    if (!wasPlaying) return;
+    tunedSound.resume();
+    audio.play().catch(() => setAudioError(true));
+  }, [phase, soundUrl, tunedSound]);
+
+  // A rendered file that can't play: carry on with the next one instead of
+  // showing an error — the Opus version, then the original tuned live.
+  const handleAudioError = () => {
+    const audio = audioRef.current;
+    const retryWith = (url: string) => {
+      if (!audio) return;
+      const at = audio.currentTime;
+      audio.src = url;
+      audio.currentTime = at;
+      tunedSound.resume();
+      audio
+        .play()
+        .then(() => {
+          setAudioError(false);
+          setPlaying(true);
+        })
+        // A failure here fires another error event, handled by this function.
+        .catch(() => {
+          if (audio.src === new URL(url, window.location.href).href) setAudioError(true);
+        });
+    };
+    // Decided from what the element is actually playing, which is always
+    // current (several errors can arrive before a re-render).
+    const current = audio?.src ?? "";
+    const onRendering = new URL(current || "/", window.location.href).pathname.startsWith("/api/sounds/renders/");
+    if (audio && onRendering && !isWebmUrl(current)) {
+      markAacUnplayable();
+      setAacFailed(true);
+      retryWith(webmUrl(current));
+      return;
+    }
+    if (audio && onRendering && originalUrl) {
+      setRenderFailed(true);
+      retryWith(originalUrl);
+      return;
+    }
+    setAudioError(true);
+  };
 
   const handleReady = () => {
     if (!record) return;
@@ -127,16 +265,25 @@ export function PausePlayerScreen() {
     window.setTimeout(() => setPhase("checkin"), CLOSING_BEAT_MS);
   };
 
-  // Session-duration timer, independent of the underlying track's own length.
+  // Session-duration timer, independent of the underlying track's own
+  // length. It adds real elapsed time on each tick rather than counting
+  // ticks: browsers slow or freeze timers in hidden tabs and on locked
+  // phones, and a tick counter would then let the Pause run on long past
+  // its length. Time spent paused is excluded.
+  const closingStartedRef = useRef(false);
   useEffect(() => {
     if (phase !== "playing" || !playing || !record) return;
+    let last = Date.now();
     const interval = window.setInterval(() => {
+      const now = Date.now();
+      const delta = (now - last) / 1000;
+      last = now;
       setElapsed((current) => {
-        const next = current + 1;
-        if (next >= record.durationSeconds) {
-          window.clearInterval(interval);
-          beginClosing();
-          return record.durationSeconds;
+        const next = Math.min(record.durationSeconds, current + delta);
+        // The end of the Pause: once (an updater can run twice in dev).
+        if (next >= record.durationSeconds && !closingStartedRef.current) {
+          closingStartedRef.current = true;
+          window.setTimeout(beginClosing, 0);
         }
         return next;
       });
@@ -144,14 +291,40 @@ export function PausePlayerScreen() {
     return () => window.clearInterval(interval);
   }, [phase, playing, record]);
 
+  // The closing fade starts once the remaining time is within it (time can
+  // jump past any exact second after the tab was hidden), at the level the
+  // fade would have reached by then.
+  const closingFadeStartedRef = useRef(false);
+  useEffect(() => {
+    if (phase !== "playing" || !playing || !record || !soundUrl || closingFadeStartedRef.current) return;
+    const fadeSeconds = soundFadeOutSeconds(record);
+    const remaining = Math.max(0, record.durationSeconds - elapsed);
+    if (fadeSeconds > 0 && remaining <= fadeSeconds) {
+      closingFadeStartedRef.current = true;
+      tunedSound.fadeOut(remaining, (remaining / fadeSeconds) ** 2);
+    }
+  }, [phase, playing, record, soundUrl, elapsed, tunedSound]);
+
   // Always interactive, even after a load failure — a failed placeholder
   // track should offer a retry, not a permanently dead control.
   const togglePlayback = () => {
+    if (!soundUrl) {
+      setPlaying((current) => !current);
+      return;
+    }
     if (!audioRef.current) return;
     if (playing) {
       audioRef.current.pause();
       return;
     }
+    tunedSound.resume();
+    // Resuming inside the closing fade rejoins it where it left off.
+    const fadeSeconds = record ? soundFadeOutSeconds(record) : 0;
+    const remaining = record ? Math.max(0, record.durationSeconds - elapsed) : Infinity;
+    if (fadeSeconds > 0 && remaining <= fadeSeconds) {
+      closingFadeStartedRef.current = true;
+      tunedSound.fadeOut(remaining, (remaining / fadeSeconds) ** 2);
+    } else tunedSound.fadeIn(SOUND_RESUME_FADE_SECONDS);
     audioRef.current
       .play()
       .then(() => setAudioError(false))
@@ -159,9 +332,18 @@ export function PausePlayerScreen() {
   };
 
   const handleRestart = () => {
-    if (!audioRef.current || !record) return;
+    if (!record) return;
+    closingFadeStartedRef.current = false;
+    if (!soundUrl) {
+      setElapsed(0);
+      setPlaying(true);
+      return;
+    }
+    if (!audioRef.current) return;
     audioRef.current.currentTime = 0;
     setElapsed(0);
+    tunedSound.resume();
+    tunedSound.fadeIn(SOUND_FADE_IN_SECONDS);
     audioRef.current
       .play()
       .then(() => {
@@ -172,10 +354,7 @@ export function PausePlayerScreen() {
   };
 
   const toggleMute = () => {
-    if (!audioRef.current) return;
-    const next = !muted;
-    audioRef.current.muted = next;
-    setMuted(next);
+    setMuted(!muted);
   };
 
   const finalizeAndLeave = (message: string, destination = "/") => {
@@ -295,7 +474,7 @@ export function PausePlayerScreen() {
 
           {audioError ? (
             <p className="max-w-[18rem] text-xs" style={{ color: "#D97B70" }}>
-              This Pause&rsquo;s audio couldn&rsquo;t play — temporary/placeholder audio, not final production content. Tap play to try again.
+              This Pause&rsquo;s sound couldn&rsquo;t load. Tap play to try again.
             </p>
           ) : null}
 
@@ -339,6 +518,18 @@ export function PausePlayerScreen() {
               intentLabel: record.intentLabel,
             }}
           />
+
+          {process.env.NODE_ENV === "development" ? (
+            <DevFrequencyTester
+              pauseHz={pauseHz}
+              currentHz={targetHz}
+              tuningSound={Boolean(originalUrl)}
+              rendered={Boolean(renderedUrl)}
+              onChange={setDevToneHz}
+              tuningOff={devTuningOff}
+              onToggleTuning={() => setDevTuningOff((current) => !current)}
+            />
+          ) : null}
         </div>
       ) : null}
 
@@ -377,7 +568,7 @@ export function PausePlayerScreen() {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="ds-tap text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                className="ds-tap inline-flex min-h-11 items-center px-3 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                 style={{ color: "var(--ds-text-muted)" }}
               >
                 Skip
@@ -407,14 +598,106 @@ export function PausePlayerScreen() {
         </div>
       ) : null}
 
+      {/* crossOrigin keeps the tuning graph working if sounds are served
+          from a separate API origin (NEXT_PUBLIC_API_URL); same-origin is unaffected. */}
       <audio
         ref={audioRef}
         preload="auto"
+        crossOrigin="anonymous"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onError={() => setAudioError(true)}
+        onError={handleAudioError}
       />
     </PlayerFrame>
+  );
+}
+
+// Traditional solfeggio-style values plus 432 Hz — the frequencies most
+// often asked about, for quick comparison by ear.
+const DEV_FREQUENCY_PRESETS = [174, 285, 396, 417, 432, 528, 639, 741, 852, 963];
+
+// Dev-only, same convention as the dashed DEV panels in moments-screen.tsx
+// and journey-screen.tsx: never rendered in production builds.
+function DevFrequencyTester({
+  pauseHz,
+  currentHz,
+  tuningSound,
+  rendered,
+  onChange,
+  tuningOff,
+  onToggleTuning,
+}: {
+  pauseHz: number | null;
+  currentHz: number | null;
+  /** True when the frequency tunes the selected sound; false when it plays as a tone. */
+  tuningSound: boolean;
+  /** True when playing the server's rendered file; false when tuning live. */
+  rendered: boolean;
+  onChange: (hz: number | null) => void;
+  tuningOff: boolean;
+  onToggleTuning: () => void;
+}) {
+  const shownHz = currentHz ?? pauseHz ?? 528;
+  return (
+    <section
+      aria-label="Dev: frequency tester"
+      className="w-full max-w-[20rem] space-y-2.5 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-left text-xs"
+      style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
+    >
+      <p className="font-semibold">
+        DEV — Frequency tester · <span className="tabular-nums">{Math.round(shownHz)} Hz</span>
+        {currentHz === null ? " (off in Preferences)" : !tuningSound ? " · tone (no sound)" : tuningOff ? " · tuning off" : " · tuning the sound"}
+        {tuningSound ? (rendered ? " · rendered file" : " · live") : ""}
+      </p>
+      <input
+        type="range"
+        min={100}
+        max={1000}
+        step={1}
+        value={shownHz}
+        onChange={(event) => onChange(Number(event.target.value))}
+        aria-label="Frequency in hertz"
+        className="w-full"
+      />
+      <div className="flex flex-wrap gap-1.5">
+        {DEV_FREQUENCY_PRESETS.map((hz) => (
+          <button
+            key={hz}
+            type="button"
+            onClick={() => onChange(hz)}
+            aria-pressed={Math.round(shownHz) === hz}
+            className="ds-tap min-h-8 rounded-full border px-2.5 font-medium tabular-nums"
+            style={{
+              borderColor: Math.round(shownHz) === hz ? "var(--ds-accent)" : "var(--ds-border)",
+              color: Math.round(shownHz) === hz ? "var(--ds-accent)" : undefined,
+            }}
+          >
+            {hz}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="ds-tap min-h-8 rounded-full border px-2.5 font-medium"
+          style={{ borderColor: "var(--ds-border)" }}
+        >
+          Reset to this Pause{pauseHz ? ` (${pauseHz} Hz)` : ""}
+        </button>
+        {tuningSound ? (
+          <button
+            type="button"
+            onClick={onToggleTuning}
+            aria-pressed={tuningOff}
+            className="ds-tap min-h-8 rounded-full border px-2.5 font-medium"
+            style={{ borderColor: "var(--ds-border)" }}
+          >
+            {tuningOff ? "Hearing the original" : "Hearing it tuned"}
+          </button>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

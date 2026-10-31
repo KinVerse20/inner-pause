@@ -77,7 +77,7 @@ export function SettingsRow({
 // A plain grouping header used above a cluster of rows/sections.
 export function SettingsSectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.06em]" style={{ color: "var(--ds-text-muted)" }}>
+    <h2 className="px-1 text-[0.75rem] font-semibold uppercase tracking-[0.06em]" style={{ color: "var(--ds-text-muted)" }}>
       {children}
     </h2>
   );
@@ -90,7 +90,7 @@ export function YouScreenHeader({ title, backHref = "/profile", backLabel = "You
     <header>
       <Link
         href={backHref}
-        className="ds-tap inline-flex items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+        className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 pr-2 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
         style={{ color: "var(--ds-text-secondary)" }}
       >
         <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />

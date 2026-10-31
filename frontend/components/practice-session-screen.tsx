@@ -19,7 +19,7 @@ import {
 import { canStartNewPracticeSession } from "@/lib/practice-entitlement";
 import { getMilestoneProgress } from "@/lib/practice-milestones";
 import { createPauseRecord, getPauseRecord } from "@/lib/pause-storage";
-import { type PracticeSkillId, practiceSkillMap } from "@/lib/practice-skills";
+import { skillLabel, type PracticeSkillId } from "@/lib/practice-skills";
 import {
   createPracticeCheckIn,
   createPracticeSessionRecord,
@@ -39,7 +39,9 @@ type ScreenPhase = "loading" | "arrival" | "tell" | "activity" | "return" | "che
 export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId }) {
   const router = useRouter();
   const resumeId = useSearchParams().get("resume");
-  const skill = practiceSkillMap[skillId];
+  // Admin-created courses resolve on the client; the label is only shown
+  // once the session has loaded, after mount.
+  const skill = { label: skillLabel(skillId) };
 
   const [phase, setPhase] = useState<ScreenPhase>("loading");
   const [record, setRecord] = useState<PracticeSessionRecord | null>(null);
@@ -95,30 +97,46 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
       setPhase("not-found");
       return;
     }
-    const created = createPracticeSessionRecord(skillId, enrollment.currentSessionNumber);
-    setRecord(created);
+    // No session record yet: opening a session (Arrival, Tell) and leaving
+    // costs nothing. It's created when the Pause actually starts
+    // (startPause), the point the free limit counts.
     setResolved(resolvedSession);
     setPhase("arrival");
   }, [resumeId, skillId]);
 
-  const startPause = () => {
-    if (!record || !resolved) return;
-    const returnTo = `/practice/${skillId}/session?resume=${record.id}`;
+  // The session's record, created on first need: when its Pause starts.
+  // Re-checks the free limit at that moment (another tab may have used it).
+  const ensureRecord = (): PracticeSessionRecord | null => {
+    if (record) return record;
+    if (!resolved) return null;
+    if (!canStartNewPracticeSession(skillId)) {
+      setPhase("pass-continuation");
+      return null;
+    }
+    const created = createPracticeSessionRecord(skillId, resolved.sessionNumber);
+    setRecord(created);
+    return created;
+  };
+
+  const startPause = (current = ensureRecord()) => {
+    if (!current || !resolved) return;
+    const returnTo = `/practice/${skillId}/session?resume=${current.id}`;
     const definition = composePracticeSessionPause(skillId, resolved, returnTo);
     const pauseRecord = createPauseRecord(definition);
-    updatePracticeSessionRecord(record.id, { linkedPauseRecordId: pauseRecord.id });
+    updatePracticeSessionRecord(current.id, { linkedPauseRecordId: pauseRecord.id });
     router.push(`/pause/player?session=${pauseRecord.id}`);
   };
 
   const submitTell = () => {
-    if (!record) return;
+    const current = ensureRecord();
+    if (!current) return;
     const trimmed = currentText.trim();
     voice.stop();
     if (trimmed) {
-      updatePracticeSessionRecord(record.id, { tellText: trimmed });
-      createTellEntry({ text: trimmed, source: mode, chips: [], interpretation: NOT_ROUTED_INTERPRETATION, linkedPracticeSessionId: record.id });
+      updatePracticeSessionRecord(current.id, { tellText: trimmed });
+      createTellEntry({ text: trimmed, source: mode, chips: [], interpretation: NOT_ROUTED_INTERPRETATION, linkedPracticeSessionId: current.id });
     }
-    startPause();
+    startPause(current);
   };
 
   const submitActivity = () => {
@@ -263,7 +281,7 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
           <p className="text-xs font-semibold" style={{ color: "var(--ds-accent)" }}>
             {skill.label}
           </p>
-          <p className="mt-0.5 text-[0.7rem]" style={{ color: "var(--ds-text-muted)" }}>
+          <p className="mt-0.5 text-[0.75rem]" style={{ color: "var(--ds-text-muted)" }}>
             Session {resolved.sessionNumber}
           </p>
         </header>
@@ -305,7 +323,7 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
                   type="button"
                   onClick={() => setMode(item)}
                   aria-pressed={mode === item}
-                  className="ds-tap inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                  className="ds-tap inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                   style={{
                     background: mode === item ? "var(--ds-accent)" : "transparent",
                     color: mode === item ? "var(--ds-accent-on)" : "var(--ds-text-secondary)",
@@ -348,7 +366,7 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
             <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={startPause}
+                onClick={() => startPause()}
                 className="text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                 style={{ color: "var(--ds-text-secondary)" }}
               >

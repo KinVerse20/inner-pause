@@ -1,20 +1,22 @@
 import { Hono } from "hono";
 
-import { getSessionUser, writeSession } from "../auth/session";
-import { findUserById, toPublicUser, updateUserProfile } from "../auth/users";
+import { getVerifiedSession, writeSession } from "../auth/session";
+import { toPublicUser, updateUserProfile } from "../auth/users";
+import { invalidBody, readJsonObject } from "../http";
 
 export const profileRoutes = new Hono();
 
 profileRoutes.post("/", async (c) => {
-  const session = getSessionUser(c);
-  if (!session) {
+  const verified = await getVerifiedSession(c);
+  if (!verified) {
     return c.json({ error: "Authentication required." }, 401);
   }
 
-  const body = (await c.req.json()) as { fullName?: string; phone?: string };
-  const updated = await updateUserProfile(session.id, {
-    fullName: body.fullName,
-    phone: body.phone,
+  const body = await readJsonObject(c);
+  if (!body) return invalidBody(c);
+  const updated = await updateUserProfile(verified.session.id, {
+    fullName: typeof body.fullName === "string" ? body.fullName : undefined,
+    phone: typeof body.phone === "string" ? body.phone : undefined,
   });
   if (!updated) {
     return c.json({ error: "Account not found." }, 404);

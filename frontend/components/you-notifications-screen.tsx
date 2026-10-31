@@ -69,7 +69,7 @@ export function YouNotificationsScreen() {
             <button
               type="button"
               onClick={() => setNotificationPermission(state.permission === "enabled" ? "declined" : "enabled")}
-              className="ds-tap min-h-9 rounded-full border px-4 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+              className="ds-tap min-h-11 rounded-full border px-4 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
               style={{ borderColor: "var(--ds-border)" }}
             >
               {state.permission === "enabled" ? "Turn off" : "Turn on"}
@@ -78,7 +78,7 @@ export function YouNotificationsScreen() {
         )}
 
         <section className="space-y-2">
-          <h2 className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.06em]" style={{ color: "var(--ds-text-muted)" }}>
+          <h2 className="px-1 text-[0.75rem] font-semibold uppercase tracking-[0.06em]" style={{ color: "var(--ds-text-muted)" }}>
             Categories
           </h2>
           <div className="space-y-1 rounded-[var(--ds-radius-md)] px-4 py-1" style={{ background: "var(--ds-surface)" }}>

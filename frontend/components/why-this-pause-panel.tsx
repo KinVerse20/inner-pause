@@ -23,7 +23,7 @@ export function WhyThisPausePanel({ input, dark = false }: { input: WhyThisPause
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="ds-tap inline-flex items-center gap-1 text-xs underline decoration-dotted underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+        className="ds-tap inline-flex min-h-11 items-center gap-1 text-xs underline decoration-dotted underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
         style={{ color: triggerColor }}
       >
         Why this Pause? <IconChevronDown className="h-3 w-3" style={{ transform: open ? "rotate(180deg)" : undefined }} />

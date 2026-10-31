@@ -27,6 +27,11 @@ export interface PreferencesState {
   theme: ThemePreference;
   soundAmbientEnabled: boolean;
   soundVoiceGuidanceEnabled: boolean;
+  /**
+   * "Frequency": tunes a Pause's sound to its frequency (lib/use-tuned-sound.ts),
+   * or plays a soft tone at it when the Pause has no sound (lib/use-tone-layer.ts).
+   */
+  soundToneLayerEnabled: boolean;
   practicePreferredSupport: PracticeSupportPreference | null;
   offlineEnabled: boolean;
 }
@@ -35,6 +40,7 @@ export const DEFAULT_PREFERENCES: PreferencesState = {
   theme: "system",
   soundAmbientEnabled: true,
   soundVoiceGuidanceEnabled: true,
+  soundToneLayerEnabled: true,
   practicePreferredSupport: null,
   offlineEnabled: false,
 };

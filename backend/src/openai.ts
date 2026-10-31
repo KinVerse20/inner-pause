@@ -17,6 +17,24 @@ export async function completeOpenAiJson(prompt: string): Promise<string | null>
   });
 
   if (!response.ok) return null;
-  const payload = (await response.json()) as { output_text?: string };
-  return payload.output_text ?? null;
+  return responseText((await response.json()) as ResponsesPayload);
+}
+
+interface ResponsesPayload {
+  output_text?: string;
+  output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
+}
+
+// The raw Responses API returns text inside output[].content[] (message
+// items, output_text parts). A top-level output_text exists only as a
+// convenience in OpenAI's SDKs, not in the HTTP response this reads.
+function responseText(payload: ResponsesPayload): string | null {
+  if (typeof payload.output_text === "string" && payload.output_text) return payload.output_text;
+  const text = (payload.output ?? [])
+    .filter((item) => item.type === "message")
+    .flatMap((item) => item.content ?? [])
+    .filter((part) => part.type === "output_text" && typeof part.text === "string")
+    .map((part) => part.text)
+    .join("");
+  return text || null;
 }

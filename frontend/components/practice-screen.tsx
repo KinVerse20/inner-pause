@@ -9,7 +9,8 @@ import { Stagger, StaggerItem } from "@/components/reveal";
 import { getCoreArc } from "@/lib/practice-content";
 import { hasEarnedCoreArcMilestone } from "@/lib/practice-engine";
 import { getPracticeEntitlement, type PracticeEntitlement } from "@/lib/practice-entitlement";
-import { practiceSkills, type PracticeSkillId } from "@/lib/practice-skills";
+import { subscribeAppContent } from "@/lib/content-store";
+import { getVisiblePracticeSkills, practiceSkills, type PracticeSkill, type PracticeSkillId } from "@/lib/practice-skills";
 import { listEnrollments, listPracticeSessionRecords, type PracticeEnrollment } from "@/lib/practice-storage";
 
 type DiscoveryLens = "for-you" | "explore";
@@ -32,16 +33,22 @@ export function PracticeScreen() {
   const [lens, setLens] = useState<DiscoveryLens>("for-you");
   const [enrollments, setEnrollments] = useState<PracticeEnrollment[]>([]);
   const [entitlement, setEntitlement] = useState<PracticeEntitlement | null>(null);
+  // Server render and first paint use the shipped seven; the admin-managed
+  // list (lib/content-store.ts) replaces it right after mount.
+  const [skills, setSkills] = useState<PracticeSkill[]>(practiceSkills);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setEnrollments(listEnrollments());
     setEntitlement(getPracticeEntitlement());
+    const load = () => setSkills(getVisiblePracticeSkills());
+    load();
+    return subscribeAppContent(load);
   }, []);
 
   const enrollmentFor = (skillId: PracticeSkillId) => enrollments.find((item) => item.skillId === skillId);
   const mostRecent = [...enrollments].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-  const forYouSkill = mostRecent ? practiceSkills.find((skill) => skill.id === mostRecent.skillId) : undefined;
+  const forYouSkill = mostRecent ? skills.find((skill) => skill.id === mostRecent.skillId) : undefined;
 
   return (
     <PauseShell>
@@ -63,7 +70,7 @@ export function PracticeScreen() {
                 type="button"
                 onClick={() => setLens(item)}
                 aria-pressed={lens === item}
-                className="ds-tap inline-flex min-h-9 items-center rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                className="ds-tap inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                 style={{
                   background: lens === item ? "var(--ds-accent)" : "transparent",
                   color: lens === item ? "var(--ds-accent-on)" : "var(--ds-text-secondary)",
@@ -85,7 +92,7 @@ export function PracticeScreen() {
                 className="ds-card ds-card-lift ds-tap flex items-center justify-between gap-3 px-4 py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
               >
                 <span className="min-w-0">
-                  <span className="block text-[0.7rem] font-semibold uppercase tracking-wide" style={{ color: "var(--ds-accent)" }}>
+                  <span className="block text-[0.75rem] font-semibold uppercase tracking-wide" style={{ color: "var(--ds-accent)" }}>
                     Continue
                   </span>
                   <span className="mt-0.5 block text-[1.05rem] font-semibold">{forYouSkill.label}</span>
@@ -105,14 +112,14 @@ export function PracticeScreen() {
                   onClick={() => setLens("explore")}
                   className="ds-filled ds-tap min-h-10 px-5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                 >
-                  Explore the seven skills
+                  Explore the skills
                 </button>
               </div>
             )}
           </section>
         ) : (
           <section aria-label="All Practice skills" className="space-y-2.5">
-            {practiceSkills.map((skill) => {
+            {skills.map((skill) => {
               const enrollment = enrollmentFor(skill.id);
               const progress = progressLabel(skill.id, enrollment);
               const freeLockedElsewhere =
@@ -128,12 +135,12 @@ export function PracticeScreen() {
                     <span className="mt-0.5 block text-[0.8rem]" style={{ color: "var(--ds-text-secondary)" }}>
                       {skill.tagline}
                     </span>
-                    <span className="mt-1 block text-[0.72rem]" style={{ color: "var(--ds-text-muted)" }}>
+                    <span className="mt-1 block text-[0.75rem]" style={{ color: "var(--ds-text-muted)" }}>
                       {progress ?? (freeLockedElsewhere ? "Available with Inner Pause Pass" : "Not started")}
                     </span>
                   </span>
                   {enrollment && progress ? (
-                    <span className="shrink-0 text-[0.7rem] font-semibold" style={{ color: "var(--ds-accent)" }}>
+                    <span className="shrink-0 text-[0.75rem] font-semibold" style={{ color: "var(--ds-accent)" }}>
                       Continue
                     </span>
                   ) : (

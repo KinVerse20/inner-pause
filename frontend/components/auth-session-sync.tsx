@@ -11,7 +11,13 @@ export function AuthSessionSync() {
     let active = true;
 
     const syncSession = async () => {
-      const user = await getCurrentUser();
+      let user: Awaited<ReturnType<typeof getCurrentUser>>;
+      try {
+        user = await getCurrentUser();
+      } catch {
+        // Offline or the server is down: keep the local account as it is.
+        return;
+      }
       if (!active) return;
       if (!user) {
         clearMvpAuthenticatedUser();

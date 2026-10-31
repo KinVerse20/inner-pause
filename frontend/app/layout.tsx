@@ -4,6 +4,7 @@ import { PlayerProvider } from "@/components/player-provider";
 import { PwaRegistration } from "@/components/pwa-registration";
 import { AccountInvitationGate } from "@/components/account-invitation-gate";
 import { AuthSessionSync } from "@/components/auth-session-sync";
+import { ContentSync } from "@/components/content-sync";
 import { EntryGate } from "@/components/entry-gate";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { ThemeApplier } from "@/components/theme-applier";
@@ -77,6 +78,7 @@ export default function RootLayout({
         <PlayerProvider>
           <SmoothScroll>
             <AuthSessionSync />
+            <ContentSync />
             <EntryGate />
             <ThemeApplier />
             {children}

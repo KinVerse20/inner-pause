@@ -15,9 +15,12 @@ export function YouAccountScreen() {
   useEffect(() => {
     const refresh = () => setAccount(getAccount());
     refresh();
-    void getCurrentUser().then((user) => {
-      if (!user) setAccount(null);
-    });
+    getCurrentUser()
+      .then((user) => {
+        if (!user) setAccount(null);
+      })
+      // Server unreachable: keep showing the local account.
+      .catch(() => {});
     return subscribeAccount(refresh);
   }, []);
 
@@ -41,7 +44,7 @@ export function YouAccountScreen() {
                   {account.email}
                 </p>
               ) : null}
-              <p className="mt-1 text-[0.72rem]" style={{ color: "var(--ds-text-muted)" }}>
+              <p className="mt-1 text-[0.75rem]" style={{ color: "var(--ds-text-muted)" }}>
                 Signed in {new Date(account.signedInAt).toLocaleDateString()}
               </p>
             </div>

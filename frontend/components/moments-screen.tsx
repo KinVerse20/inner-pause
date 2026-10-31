@@ -174,7 +174,7 @@ export function MomentsScreen() {
               >
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--ds-accent)" }} />
                 <span
-                  className="truncate text-[0.72rem] font-semibold uppercase tracking-[0.06em]"
+                  className="truncate text-[0.75rem] font-semibold uppercase tracking-[0.06em]"
                   style={{ color: "var(--ds-accent)" }}
                 >
                   {mode.label} &middot; {mode.purpose}
@@ -193,7 +193,7 @@ export function MomentsScreen() {
 
             <section aria-label="Choose a situation">
               <p
-                className="mb-2.5 text-[0.7rem] font-semibold uppercase tracking-[0.06em]"
+                className="mb-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.06em]"
                 style={{ color: "var(--ds-text-muted)" }}
               >
                 Choose a situation
@@ -281,7 +281,7 @@ export function MomentsScreen() {
               <button
                 type="button"
                 onClick={() => applyDevOffset(26 * 60 * 60 * 1000)}
-                className="ds-tap min-h-9 rounded-full border px-3 font-medium"
+                className="ds-tap min-h-11 rounded-full border px-3 font-medium"
                 style={{ borderColor: "var(--ds-border)" }}
               >
                 Fast-forward +26h (make eligible)
@@ -293,7 +293,7 @@ export function MomentsScreen() {
                   setDevOffsetMs(0);
                   window.location.reload();
                 }}
-                className="ds-tap min-h-9 rounded-full border px-3 font-medium"
+                className="ds-tap min-h-11 rounded-full border px-3 font-medium"
                 style={{ borderColor: "var(--ds-border)" }}
               >
                 Reset clock

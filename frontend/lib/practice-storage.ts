@@ -3,6 +3,7 @@
 import type { CheckInTier } from "@/lib/practice-content";
 import type { PracticeSkillId } from "@/lib/practice-skills";
 import type { PauseFeedback } from "@/lib/pause-storage";
+import { createId } from "@/lib/id";
 
 // Local persistence for Practice (docs/TECHNICAL_ARCHITECTURE.md §6):
 // deliberately fresh, not lib/progress.ts's legacy chakra-unlock/streak/
@@ -129,7 +130,7 @@ export function listEnrollments(): PracticeEnrollment[] {
 
 export function createPracticeSessionRecord(skillId: PracticeSkillId, sessionNumber: number): PracticeSessionRecord {
   const record: PracticeSessionRecord = {
-    id: crypto.randomUUID(),
+    id: createId(),
     skillId,
     sessionNumber,
     startedAt: new Date().toISOString(),
@@ -162,7 +163,7 @@ export function listPracticeSessionRecords(skillId?: PracticeSkillId): PracticeS
 // ---------- Check-ins ----------
 
 export function createPracticeCheckIn(input: Omit<PracticeCheckInRecord, "id" | "createdAt">): PracticeCheckInRecord {
-  const record: PracticeCheckInRecord = { ...input, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+  const record: PracticeCheckInRecord = { ...input, id: createId(), createdAt: new Date().toISOString() };
   writeJson(CHECKIN_KEY, [record, ...readJson<PracticeCheckInRecord>(CHECKIN_KEY)]);
   return record;
 }

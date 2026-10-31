@@ -23,6 +23,7 @@
 # production
 /build
 /backend/dist
+/backend/uploads
 
 # misc
 .DS_Store

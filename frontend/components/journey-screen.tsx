@@ -89,7 +89,7 @@ function JourneyStats() {
       {items.map((item) => (
         <div key={item.label} className="px-3 py-4 text-center">
           <p className="ds-display text-[1.65rem]">{item.value}</p>
-          <p className="mt-0.5 text-[0.72rem]" style={{ color: "var(--ds-text-secondary)" }}>
+          <p className="mt-0.5 text-[0.75rem]" style={{ color: "var(--ds-text-secondary)" }}>
             {item.label}
           </p>
         </div>
@@ -222,7 +222,7 @@ export function JourneyScreen() {
                     setSelectedEntry(null);
                   }}
                   aria-pressed={tab === item.id}
-                  className="ds-tap inline-flex min-h-9 items-center rounded-full px-3.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                  className="ds-tap inline-flex min-h-11 items-center rounded-full px-3.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                   style={{
                     background: tab === item.id ? "var(--ds-accent)" : "transparent",
                     color: tab === item.id ? "var(--ds-accent-on)" : "var(--ds-text-secondary)",
@@ -281,7 +281,7 @@ export function JourneyScreen() {
             <button
               type="button"
               onClick={togglePass}
-              className="ds-tap min-h-9 rounded-full border px-3 font-medium"
+              className="ds-tap min-h-11 rounded-full border px-3 font-medium"
               style={{ borderColor: "var(--ds-border)" }}
             >
               {pass ? "Pass: ON (tap to turn off)" : "Pass: OFF (tap to turn on)"}
@@ -340,7 +340,7 @@ function HighlightDetail({
       <button
         type="button"
         onClick={onBack}
-        className="ds-tap inline-flex items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+        className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
         style={{ color: "var(--ds-text-secondary)" }}
       >
         <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
@@ -423,7 +423,7 @@ function JournalList({ entries, onOpen }: { entries: TellEntry[]; onOpen: (entry
           className="ds-tap block w-full rounded-[var(--ds-radius-md)] px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
           style={{ background: "var(--ds-surface)" }}
         >
-          <span className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-wide" style={{ color: "var(--ds-text-muted)" }}>
+          <span className="flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-wide" style={{ color: "var(--ds-text-muted)" }}>
             <span>{entry.source === "speak" ? "Spoken" : "Written"}</span>
             <span>·</span>
             <span>{formatDate(entry.createdAt)}</span>
@@ -561,7 +561,7 @@ function PatternsList({
                   <button
                     type="button"
                     onClick={() => onRespond(pattern.id, "relevant")}
-                    className="ds-tap min-h-9 rounded-full border px-3.5 text-xs font-semibold"
+                    className="ds-tap min-h-11 rounded-full border px-3.5 text-xs font-semibold"
                     style={{ borderColor: "var(--ds-border)" }}
                   >
                     Relevant
@@ -569,7 +569,7 @@ function PatternsList({
                   <button
                     type="button"
                     onClick={() => onRespond(pattern.id, "not-relevant")}
-                    className="ds-tap min-h-9 rounded-full border px-3.5 text-xs font-semibold"
+                    className="ds-tap min-h-11 rounded-full border px-3.5 text-xs font-semibold"
                     style={{ borderColor: "var(--ds-border)" }}
                   >
                     Not really
@@ -577,7 +577,7 @@ function PatternsList({
                   <button
                     type="button"
                     onClick={() => router.push("/tell")}
-                    className="ds-tap min-h-9 rounded-full border px-3.5 text-xs font-semibold"
+                    className="ds-tap min-h-11 rounded-full border px-3.5 text-xs font-semibold"
                     style={{ borderColor: "var(--ds-accent)", color: "var(--ds-accent)" }}
                   >
                     Tell Pause more

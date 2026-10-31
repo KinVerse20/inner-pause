@@ -1,5 +1,9 @@
 "use client";
 
+import type { PassState } from "@inner-pause/shared";
+
+import { setServerPass } from "@/lib/entitlements";
+
 export interface LocalAccount {
   id: string;
   displayName: string;
@@ -22,7 +26,9 @@ export function getAccount(): LocalAccount | null {
   }
 }
 
-export function applyServerAccount(user: { id: string; email: string; fullName: string }): LocalAccount {
+export function applyServerAccount(user: { id: string; email: string; fullName: string; pass?: PassState }): LocalAccount {
+  // The account's Pass travels with it (lib/entitlements.ts).
+  setServerPass(user.pass ?? null);
   const account: LocalAccount = {
     id: user.id,
     displayName: user.fullName.trim() || user.email || "You",
@@ -38,6 +44,7 @@ export function applyServerAccount(user: { id: string; email: string; fullName: 
 
 export function clearAccount() {
   if (!isBrowser()) return;
+  setServerPass(null);
   window.localStorage.removeItem(ACCOUNT_KEY);
   window.dispatchEvent(new Event(EVENT_NAME));
 }

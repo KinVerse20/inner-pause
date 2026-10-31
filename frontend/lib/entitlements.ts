@@ -1,15 +1,20 @@
 "use client";
 
-// The Journey free/paid boundary (docs/PRODUCT_FLOW.md §36,
-// docs/TECHNICAL_ARCHITECTURE.md §7) and, this slice, You -> Inner Pause
-// Pass's functional entitlement/state model — not final payment
-// processing. One product, one price, 60-day duration, no recurring
-// subscription (§36). A local/dev activation toggle stands in for real
-// purchase/verification so free/active/expired scope-gating is testable
-// locally; real payment gateway integration is out of this slice's scope.
+import type { PassState as ServerPassState } from "@inner-pause/shared";
+
+// The free/paid boundary (docs/PRODUCT_FLOW.md §36): the Inner Pause Pass.
+// One product, one price, 60 days, no recurring subscription. The Pass is
+// bought with Razorpay and held on the user's account on the server
+// (backend/src/pass-store.ts); this keeps the server's answer for the
+// signed-in account (setServerPass), refreshed on every app load.
+//
+// In development only, a local toggle (the DEV panels) can also activate a
+// Pass, so free/active/expired gating is testable without paying.
 const PASS_KEY = "inner-pause:dev-has-pass";
 const PASS_ACTIVATED_AT_KEY = "inner-pause:pass-activated-at";
+const SERVER_PASS_KEY = "inner-pause:pass";
 const EVENT_NAME = "inner-pause:entitlements-change";
+const devPassAllowed = process.env.NODE_ENV !== "production";
 
 // §36: "Duration: 60 days."
 export const PASS_DURATION_MS = 60 * 24 * 60 * 60 * 1000;
@@ -26,15 +31,45 @@ function readActivatedAt(): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
+// When the account's Pass ends, as the server last reported it.
+function readServerExpiry(): number | null {
+  if (!isBrowser()) return null;
+  try {
+    const raw = window.localStorage.getItem(SERVER_PASS_KEY);
+    const expiresAt = raw ? (JSON.parse(raw) as { expiresAt?: string | null }).expiresAt : null;
+    const ms = expiresAt ? Date.parse(expiresAt) : NaN;
+    return Number.isFinite(ms) ? ms : null;
+  } catch {
+    return null;
+  }
+}
+
+// The later of the account's Pass and (development only) the dev toggle.
+function latestExpiry(): number | null {
+  const devActivatedAt = devPassAllowed ? readActivatedAt() : null;
+  const candidates = [readServerExpiry(), devActivatedAt === null ? null : devActivatedAt + PASS_DURATION_MS].filter(
+    (value): value is number => value !== null,
+  );
+  return candidates.length ? Math.max(...candidates) : null;
+}
+
 export function getPassState(): PassState {
-  const activatedAt = readActivatedAt();
-  if (activatedAt === null) return "free";
-  return Date.now() - activatedAt < PASS_DURATION_MS ? "active" : "expired";
+  const expiry = latestExpiry();
+  if (expiry === null) return "free";
+  return Date.now() < expiry ? "active" : "expired";
 }
 
 export function getPassExpiresAt(): string | null {
-  const activatedAt = readActivatedAt();
-  return activatedAt === null ? null : new Date(activatedAt + PASS_DURATION_MS).toISOString();
+  const expiry = latestExpiry();
+  return expiry === null ? null : new Date(expiry).toISOString();
+}
+
+/** Records the server's Pass for the signed-in account (null when signed out). */
+export function setServerPass(pass: ServerPassState | null | undefined) {
+  if (!isBrowser()) return;
+  if (pass?.expiresAt) window.localStorage.setItem(SERVER_PASS_KEY, JSON.stringify({ expiresAt: pass.expiresAt }));
+  else window.localStorage.removeItem(SERVER_PASS_KEY);
+  window.dispatchEvent(new Event(EVENT_NAME));
 }
 
 // Never gates on anything but the computed state above — history/Journal/

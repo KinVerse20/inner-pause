@@ -1,6 +1,6 @@
 import { listHighlights } from "@/lib/journey-highlights";
 import { listPauseRecords } from "@/lib/pause-storage";
-import { practiceSkillMap } from "@/lib/practice-skills";
+import { skillLabel } from "@/lib/practice-skills";
 import { listEnrollments } from "@/lib/practice-storage";
 
 // Journey — Growth (this slice's brief §6): computed on read from existing
@@ -21,7 +21,7 @@ function practiceMilestoneStatements(): GrowthStatement[] {
     .filter((enrollment) => enrollment.milestoneEarnedAt)
     .map((enrollment) => ({
       id: `milestone:${enrollment.skillId}`,
-      text: `You completed the core ${practiceSkillMap[enrollment.skillId].label.toLowerCase()} practice.`,
+      text: `You completed the core ${skillLabel(enrollment.skillId).toLowerCase()} practice.`,
     }));
 }
 

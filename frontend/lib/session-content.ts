@@ -1,6 +1,6 @@
 import type { BigMomentMode } from "@/lib/big-moment-engine";
 import type { PauseCategoryId } from "@/lib/pause-categories";
-import type { PracticeSkillId } from "@/lib/practice-skills";
+import type { BuiltInSkillId } from "@/lib/practice-skills";
 
 // The shared session-aware content layer (docs/PRODUCT_FLOW.md §7): one
 // content model reused by Right Now, the Ground Pause, Big Moments, and
@@ -22,7 +22,7 @@ export interface PlaybackCue {
 // Practice skills — "confidence" deliberately means the same thing in both,
 // since they're thematically identical (§7: "reuse... rather than a
 // separate content system per surface").
-export type ThemeId = PauseCategoryId | Exclude<PracticeSkillId, "confidence">;
+export type ThemeId = PauseCategoryId | Exclude<BuiltInSkillId, "confidence">;
 
 // Two short guidance lines per theme: an opening tone and a closing tone.
 // Tone only, not a locked script (docs/PRODUCT_FLOW.md §7) — small and
@@ -130,6 +130,19 @@ export function buildThemePlaybackCues(theme: ThemeId, chakraName: string, frequ
     buildChakraCue(chakraName, frequencyLabel),
     { kind: "guidance", lines: [closing] },
   ];
+}
+
+// Used for admin-created cards that don't author their own lines — calm,
+// outcome-neutral guidance that suits any Pause.
+export const GENERIC_GUIDANCE_LINES = ["Let your breathing lead.", "Nothing needs to be solved right now.", "Take one last slow breath."];
+
+// Admin-authored cards (/admin → Cards): their own guidance lines, in
+// order, with the chakra cue placed before the last line so the Pause
+// still closes on guidance, never on a bare chakra label.
+export function buildGuidanceLinePlaybackCues(lines: string[], chakraName: string, frequencyLabel: string): PlaybackCue[] {
+  const guidance: PlaybackCue[] = lines.map((line) => ({ kind: "guidance", lines: [line] }));
+  if (guidance.length < 2) return [...guidance, buildChakraCue(chakraName, frequencyLabel)];
+  return [...guidance.slice(0, -1), buildChakraCue(chakraName, frequencyLabel), guidance[guidance.length - 1]];
 }
 
 // Big Moments — Before/After: same shape as the theme sequence above, but

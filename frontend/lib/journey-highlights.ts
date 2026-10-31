@@ -1,5 +1,5 @@
 import { getCoreArc } from "@/lib/practice-content";
-import { practiceSkillMap } from "@/lib/practice-skills";
+import { skillLabel } from "@/lib/practice-skills";
 import { listMomentRecords, type MomentRecord, type ReturnToMeState } from "@/lib/moment-storage";
 import { getPauseRecord, type PauseFeedback } from "@/lib/pause-storage";
 import { listPracticeSessionRecords, type PracticeSessionRecord } from "@/lib/practice-storage";
@@ -62,7 +62,7 @@ function highlightFromMoment(record: MomentRecord): Highlight {
 
 function highlightFromPractice(record: PracticeSessionRecord): Highlight | null {
   if (!record.activityRealWorldRep || !record.returnText) return null;
-  const skill = practiceSkillMap[record.skillId];
+  const skill = { label: skillLabel(record.skillId) };
   return {
     id: `practice:${record.id}`,
     sourceType: "practice",

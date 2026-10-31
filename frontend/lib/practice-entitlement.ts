@@ -1,6 +1,6 @@
 import { hasActivePass } from "@/lib/entitlements";
 import type { PracticeSkillId } from "@/lib/practice-skills";
-import { listPracticeSessionRecords } from "@/lib/practice-storage";
+import { listPracticeSessionRecords, type PracticeSessionRecord } from "@/lib/practice-storage";
 
 // Free Practice (docs/PRODUCT_FLOW.md §36, locked): exactly two Practice
 // sessions total, from one chosen skill — never per-skill, never a
@@ -9,12 +9,22 @@ import { listPracticeSessionRecords } from "@/lib/practice-storage";
 // abandoning and restarting.
 export const FREE_PRACTICE_SESSION_LIMIT = 2;
 
+// A session counts once its Pause has started (or it was completed).
+// Records are now only created at that point, but older versions created
+// one whenever a session screen was merely opened; those never-played
+// records are not counted, so nobody stays locked out by them.
+const isStarted = (record: PracticeSessionRecord) => Boolean(record.linkedPauseRecordId || record.completedAt);
+
+function startedSessionRecords() {
+  return listPracticeSessionRecords().filter(isStarted);
+}
+
 // The skill the free sample is "locked" to: whichever skill produced the
 // very first Practice session record, by start time. Undefined until a
 // free user has actually started a session anywhere (browsing skills or
 // merely enrolling doesn't consume anything — only starting playback does).
 export function getFreeSampleSkillId(): PracticeSkillId | undefined {
-  const records = listPracticeSessionRecords();
+  const records = startedSessionRecords();
   if (records.length === 0) return undefined;
   const earliest = [...records].sort((a, b) => a.startedAt.localeCompare(b.startedAt))[0];
   return earliest.skillId;
@@ -29,7 +39,7 @@ export interface PracticeEntitlement {
 export function getPracticeEntitlement(): PracticeEntitlement {
   return {
     hasPass: hasActivePass(),
-    freeSessionsUsed: listPracticeSessionRecords().length,
+    freeSessionsUsed: startedSessionRecords().length,
     freeSampleSkillId: getFreeSampleSkillId(),
   };
 }

@@ -63,7 +63,7 @@ function MvpBottomNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.68rem] transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
+              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.75rem] transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
                 active ? "bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "text-[var(--ip-muted)] hover:text-[var(--ip-ink)]"
               }`}
             >

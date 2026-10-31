@@ -82,7 +82,7 @@ export function TellComposeScreen() {
         <header>
           <Link
             href="/"
-            className="ds-tap inline-flex items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+            className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
             style={{ color: "var(--ds-text-secondary)" }}
           >
             <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
@@ -106,7 +106,7 @@ export function TellComposeScreen() {
               type="button"
               onClick={() => switchMode(item)}
               aria-pressed={mode === item}
-              className="ds-tap inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+              className="ds-tap inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
               style={{
                 background: mode === item ? "var(--ds-accent)" : "transparent",
                 color: mode === item ? "var(--ds-accent-on)" : "var(--ds-text-secondary)",

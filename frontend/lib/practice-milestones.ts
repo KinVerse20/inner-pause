@@ -1,4 +1,5 @@
-import type { PracticeSkillId } from "@/lib/practice-skills";
+import { getCourseOverride } from "@/lib/content-store";
+import type { BuiltInSkillId, PracticeSkillId } from "@/lib/practice-skills";
 import type { PracticeSessionRecord } from "@/lib/practice-storage";
 
 // Practice Completion pass §4: milestones communicate development, never a
@@ -15,7 +16,7 @@ export interface Milestone {
   atEngagedSessions: number;
 }
 
-export const MILESTONE_PATHS: Record<PracticeSkillId, Milestone[]> = {
+export const MILESTONE_PATHS: Record<BuiltInSkillId, Milestone[]> = {
   confidence: [
     { id: "foundation", title: "Foundation", atEngagedSessions: 1 },
     { id: "speaking-up", title: "Speaking Up", atEngagedSessions: 3 },
@@ -60,6 +61,12 @@ export const MILESTONE_PATHS: Record<PracticeSkillId, Milestone[]> = {
   ],
 };
 
+// An admin-designed milestone path (lib/content-store.ts) replaces the
+// built-in one above; a course saved with no milestones means "no path".
+export function getMilestonePath(skillId: PracticeSkillId): Milestone[] {
+  return getCourseOverride(skillId)?.milestones ?? MILESTONE_PATHS[skillId as BuiltInSkillId] ?? [];
+}
+
 // A session counts toward milestone progress only if it was genuinely
 // engaged with, not merely opened (Practice Completion pass §14/§4) — the
 // same real-response signal lib/practice-engine.ts's
@@ -78,7 +85,7 @@ export function getMilestoneProgress(
   records: PracticeSessionRecord[],
   arcMilestoneEarned: boolean,
 ): MilestoneProgress {
-  const path = MILESTONE_PATHS[skillId] ?? [];
+  const path = getMilestonePath(skillId);
   const engaged = countEngagedSessions(records);
   let reachedCount = path.filter((milestone) => engaged >= milestone.atEngagedSessions).length;
 

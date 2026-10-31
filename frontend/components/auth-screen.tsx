@@ -14,7 +14,10 @@ import { setMvpAuthenticatedUser, upsertProfile } from "@/lib/mvp-storage";
 export function AuthScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo")?.startsWith("/") ? searchParams.get("redirectTo") : "/";
+  // Same-site paths only: "//host" and "/\host" would leave the app (an
+  // open redirect after sign-in).
+  const requested = searchParams.get("redirectTo") ?? "";
+  const redirectTo = requested.startsWith("/") && !requested.startsWith("//") && !requested.startsWith("/\\") ? requested : "/";
   const routeMessage = searchParams.get("message");
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("signup");
   const [showEmail, setShowEmail] = useState(false);
@@ -44,7 +47,7 @@ export function AuthScreen() {
     try {
       if (mode === "forgot") {
         await requestPasswordReset(email);
-        setStatus("If an account exists for that email, a reset link is ready. Check the API log in local development.");
+        setStatus("If an account exists for that email, we've sent it a link to choose a new password. The link works for 1 hour.");
         return;
       }
 
@@ -184,13 +187,21 @@ export function AuthScreen() {
           </form>
         ) : null}
 
-        <p className="mt-6 text-center text-[0.72rem] leading-5" style={{ color: "var(--ds-text-muted)" }}>
-          By continuing, you agree to our Terms of Service and Privacy Policy.
+        <p className="mt-6 text-center text-[0.75rem] leading-5" style={{ color: "var(--ds-text-muted)" }}>
+          By continuing, you agree to our{" "}
+          <Link href="/terms" className="underline underline-offset-2">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy-policy" className="underline underline-offset-2">
+            Privacy Policy
+          </Link>
+          .
         </p>
 
         <div className="relative z-10 mt-auto space-y-2 bg-gradient-to-t from-[var(--ds-bg)] via-[var(--ds-bg)] to-transparent pt-10 pb-2 text-center text-sm" style={{ color: "var(--ds-text-secondary)" }}>
           {mode === "login" ? (
-            <button type="button" onClick={() => setMode("signup")} className="ds-tap font-medium">
+            <button type="button" onClick={() => setMode("signup")} className="ds-tap inline-flex min-h-11 items-center font-medium">
               New here? <span style={{ color: "var(--ds-accent)" }}>Create an account</span>
             </button>
           ) : (
@@ -200,13 +211,13 @@ export function AuthScreen() {
                 setMode("login");
                 setShowEmail(true);
               }}
-              className="ds-tap font-medium"
+              className="ds-tap inline-flex min-h-11 items-center font-medium"
             >
               Already have an account? <span style={{ color: "var(--ds-accent)" }}>Sign in</span>
             </button>
           )}
           <div className="mt-2">
-            <button type="button" onClick={() => setMode("forgot")} className="ds-tap text-xs" style={{ color: "var(--ds-text-muted)" }}>
+            <button type="button" onClick={() => setMode("forgot")} className="ds-tap inline-flex min-h-11 items-center px-2 text-xs" style={{ color: "var(--ds-text-muted)" }}>
               Forgot password?
             </button>
           </div>

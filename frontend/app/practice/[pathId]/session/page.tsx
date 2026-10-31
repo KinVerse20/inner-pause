@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { PracticeSessionScreen } from "@/components/practice-session-screen";
-import { isPracticeSkillId } from "@/lib/practice-skills";
 
 export default async function PracticeSessionPage({
   params,
@@ -10,7 +9,7 @@ export default async function PracticeSessionPage({
   params: Promise<{ pathId: string }>;
 }) {
   const { pathId } = await params;
-  if (!isPracticeSkillId(pathId)) notFound();
+  if (!/^[a-z0-9-]{1,40}$/.test(pathId)) notFound();
   return (
     <Suspense>
       <PracticeSessionScreen skillId={pathId} />

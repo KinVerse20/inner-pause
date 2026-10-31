@@ -53,10 +53,15 @@ export async function updateUserProfile(id: string, input: { fullName?: string; 
   if (!ObjectId.isValid(id)) return null;
   const users = await usersCollection();
   const next: Partial<UserDocument> = { updatedAt: new Date() };
-  if (typeof input.fullName === "string") next.fullName = input.fullName.trim();
-  if (typeof input.phone === "string") next.phone = input.phone.trim();
+  if (typeof input.fullName === "string") next.fullName = input.fullName.trim().slice(0, 80);
+  if (typeof input.phone === "string") next.phone = input.phone.trim().slice(0, 30);
   await users.updateOne({ _id: new ObjectId(id) }, { $set: next });
   return findUserById(id);
+}
+
+export async function deleteUser(id: string) {
+  if (!ObjectId.isValid(id)) return;
+  await (await usersCollection()).deleteOne({ _id: new ObjectId(id) });
 }
 
 export async function updateUserPassword(id: string, passwordHash: string) {
@@ -65,7 +70,7 @@ export async function updateUserPassword(id: string, passwordHash: string) {
   await users.updateOne(
     { _id: new ObjectId(id) },
     {
-      $set: { passwordHash, updatedAt: new Date() },
+      $set: { passwordHash, passwordChangedAt: new Date(), updatedAt: new Date() },
       $unset: { resetTokenHash: "", resetTokenExpiresAt: "" },
     },
   );

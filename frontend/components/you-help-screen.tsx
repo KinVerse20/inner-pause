@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 
+import { SUPPORT_EMAIL } from "@inner-pause/shared";
+
 import { IconChevronDown } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
-import { YouScreenHeader } from "@/components/settings-row";
+import { SettingsRow, SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
 import { submitFeedback, type FeedbackKind } from "@/lib/feedback-store";
 
 // You -> Help/About (docs/PRODUCT_FLOW.md §28-30): concise, informational,
@@ -74,7 +76,7 @@ export function YouHelpScreen() {
                   type="button"
                   aria-expanded={open}
                   onClick={() => setOpenId(open ? null : section.id)}
-                  className="ds-tap flex w-full items-center justify-between text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                  className="ds-tap -my-2.5 flex min-h-11 w-full items-center justify-between text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                 >
                   <span className="text-[0.95rem] font-semibold">{section.title}</span>
                   <IconChevronDown className="h-4 w-4 shrink-0" style={{ transform: open ? "rotate(180deg)" : undefined }} />
@@ -104,7 +106,7 @@ export function YouHelpScreen() {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setKind(option.id)}
-                  className="ds-tap min-h-9 rounded-full border px-3 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                  className="ds-tap min-h-11 rounded-full border px-3 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                   style={{
                     borderColor: active ? "var(--ds-accent)" : "var(--ds-border)",
                     background: active ? "var(--ds-accent-soft)" : "transparent",
@@ -137,9 +139,19 @@ export function YouHelpScreen() {
           </button>
           {sent ? (
             <p className="text-[0.78rem]" style={{ color: "var(--ds-success)" }}>
-              Thank you. Saved on this device for now — sending it to us is coming soon.
+              Thank you. It&rsquo;s saved on this device. To reach us directly, email {SUPPORT_EMAIL}.
             </p>
           ) : null}
+        </section>
+
+        <section className="space-y-2">
+          <SettingsSectionTitle>Contact and legal</SettingsSectionTitle>
+          <div className="rounded-[var(--ds-radius-md)] px-4 py-1" style={{ background: "var(--ds-surface)" }}>
+            <SettingsRow href={`mailto:${SUPPORT_EMAIL}`} label="Contact us" description={SUPPORT_EMAIL} />
+            <SettingsRow href="/terms" label="Terms of Service" />
+            <SettingsRow href="/privacy-policy" label="Privacy Policy" />
+            <SettingsRow href="/refund-policy" label="Refund and cancellation policy" />
+          </div>
         </section>
       </div>
     </PauseShell>

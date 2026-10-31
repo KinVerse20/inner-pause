@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { BrandLogo, GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
@@ -16,9 +16,9 @@ export function ResetPasswordScreen() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!token) setError("This reset link is missing. Request a new password reset.");
-  }, [token]);
+  // Shown straight away for a link without a token, derived rather than
+  // set from an effect.
+  const shownError = error || (token ? "" : "This reset link is missing. Request a new password reset.");
 
   const submit = async () => {
     setError("");
@@ -63,7 +63,7 @@ export function ResetPasswordScreen() {
             <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 p-3 text-stone-100" />
           </label>
           {status ? <p className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">{status}</p> : null}
-          {error ? <p className="rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-sm text-red-100">{error}</p> : null}
+          {shownError ? <p className="rounded-2xl border border-red-300/20 bg-red-500/10 p-3 text-sm text-red-100">{shownError}</p> : null}
           <GoldButton disabled={loading} className="w-full" onClick={submit}>
             {loading ? "Updating..." : "Update Password"}
           </GoldButton>

@@ -1,5 +1,6 @@
+import { getCourseOverride } from "@/lib/content-store";
 import type { PauseCategoryId } from "@/lib/pause-categories";
-import type { PracticeSkillId } from "@/lib/practice-skills";
+import type { BuiltInSkillId, PracticeSkillId } from "@/lib/practice-skills";
 
 // Authored Practice content (docs/PRODUCT_FLOW.md §18): a finite Core
 // Practice Arc per skill, plus a small reusable pool for Ongoing Practice
@@ -441,7 +442,7 @@ const SELF_COMPASSION_ONGOING_POOL: PracticeActivity[] = [
   { type: "reflection", prompt: "What's a way you've been gentler with yourself since you started this practice?" },
 ];
 
-const CORE_ARCS: Partial<Record<PracticeSkillId, PracticeSessionContent[]>> = {
+const CORE_ARCS: Record<BuiltInSkillId, PracticeSessionContent[]> = {
   confidence: CONFIDENCE_CORE_ARC,
   "self-trust": SELF_TRUST_CORE_ARC,
   uncertainty: UNCERTAINTY_CORE_ARC,
@@ -451,7 +452,7 @@ const CORE_ARCS: Partial<Record<PracticeSkillId, PracticeSessionContent[]>> = {
   "self-compassion": SELF_COMPASSION_CORE_ARC,
 };
 
-const ONGOING_POOLS: Partial<Record<PracticeSkillId, PracticeActivity[]>> = {
+const ONGOING_POOLS: Record<BuiltInSkillId, PracticeActivity[]> = {
   confidence: CONFIDENCE_ONGOING_POOL,
   "self-trust": SELF_TRUST_ONGOING_POOL,
   uncertainty: UNCERTAINTY_ONGOING_POOL,
@@ -468,7 +469,7 @@ const ONGOING_POOLS: Partial<Record<PracticeSkillId, PracticeActivity[]>> = {
 // existing categories, doubling up where two skills share a natural theme
 // (self-trust/presence both root; emotional-regulation/self-compassion
 // both heart) rather than inventing a seventh.
-export const SKILL_DEFAULT_CATEGORY: Record<PracticeSkillId, PauseCategoryId> = {
+const SKILL_DEFAULT_CATEGORY: Record<BuiltInSkillId, PauseCategoryId> = {
   confidence: "confidence",
   "self-trust": "reset",
   uncertainty: "focus",
@@ -483,7 +484,7 @@ export const SKILL_DEFAULT_CATEGORY: Record<PracticeSkillId, PauseCategoryId> = 
 // Arc session authors its own (Confidence's arc does, above; the other six
 // use this directly). One line per skill is sufficient — it doesn't need to
 // vary per session to be "skill/context-aware."
-export const SKILL_ARRIVAL_GUIDANCE: Record<PracticeSkillId, string[]> = {
+const SKILL_ARRIVAL_GUIDANCE: Record<BuiltInSkillId, string[]> = {
   confidence: ["Get comfortable.", "Let yourself arrive here."],
   "self-trust": ["Settle in.", "There is nothing you need to prove right now."],
   uncertainty: ["Get comfortable.", "Let things be unclear for a moment."],
@@ -493,12 +494,34 @@ export const SKILL_ARRIVAL_GUIDANCE: Record<PracticeSkillId, string[]> = {
   "self-compassion": ["Get comfortable.", "Give yourself a little room to be as you are."],
 };
 
-export function getCoreArc(skillId: PracticeSkillId): PracticeSessionContent[] {
-  return CORE_ARCS[skillId] ?? [];
+/** The Core Arc built into the app, ignoring any admin override (used by /admin as the editing baseline). */
+export function getDefaultCoreArc(skillId: PracticeSkillId): PracticeSessionContent[] {
+  return CORE_ARCS[skillId as BuiltInSkillId] ?? [];
 }
 
+// An admin-designed course (lib/content-store.ts) replaces the built-in
+// Core Arc wholesale; otherwise the authored default above applies.
+export function getCoreArc(skillId: PracticeSkillId): PracticeSessionContent[] {
+  const override = getCourseOverride(skillId);
+  if (!override) return getDefaultCoreArc(skillId);
+  return override.sessions.map((session, index) => ({ ...session, sessionNumber: index + 1 }));
+}
+
+// Ongoing Practice for an admin-created course reuses its own Core Arc
+// activities as the pool — the same "variations and reps, not new authored
+// content" idea (docs/PRODUCT_FLOW.md §18), with no extra authoring.
 export function getOngoingPool(skillId: PracticeSkillId): PracticeActivity[] {
-  return ONGOING_POOLS[skillId] ?? [];
+  return ONGOING_POOLS[skillId as BuiltInSkillId] ?? getCoreArc(skillId).map((session) => session.activity);
+}
+
+/** Sound category for Ongoing sessions: the original's mapping, else the course's first session's. */
+export function getSkillDefaultCategory(skillId: PracticeSkillId): PauseCategoryId {
+  return SKILL_DEFAULT_CATEGORY[skillId as BuiltInSkillId] ?? getCoreArc(skillId)[0]?.categoryId ?? "calm";
+}
+
+/** Arrival lines for Ongoing sessions: the original's, else the course's first session's. */
+export function getSkillArrivalGuidance(skillId: PracticeSkillId): string[] {
+  return SKILL_ARRIVAL_GUIDANCE[skillId as BuiltInSkillId] ?? getCoreArc(skillId)[0]?.arrivalGuidance ?? ["Get comfortable."];
 }
 
 // Check-in content (docs/PRODUCT_FLOW.md §20) — one simple prompt per tier,

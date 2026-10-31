@@ -9,6 +9,7 @@ import { PauseShell } from "@/components/pause-shell";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { chakraMap } from "@/data/chakras";
 import { composeBigMomentPause } from "@/lib/big-moment-engine";
+import { getCard } from "@/lib/content-store";
 import { createMomentRecord } from "@/lib/moment-storage";
 import { pauseCategoryMap, type PauseCategoryId } from "@/lib/pause-categories";
 import { composeRightNowPause } from "@/lib/pause-engine";
@@ -108,7 +109,7 @@ export function TellRecommendedScreen() {
         <header>
           <Link
             href={tellHref}
-            className="ds-tap inline-flex items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+            className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
             style={{ color: "var(--ds-text-secondary)" }}
           >
             <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
@@ -149,7 +150,7 @@ function ConfidentPause({
   onStart: () => void;
   starting: boolean;
 }) {
-  const category = pauseCategoryMap[categoryId];
+  const category = getCard(categoryId) ?? pauseCategoryMap[categoryId];
   const chakra = chakraMap[category.chakraId];
 
   return (
@@ -262,7 +263,7 @@ function CandidateList({
   return (
     <div className="space-y-2.5">
       {candidates.map((categoryId) => {
-        const category = pauseCategoryMap[categoryId];
+        const category = getCard(categoryId) ?? pauseCategoryMap[categoryId];
         return (
           <button
             key={categoryId}

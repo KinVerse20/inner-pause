@@ -9,24 +9,47 @@ import { getCoreArc } from "@/lib/practice-content";
 import { hasEarnedCoreArcMilestone } from "@/lib/practice-engine";
 import { canStartNewPracticeSession, getPracticeEntitlement, type PracticeEntitlement } from "@/lib/practice-entitlement";
 import { getMilestoneProgress } from "@/lib/practice-milestones";
-import { practiceSkillMap, type PracticeSkill } from "@/lib/practice-skills";
+import { subscribeAppContent } from "@/lib/content-store";
+import { getPracticeSkill, skillLabel, type PracticeSkill } from "@/lib/practice-skills";
 import { ensureEnrollment, listPracticeSessionRecords, type PracticeEnrollment } from "@/lib/practice-storage";
 
 // Practice — Skill Journey (Practice Completion pass §3): not a hub, not a
 // flat session list. Answers, in order: where am I, what am I practicing
 // now, what have I already built, what am I working toward.
-export function PracticeSkillJourneyScreen({ skill }: { skill: PracticeSkill }) {
+// Courses are admin-managed records read on the client (lib/content-store.ts),
+// so the skill is resolved here rather than by the server route.
+export function PracticeSkillJourneyScreen({ skillId }: { skillId: string }) {
+  // undefined: not read yet; null: no such course (deleted, or a stale link).
+  const [skill, setSkill] = useState<PracticeSkill | null | undefined>(undefined);
   const [enrollment, setEnrollment] = useState<PracticeEnrollment | null>(null);
   const [entitlement, setEntitlement] = useState<PracticeEntitlement | null>(null);
-  const arc = getCoreArc(skill.id);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setEnrollment(ensureEnrollment(skill.id));
-    setEntitlement(getPracticeEntitlement());
-  }, [skill.id]);
+    const load = () => {
+      const found = getPracticeSkill(skillId) ?? null;
+      setSkill(found);
+      if (!found) return;
+      setEnrollment(ensureEnrollment(found.id));
+      setEntitlement(getPracticeEntitlement());
+    };
+    load();
+    return subscribeAppContent(load);
+  }, [skillId]);
 
-  if (!enrollment || !entitlement) {
+  if (skill === null) {
+    return (
+      <PauseShell>
+        <div className="space-y-4 pb-4 pt-2">
+          <BackLink />
+          <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
+            This practice isn&rsquo;t available any more.
+          </p>
+        </div>
+      </PauseShell>
+    );
+  }
+
+  if (!skill || !enrollment || !entitlement) {
     return (
       <PauseShell>
         <div className="space-y-4 pb-4 pt-2">
@@ -36,6 +59,7 @@ export function PracticeSkillJourneyScreen({ skill }: { skill: PracticeSkill }) 
     );
   }
 
+  const arc = getCoreArc(skill.id);
   const records = listPracticeSessionRecords(skill.id);
   const arcMilestoneEarned = hasEarnedCoreArcMilestone(skill.id, records);
   const { path, reachedCount } = getMilestoneProgress(skill.id, records, arcMilestoneEarned);
@@ -90,7 +114,7 @@ export function PracticeSkillJourneyScreen({ skill }: { skill: PracticeSkill }) 
                       {milestone.title}
                     </span>
                     {isCurrentTarget ? (
-                      <span className="ml-auto shrink-0 text-[0.68rem] font-semibold uppercase tracking-wide" style={{ color: "var(--ds-accent)" }}>
+                      <span className="ml-auto shrink-0 text-[0.75rem] font-semibold uppercase tracking-wide" style={{ color: "var(--ds-accent)" }}>
                         Working toward
                       </span>
                     ) : null}
@@ -126,7 +150,7 @@ export function PracticeSkillJourneyScreen({ skill }: { skill: PracticeSkill }) 
           <div className="space-y-3 rounded-[var(--ds-radius-md)] px-4 py-5 text-center" style={{ background: "var(--ds-surface)" }}>
             <p className="text-sm font-semibold">
               {freeLockedElsewhere && entitlement.freeSampleSkillId
-                ? `Your free Practice sessions are with ${practiceSkillMap[entitlement.freeSampleSkillId].label}.`
+                ? `Your free Practice sessions are with ${skillLabel(entitlement.freeSampleSkillId)}.`
                 : "Ready to keep building?"}
             </p>
             <p className="text-xs" style={{ color: "var(--ds-text-secondary)" }}>
@@ -150,7 +174,7 @@ export function PracticeSkillJourneyScreen({ skill }: { skill: PracticeSkill }) 
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <h2 className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.06em]" style={{ color: "var(--ds-text-muted)" }}>
+    <h2 className="px-1 text-[0.75rem] font-semibold uppercase tracking-[0.06em]" style={{ color: "var(--ds-text-muted)" }}>
       {children}
     </h2>
   );
@@ -171,7 +195,7 @@ function BackLink() {
   return (
     <Link
       href="/practice"
-      className="ds-tap inline-flex items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+      className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
       style={{ color: "var(--ds-text-secondary)" }}
     >
       <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />

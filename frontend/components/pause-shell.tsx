@@ -87,7 +87,7 @@ function NavDestination({
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      className="ds-tap relative grid min-h-11 place-items-center gap-0.5 rounded-[var(--ds-radius-sm)] py-1 text-center text-[0.68rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+      className="ds-tap relative grid min-h-11 place-items-center gap-0.5 rounded-[var(--ds-radius-sm)] py-1 text-center text-[0.75rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
       style={{ color: active ? "var(--ds-accent)" : "var(--ds-text-muted)" }}
     >
       <span

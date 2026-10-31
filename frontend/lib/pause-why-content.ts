@@ -27,8 +27,8 @@ export function buildWhyThisPauseContent(input: WhyThisPauseInput): WhyThisPause
 
   return {
     chakra: `${input.chakraName} is traditionally associated with ${input.traditionalAssociation.toLowerCase()}.`,
-    frequency: `The ${input.frequencyLabel} tone is part of this Pause's sound layer — chosen to complement its intent: ${intent}.`,
-    together: `The ${shortChakraName} association and the ${input.frequencyLabel} tone work together here: one carries the feeling, the other carries the sound, both pointing toward the same thing — ${intent}.`,
+    frequency: `This Pause's sound is tuned to ${input.frequencyLabel}, chosen to complement its intent: ${intent}.`,
+    together: `The ${shortChakraName} association and the ${input.frequencyLabel} frequency work together here. One carries the feeling, the other carries the sound, and both point toward the same thing: ${intent}.`,
     whyThisHelps: `This Pause is here for one simple reason: ${intent}.`,
   };
 }

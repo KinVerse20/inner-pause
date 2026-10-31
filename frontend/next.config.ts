@@ -31,6 +31,14 @@ const apiOrigin = (process.env.API_URL ?? "http://localhost:4000").replace(/\/$/
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@inner-pause/shared"],
+  experimental: {
+    // Because proxy.ts exists, Next.js buffers request bodies and cuts them
+    // off at 10 MB by default, which breaks /admin sound uploads forwarded
+    // to the backend. Kept just above the backend's own 300 MB upload cap
+    // (backend/src/sound-store.ts, sized for lossless WAV/FLAC masters),
+    // which is the real limit.
+    proxyClientMaxBodySize: "310mb",
+  },
   async rewrites() {
     return [
       {

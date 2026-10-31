@@ -9,6 +9,7 @@ import {
 } from "@inner-pause/shared";
 import { Hono } from "hono";
 
+import { readJsonObject, stringField } from "../http";
 import { completeOpenAiJson } from "../openai";
 
 const AI_CONFIDENCE_THRESHOLD = 0.5;
@@ -36,10 +37,13 @@ tellRoutes.post("/", async (c) => {
   let chips: string[] = [];
   let momentMode: BigMomentMode | undefined;
   try {
-    const body = (await c.req.json()) as { text?: string; chips?: string[]; momentMode?: BigMomentMode };
-    text = body.text?.trim() ?? "";
-    chips = Array.isArray(body.chips) ? body.chips : [];
-    momentMode = parseMomentMode(body.momentMode);
+    const body = await readJsonObject(c);
+    text = stringField(body?.text, 20_000);
+    // Only short text chips; anything else would break classification.
+    chips = Array.isArray(body?.chips)
+      ? body.chips.filter((chip): chip is string => typeof chip === "string").map((chip) => chip.trim().slice(0, 60)).filter(Boolean).slice(0, 12)
+      : [];
+    momentMode = parseMomentMode(body?.momentMode);
     if (!text) {
       return c.json({ error: "Text is required." }, 400);
     }

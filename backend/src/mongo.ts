@@ -13,6 +13,11 @@ export interface UserDocument {
   updatedAt: Date;
   resetTokenHash?: string;
   resetTokenExpiresAt?: Date;
+  /** Sessions issued before this are no longer accepted (auth/session.ts). */
+  passwordChangedAt?: Date;
+  /** The Inner Pause Pass (pass-store.ts): when the current one ends. */
+  passExpiresAt?: Date;
+  passActivatedAt?: Date;
 }
 
 export function getMongoUri() {

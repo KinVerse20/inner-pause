@@ -12,7 +12,21 @@ export function PwaRegistration() {
   const [updateReady, setUpdateReady] = useState(false);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" || typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    // A worker registered by an earlier production run (`npm run start`)
+    // outlives it and keeps serving cached /_next/ files cache-first, so a
+    // dev server's fresh code never reaches the page. In development,
+    // remove any such worker and its caches, then reload once onto the
+    // live code.
+    if (process.env.NODE_ENV !== "production") {
+      void navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+        if (registrations.length === 0) return;
+        await Promise.all(registrations.map((item) => item.unregister()));
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.startsWith("innerpause-")).map((key) => caches.delete(key)));
+        window.location.reload();
+      });
       return;
     }
 
@@ -43,8 +57,13 @@ export function PwaRegistration() {
         // ignore registration failures and keep the app usable in the browser
       });
 
+    // Reload only when a new version replaces one that was already running
+    // (the "New version available → Refresh" flow). On a first visit the
+    // worker takes control via clients.claim() too, and reloading then
+    // would yank the page out from under someone who just arrived.
+    const hadController = Boolean(navigator.serviceWorker.controller);
     const handleControllerChange = () => {
-      window.location.reload();
+      if (hadController) window.location.reload();
     };
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);

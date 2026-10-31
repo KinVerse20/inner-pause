@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
 import { ToggleSwitch } from "@/components/toggle-switch";
+import { clearOfflineSounds, downloadPauseSoundsForOffline } from "@/lib/offline-audio";
 import {
   DEFAULT_PREFERENCES,
   PRACTICE_SUPPORT_OPTIONS,
@@ -41,6 +42,28 @@ export function YouPreferencesScreen() {
 
   const set = (patch: Partial<PreferencesState>) => setPreferences(updatePreferences(patch));
 
+  // Offline: on downloads every card's sound now, off frees the space.
+  const [offlineStatus, setOfflineStatus] = useState("");
+  const setOffline = async (enabled: boolean) => {
+    set({ offlineEnabled: enabled });
+    if (!enabled) {
+      await clearOfflineSounds();
+      setOfflineStatus("");
+      return;
+    }
+    setOfflineStatus("Downloading sounds…");
+    try {
+      const { files, bytes } = await downloadPauseSoundsForOffline();
+      setOfflineStatus(
+        files === 0
+          ? "No sounds to download yet. Pages you open are kept for offline use."
+          : `${files} ${files === 1 ? "sound" : "sounds"} ready offline (${(bytes / 1024 / 1024).toFixed(1)} MB).`,
+      );
+    } catch (error) {
+      setOfflineStatus(error instanceof Error ? error.message : "Couldn't download the sounds. Try again when you're online.");
+    }
+  };
+
   return (
     <PauseShell>
       <div className="space-y-6 pb-4 pt-2">
@@ -75,15 +98,24 @@ export function YouPreferencesScreen() {
           <div className="space-y-1 rounded-[var(--ds-radius-md)] px-4 py-1" style={{ background: "var(--ds-surface)" }}>
             <PreferenceToggleRow
               label="Ambient sound"
-              description="Background sound layer during a Pause"
+              description="The sound you choose, like river or rain. Off: a soft tone only"
               checked={preferences.soundAmbientEnabled}
               onChange={(value) => set({ soundAmbientEnabled: value })}
             />
+            {/* Spoken guidance isn't built yet: shown, but not offered as a
+                switch that would do nothing. */}
             <PreferenceToggleRow
               label="Voice guidance"
-              description="Spoken cues during playback"
-              checked={preferences.soundVoiceGuidanceEnabled}
-              onChange={(value) => set({ soundVoiceGuidanceEnabled: value })}
+              description="Spoken cues during playback. Coming soon"
+              checked={false}
+              disabled
+              onChange={() => {}}
+            />
+            <PreferenceToggleRow
+              label="Frequency"
+              description="Each Pause's sound, tuned to its frequency"
+              checked={preferences.soundToneLayerEnabled}
+              onChange={(value) => set({ soundToneLayerEnabled: value })}
             />
           </div>
         </section>
@@ -92,7 +124,7 @@ export function YouPreferencesScreen() {
           <SettingsSectionTitle>Practice</SettingsSectionTitle>
           <div className="space-y-2 rounded-[var(--ds-radius-md)] px-4 py-3.5" style={{ background: "var(--ds-surface)" }}>
             <p className="text-[0.82rem]" style={{ color: "var(--ds-text-secondary)" }}>
-              What tends to help most, as a starting point for new Practice sessions.
+              What tends to help you most? Saved for upcoming Practice updates, which will use it to tailor your sessions.
             </p>
             <div className="flex flex-wrap gap-2">
               {PRACTICE_SUPPORT_OPTIONS.map((option) => {
@@ -107,7 +139,7 @@ export function YouPreferencesScreen() {
                         practicePreferredSupport: active ? null : (option.id as PracticeSupportPreference),
                       })
                     }
-                    className="ds-tap min-h-9 rounded-full border px-3 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                    className="ds-tap min-h-11 rounded-full border px-3 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                     style={{
                       borderColor: active ? "var(--ds-accent)" : "var(--ds-border)",
                       background: active ? "var(--ds-accent-soft)" : "transparent",
@@ -126,10 +158,15 @@ export function YouPreferencesScreen() {
           <div className="rounded-[var(--ds-radius-md)] px-4 py-1" style={{ background: "var(--ds-surface)" }}>
             <PreferenceToggleRow
               label="Make Pauses available offline"
-              description="Downloaded Pause audio, Practice content, and journaling keep working without a connection; everything syncs once you're back online."
+              description="Downloads every Pause's sound, so Pauses and pages you've opened keep working without a connection. Journaling is always saved on this device."
               checked={preferences.offlineEnabled}
-              onChange={(value) => set({ offlineEnabled: value })}
+              onChange={(value) => void setOffline(value)}
             />
+            {offlineStatus ? (
+              <p role="status" className="pb-3 text-[0.76rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                {offlineStatus}
+              </p>
+            ) : null}
           </div>
         </section>
       </div>
@@ -141,22 +178,24 @@ function PreferenceToggleRow({
   label,
   description,
   checked,
+  disabled = false,
   onChange,
 }: {
   label: string;
   description: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className="flex items-center gap-3 py-3" style={disabled ? { opacity: 0.55 } : undefined}>
       <span className="min-w-0 flex-1">
         <span className="block text-[0.9rem] font-medium">{label}</span>
         <span className="block text-[0.76rem]" style={{ color: "var(--ds-text-secondary)" }}>
           {description}
         </span>
       </span>
-      <ToggleSwitch checked={checked} onChange={onChange} label={label} />
+      <ToggleSwitch checked={checked} onChange={onChange} label={label} disabled={disabled} />
     </div>
   );
 }

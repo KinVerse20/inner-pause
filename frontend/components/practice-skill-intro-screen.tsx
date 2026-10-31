@@ -76,7 +76,7 @@ function BackLink() {
   return (
     <Link
       href="/practice"
-      className="ds-tap inline-flex items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+      className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
       style={{ color: "var(--ds-text-secondary)" }}
     >
       <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
