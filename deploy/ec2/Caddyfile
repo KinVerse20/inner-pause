@@ -1,0 +1,16 @@
+# Caddy serves HTTPS (certificates from Let's Encrypt, renewed automatically)
+# and hands every request to the Next.js frontend, which forwards /api/* to
+# the backend on 127.0.0.1:4000.
+
+theinnerpause.com {
+	encode zstd gzip
+	# Admin sound uploads go up to 300 MB (backend/src/sound-store.ts).
+	request_body {
+		max_size 310MB
+	}
+	reverse_proxy 127.0.0.1:3000
+}
+
+www.theinnerpause.com {
+	redir https://theinnerpause.com{uri} permanent
+}

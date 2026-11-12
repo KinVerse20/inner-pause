@@ -1,0 +1,15 @@
+[Unit]
+Description=Inner Pause web (Next.js frontend)
+After=network-online.target innerpause-api.service
+Wants=network-online.target
+
+[Service]
+User=innerpause
+WorkingDirectory=/opt/innerpause/current/frontend
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

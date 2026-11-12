@@ -53,6 +53,10 @@ The price and length are in `shared/src/brand.ts` (`PASS_PRICE_INR`,
 
 ## 4. Sound storage on S3
 
+On the Inner Pause AWS account, the bucket is
+`theinnerpause-files-735381631291`. For how the server reaches it, see
+`deploy/ec2/README.md`. For a new account:
+
 1. Create a private S3 bucket (for example in `ap-south-1`, Mumbai).
 2. Give the server an IAM role allowing `s3:GetObject`, `s3:PutObject`,
    `s3:DeleteObject` and `s3:ListBucket` on that bucket.
