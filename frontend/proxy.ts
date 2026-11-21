@@ -1,16 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const publicRoutes = [
-  "/",
-  "/entry",
-  "/pause",
-  "/practice",
-  "/journey",
-  "/profile",
-  "/moments",
-  "/tell",
   "/auth",
-  "/auth/confirm",
   "/auth/reset-password",
   "/about",
   "/offline",
@@ -24,17 +15,21 @@ function isPublicPath(pathname: string) {
     publicRoutes.some((path) => pathname === path || pathname.startsWith(`${path}/`)) ||
     pathname.startsWith("/icons/") ||
     pathname.startsWith("/branding/") ||
-    pathname.startsWith("/audio/") ||
-    pathname.startsWith("/api/")
+    pathname.startsWith("/audio/")
   );
 }
 
-export async function proxy(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
   if (isPublicPath(pathname)) {
-    return NextResponse.next({ request });
+    return NextResponse.next();
   }
-  return NextResponse.next({ request });
+
+  // Cognito tokens for the standalone AWS frontend are stored client-side.
+  // Route redirects are handled by AuthProvider in the browser, while backend
+  // endpoints validate Cognito JWTs for real access control.
+  return NextResponse.next();
 }
 
 export const config = {

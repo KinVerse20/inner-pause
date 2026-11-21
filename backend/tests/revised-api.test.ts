@@ -1,0 +1,22 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { ApiRouter } from '../src/routes/router.js';
+test('authenticated revised API covers detection, confirmation, planning, feedback and history', async () => {
+  const router = new ApiRouter();
+  const call = (method: string, path: string, body?: unknown, token = 'test-user-a') => router.handle({ method, path: '/api/v1/revised' + path, body, headers: { authorization: `Bearer ${token}` }, requestId: crypto.randomUUID() });
+  const detected = await call('POST', '/detect', { text: 'I feel anxious and sad.' });
+  assert.equal(detected.statusCode, 200);
+  const emotionIds = JSON.parse(detected.body).data.suggestions.map((s: { emotionId: string }) => s.emotionId);
+  const created = await call('POST', '/journeys', { emotionIds, inputMode: 'written', reflection: 'I feel anxious and sad.', depth: 'quick', sound: 'frequency-only', tonePreset: 'soft' });
+  assert.equal(created.statusCode, 201);
+  const journey = JSON.parse(created.body).data;
+  assert.equal(journey.plan.totalSeconds, 600);
+  assert.equal((await call('GET', `/journeys/${journey.id}`, undefined, 'test-user-b')).statusCode, 404);
+  assert.equal((await call('GET', '/journeys', undefined, 'invalid')).statusCode, 401);
+  assert.equal((await call('POST', '/detect', { text: 123 })).statusCode, 400);
+  const finished = await call('PATCH', `/journeys/${journey.id}`, { status: 'completed', feedback: { rating: 4, reflection: 'Relaxed' } });
+  assert.equal(finished.statusCode, 200);
+  const history = JSON.parse((await call('GET', '/journeys')).body).data;
+  assert.equal(history[0].status, 'completed');
+  assert.equal(history[0].feedback.rating, 4);
+});

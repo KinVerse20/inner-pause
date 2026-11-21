@@ -1,0 +1,47 @@
+{
+  "flowId": "bTP0MEnA25fTRwsBhlvf",
+  "sounds": [
+    {
+      "id": "rain",
+      "generationId": "tebUz1yYfkXumy99Wa9J",
+      "modelId": "eleven_text_to_sound_v2",
+      "duration": 30
+    },
+    {
+      "id": "forest",
+      "generationId": "l47PioE0kx15RVBhq6dE",
+      "modelId": "eleven_text_to_sound_v2",
+      "duration": 30
+    },
+    {
+      "id": "rainforest",
+      "generationId": "EK4cAvqdhFnCpagfPwmd",
+      "modelId": "eleven_text_to_sound_v2",
+      "duration": 30
+    },
+    {
+      "id": "waves",
+      "generationId": "VTOVX4JdyHOMHHGLnK5u",
+      "modelId": "eleven_text_to_sound_v2",
+      "duration": 30
+    },
+    {
+      "id": "gong",
+      "generationId": "c7eLhn95XGTq6Tgf1nbm",
+      "modelId": "eleven_text_to_sound_v2",
+      "duration": 30
+    },
+    {
+      "id": "bell",
+      "generationId": "lYMinwAMchGDhg4faeoP",
+      "modelId": "eleven_text_to_sound_v2",
+      "duration": 30
+    },
+    {
+      "id": "piano",
+      "generationId": "M63pXcqrbbFMVV8dUXGm",
+      "modelId": "eleven_music_v2",
+      "duration": 300
+    }
+  ]
+}

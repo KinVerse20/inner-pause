@@ -1,18 +1,7 @@
 const CACHE_VERSION = "innerpause-v3";
 const APP_SHELL_CACHE = `${CACHE_VERSION}-app-shell`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
-// Must match frontend/lib/offline-audio.ts, which downloads sounds into it.
 const AUDIO_CACHE = `${CACHE_VERSION}-audio`;
-const PAGE_CACHE = `${CACHE_VERSION}-pages`;
-
-// Pause sounds: the built-in tracks (/audio/), the server's renderings and
-// original uploads. Each of these URLs always serves the same file (a
-// rendering's key names its exact content; a new upload gets a new id), so
-// caching on first play is safe, and makes played Pauses work offline.
-const isPauseAudio = (pathname) =>
-  pathname.startsWith("/audio/") ||
-  pathname.startsWith("/api/sounds/renders/") ||
-  /^\/api\/sounds\/[a-f0-9]{24}\/file$/.test(pathname);
 const OFFLINE_URL = "/offline";
 
 const APP_SHELL_ASSETS = [
@@ -37,7 +26,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => ![APP_SHELL_CACHE, ASSET_CACHE, AUDIO_CACHE, PAGE_CACHE].includes(key))
+            .filter((key) => ![APP_SHELL_CACHE, ASSET_CACHE, AUDIO_CACHE].includes(key))
             .map((key) => caches.delete(key)),
         ),
       )
@@ -49,6 +38,40 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data?.json() || {};
+  } catch {
+    payload = { body: event.data?.text() };
+  }
+  const title = payload.title || "Your Inner Pause Practice is ready";
+  const options = {
+    body: payload.body || "Take a few minutes to return to yourself.",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: payload.tag || "innerpause-daily-practice",
+    renotify: false,
+    data: { url: payload.url || "/?open=practice" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const destination = new URL(event.notification.data?.url || "/?open=practice", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((client) => client.url.startsWith(self.location.origin));
+      if (existing) {
+        existing.navigate(destination);
+        return existing.focus();
+      }
+      return self.clients.openWindow(destination);
+    }),
+  );
 });
 
 const isAppNavigation = (request) =>
@@ -74,14 +97,7 @@ const serveCachedRangeResponse = async (request, cachedResponse) => {
   }
 
   const start = Number(match[1]);
-  const end = Math.min(match[2] ? Number(match[2]) : size - 1, size - 1);
-  if (start >= size || start > end) {
-    return new Response(null, {
-      status: 416,
-      statusText: "Range Not Satisfiable",
-      headers: { "Content-Range": `bytes */${size}` },
-    });
-  }
+  const end = match[2] ? Number(match[2]) : size - 1;
   const chunk = arrayBuffer.slice(start, end + 1);
 
   return new Response(chunk, {
@@ -104,7 +120,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (isPauseAudio(url.pathname)) {
+  if (url.pathname.startsWith("/audio/")) {
     event.respondWith(
       caches.open(AUDIO_CACHE).then(async (cache) => {
         const cached = await cache.match(url.pathname);
@@ -132,29 +148,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Pages: network first. Each page loaded is kept, so pages visited
-  // before open offline. The query string is ignored when offline, so any
-  // /pause/player?session=... works once the player has been opened.
   if (isAppNavigation(request)) {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          if (response.ok && response.type === "basic") {
-            const copy = response.clone();
-            caches.open(PAGE_CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
-          }
-          return response;
-        })
-        .catch(async () => {
-          const pages = await caches.open(PAGE_CACHE);
-          // ignoreVary: Next varies pages on its router headers, which
-          // differ between a saved page and a later navigation to it.
-          return (
-            (await pages.match(request, { ignoreVary: true })) ||
-            (await pages.match(request, { ignoreSearch: true, ignoreVary: true })) ||
-            (await caches.match(OFFLINE_URL))
-          );
-        }),
+        .then((response) => response)
+        .catch(async () => (await caches.match(request)) || caches.match(OFFLINE_URL)),
     );
     return;
   }

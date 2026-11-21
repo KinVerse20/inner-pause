@@ -1,185 +1,111 @@
-"use client";
+'use client';
 
-import type { CheckInTier } from "@/lib/practice-content";
-import type { PracticeSkillId } from "@/lib/practice-skills";
-import type { PauseFeedback } from "@/lib/pause-storage";
-import { createId } from "@/lib/id";
+import type { PracticeIssueId } from './practice-data';
 
-// Local persistence for Practice (docs/TECHNICAL_ARCHITECTURE.md §6):
-// deliberately fresh, not lib/progress.ts's legacy chakra-unlock/streak/
-// badge engine (§6: "temporary legacy structure to migrate away from" —
-// wrong skill count/names, sequential-unlock semantics the current docs
-// don't describe, and a streak/points model this slice's brief explicitly
-// says not to use as the primary progress model). Same reasoning that kept
-// lib/pause-storage.ts separate from the legacy HealingPlan model.
-
-export type PracticePhase = "core-arc" | "ongoing";
-
-// One row per skill the user has ever engaged with — independent per skill
-// (skills are not sequentially unlocked, unlike the legacy chakra chain).
-export interface PracticeEnrollment {
-  skillId: PracticeSkillId;
-  phase: PracticePhase;
-  /** The next session number to start/continue at — 1-indexed, continuous across core-arc -> ongoing. */
-  currentSessionNumber: number;
-  completedSessionNumbers: number[];
-  skippedSessionNumbers: number[];
-  milestoneEarnedAt?: string;
-  startedAt: string;
-  updatedAt: string;
-  /**
-   * A deterministic personalization foundation (this slice's brief §12): the
-   * most recent early-signal check-in's chosen option, if any — captured so
-   * future sessions *can* adapt on it, without this slice building the full
-   * adaptation logic that reads it.
-   */
-  preferredSupport?: string;
-}
-
-export interface PracticeCheckInRecord {
-  id: string;
-  skillId: PracticeSkillId;
-  tier: CheckInTier;
-  atSessionNumber: number;
-  response?: string;
-  skipped: boolean;
+export interface PracticeCheckIn {
+  day: number;
+  text: string;
+  exerciseResponse?: string;
+  rating: 1 | 2 | 3 | 4 | 5;
   createdAt: string;
 }
 
-export interface PracticeSessionRecord {
-  id: string;
-  skillId: PracticeSkillId;
-  sessionNumber: number;
-  startedAt: string;
-  completedAt?: string;
-  tellText?: string;
-  linkedPauseRecordId?: string;
-  pauseFeedback?: PauseFeedback;
-  activityResponse?: string;
-  activityRealWorldRep?: string;
-  returnText?: string;
-  returnSkipped?: boolean;
+export interface PracticeCompletion {
+  day: number;
+  completedAt: string;
+  reflection?: string;
 }
 
-const ENROLLMENT_KEY = "inner-pause:practice-enrollments";
-const SESSION_KEY = "inner-pause:practice-sessions";
-const CHECKIN_KEY = "inner-pause:practice-checkins";
-const EVENT_NAME = "inner-pause:practice-change";
+export interface PracticeEnrollment {
+  id: string;
+  issueId: PracticeIssueId;
+  startedAt: string;
+  reminderTime: string;
+  reminderEnabled: boolean;
+  notificationPermission: NotificationPermission | 'unsupported';
+  checkIns: PracticeCheckIn[];
+  completions: PracticeCompletion[];
+  status: 'active' | 'completed';
+}
 
-const isBrowser = () => typeof window !== "undefined";
+export interface PracticeState {
+  enrollments: PracticeEnrollment[];
+  activeEnrollmentId?: string;
+}
 
-function readJson<T>(key: string): T[] {
-  if (!isBrowser()) return [];
+const KEY = 'innerpause-practices-v1';
+const defaults: PracticeState = { enrollments: [] };
+
+export function readPracticeState(): PracticeState {
+  if (typeof window === 'undefined') return defaults;
   try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as T[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(window.localStorage.getItem(KEY) || '{}') as Partial<PracticeState>;
+    return {
+      enrollments: Array.isArray(parsed.enrollments) ? parsed.enrollments : [],
+      activeEnrollmentId: typeof parsed.activeEnrollmentId === 'string' ? parsed.activeEnrollmentId : undefined,
+    };
   } catch {
-    return [];
+    return defaults;
   }
 }
 
-function writeJson<T>(key: string, value: T[]) {
-  if (!isBrowser()) return;
-  window.localStorage.setItem(key, JSON.stringify(value));
-  window.dispatchEvent(new Event(EVENT_NAME));
+export function writePracticeState(state: PracticeState) {
+  window.localStorage.setItem(KEY, JSON.stringify(state));
+  window.dispatchEvent(new Event('innerpause-practice-change'));
 }
 
-// ---------- Enrollments ----------
-
-export function getEnrollment(skillId: PracticeSkillId): PracticeEnrollment | undefined {
-  return readJson<PracticeEnrollment>(ENROLLMENT_KEY).find((item) => item.skillId === skillId);
+export function clearPracticeState() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(KEY);
+  window.localStorage.removeItem('innerpause-pending-push-subscription');
+  window.dispatchEvent(new Event('innerpause-practice-change'));
 }
 
-export function ensureEnrollment(skillId: PracticeSkillId): PracticeEnrollment {
-  const existing = getEnrollment(skillId);
-  if (existing) return existing;
-  const now = new Date().toISOString();
-  const enrollment: PracticeEnrollment = {
-    skillId,
-    phase: "core-arc",
-    currentSessionNumber: 1,
-    completedSessionNumbers: [],
-    skippedSessionNumbers: [],
-    startedAt: now,
-    updatedAt: now,
-  };
-  writeJson(ENROLLMENT_KEY, [...readJson<PracticeEnrollment>(ENROLLMENT_KEY), enrollment]);
-  return enrollment;
+export function activePractice(state: PracticeState) {
+  return state.enrollments.find(item => item.id === state.activeEnrollmentId && item.status === 'active');
 }
 
-export function updateEnrollment(skillId: PracticeSkillId, patch: Partial<PracticeEnrollment>): PracticeEnrollment {
-  const all = readJson<PracticeEnrollment>(ENROLLMENT_KEY);
-  let updated: PracticeEnrollment | undefined;
-  const next = all.map((item) => {
-    if (item.skillId !== skillId) return item;
-    updated = { ...item, ...patch, updatedAt: new Date().toISOString() };
-    return updated;
-  });
-  if (!updated) return ensureEnrollment(skillId);
-  writeJson(ENROLLMENT_KEY, next);
-  return updated;
+export function currentPracticeDay(enrollment: PracticeEnrollment) {
+  return Math.min(14, enrollment.completions.length + 1);
 }
 
-export function listEnrollments(): PracticeEnrollment[] {
-  return readJson<PracticeEnrollment>(ENROLLMENT_KEY);
+export function practiceStreak(enrollment: PracticeEnrollment, today = new Date()) {
+  const dates = [...new Set(enrollment.completions.map(item => localDateKey(new Date(item.completedAt))))].sort().reverse();
+  if (!dates.length) return 0;
+  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayKey = localDateKey(cursor);
+  cursor.setDate(cursor.getDate() - 1);
+  const yesterdayKey = localDateKey(cursor);
+  if (dates[0] !== todayKey && dates[0] !== yesterdayKey) return 0;
+  let streak = 0;
+  const expected = new Date(dates[0] === todayKey ? today : cursor);
+  expected.setHours(0, 0, 0, 0);
+  for (const date of dates) {
+    if (date !== localDateKey(expected)) break;
+    streak += 1;
+    expected.setDate(expected.getDate() - 1);
+  }
+  return streak;
 }
 
-// ---------- Session records ----------
-
-export function createPracticeSessionRecord(skillId: PracticeSkillId, sessionNumber: number): PracticeSessionRecord {
-  const record: PracticeSessionRecord = {
-    id: createId(),
-    skillId,
-    sessionNumber,
-    startedAt: new Date().toISOString(),
-  };
-  writeJson(SESSION_KEY, [record, ...readJson<PracticeSessionRecord>(SESSION_KEY)]);
-  return record;
+export function longestPracticeStreak(enrollment: PracticeEnrollment) {
+  const dates = [...new Set(enrollment.completions.map(item => localDateKey(new Date(item.completedAt))))].sort();
+  let longest = 0;
+  let current = 0;
+  let previous: Date | undefined;
+  for (const key of dates) {
+    const date = new Date(`${key}T00:00:00`);
+    const gap = previous ? Math.round((date.getTime() - previous.getTime()) / 86_400_000) : 1;
+    current = gap === 1 ? current + 1 : 1;
+    longest = Math.max(longest, current);
+    previous = date;
+  }
+  return longest;
 }
 
-export function getPracticeSessionRecord(id: string): PracticeSessionRecord | undefined {
-  return readJson<PracticeSessionRecord>(SESSION_KEY).find((item) => item.id === id);
-}
-
-export function updatePracticeSessionRecord(id: string, patch: Partial<PracticeSessionRecord>): PracticeSessionRecord | undefined {
-  const all = readJson<PracticeSessionRecord>(SESSION_KEY);
-  let updated: PracticeSessionRecord | undefined;
-  const next = all.map((item) => {
-    if (item.id !== id) return item;
-    updated = { ...item, ...patch };
-    return updated;
-  });
-  writeJson(SESSION_KEY, next);
-  return updated;
-}
-
-export function listPracticeSessionRecords(skillId?: PracticeSkillId): PracticeSessionRecord[] {
-  const all = readJson<PracticeSessionRecord>(SESSION_KEY);
-  return skillId ? all.filter((item) => item.skillId === skillId) : all;
-}
-
-// ---------- Check-ins ----------
-
-export function createPracticeCheckIn(input: Omit<PracticeCheckInRecord, "id" | "createdAt">): PracticeCheckInRecord {
-  const record: PracticeCheckInRecord = { ...input, id: createId(), createdAt: new Date().toISOString() };
-  writeJson(CHECKIN_KEY, [record, ...readJson<PracticeCheckInRecord>(CHECKIN_KEY)]);
-  return record;
-}
-
-export function listPracticeCheckIns(skillId?: PracticeSkillId): PracticeCheckInRecord[] {
-  const all = readJson<PracticeCheckInRecord>(CHECKIN_KEY);
-  return skillId ? all.filter((item) => item.skillId === skillId) : all;
-}
-
-export function subscribePracticeChange(callback: () => void) {
-  if (!isBrowser()) return () => {};
-  const handler = () => callback();
-  window.addEventListener(EVENT_NAME, handler);
-  window.addEventListener("storage", handler);
-  return () => {
-    window.removeEventListener(EVENT_NAME, handler);
-    window.removeEventListener("storage", handler);
-  };
+function localDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

@@ -2,38 +2,23 @@
 
 import { useEffect } from "react";
 
-import { applyServerAccount, clearAccount } from "@/lib/account-store";
-import { getCurrentUser } from "@/lib/auth-client";
-import { clearMvpAuthenticatedUser, setMvpAuthenticatedUser, upsertProfile } from "@/lib/mvp-storage";
+import { createFrontendApiClient, readFrontendProfile, setFrontendSession } from "@/lib/auth/session";
 
 export function AuthSessionSync() {
   useEffect(() => {
     let active = true;
 
     const syncSession = async () => {
-      let user: Awaited<ReturnType<typeof getCurrentUser>>;
-      try {
-        user = await getCurrentUser();
-      } catch {
-        // Offline or the server is down: keep the local account as it is.
-        return;
-      }
+      const profile = readFrontendProfile();
+      if (profile) setFrontendSession(profile.id, profile);
+      const api = createFrontendApiClient();
+      const user = await api.me().catch(() => null);
       if (!active) return;
-      if (!user) {
-        clearMvpAuthenticatedUser();
-        clearAccount();
-        return;
-      }
-      setMvpAuthenticatedUser(user.id);
-      upsertProfile({
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-      });
-      applyServerAccount(user);
+      if (user) setFrontendSession(profile?.id ?? user.id, user);
     };
 
-    void syncSession();
+    syncSession();
+
     return () => {
       active = false;
     };

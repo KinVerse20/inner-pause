@@ -1,5 +1,5 @@
-import { AdminScreen } from "@/components/admin-screen";
+import { AdminControlRoomScreen } from "@/components/admin-control-room-screen";
 
 export default function AdminPage() {
-  return <AdminScreen />;
+  return <AdminControlRoomScreen />;
 }

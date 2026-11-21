@@ -1,5 +1,5 @@
-import { PauseHomeScreen } from "@/components/pause-home-screen";
+import { PhaseOneApp } from "@/components/phase-one-app";
 
 export default function HomePage() {
-  return <PauseHomeScreen />;
+  return <PhaseOneApp />;
 }

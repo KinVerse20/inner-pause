@@ -1,28 +1,41 @@
 {
-  "name": "@inner-pause/backend",
+  "name": "@innerpause/backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "dev": "node --import tsx src/local-server.ts",
+    "build": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "migrate:aws:test": "node scripts/run-migrations.mjs",
+    "test:aws:smoke": "node scripts/aws-integration-smoke.mjs",
+    "lambda:local": "node --import tsx scripts/invoke-lambda-local.mjs"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1150.0",
-    "@hono/node-server": "^1.19.6",
-    "@inner-pause/shared": "*",
-    "bcryptjs": "^2.4.3",
-    "ffmpeg-static": "^5.3.0",
-    "hono": "^4.10.8",
-    "mongodb": "^6.20.0",
-    "nodemailer": "^10.1.0"
+    "@aws-sdk/client-accessanalyzer": "^3.1102.0",
+    "@aws-sdk/client-backup": "^3.1102.0",
+    "@aws-sdk/client-cloudwatch": "^3.1102.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.1102.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1102.0",
+    "@aws-sdk/client-cost-explorer": "^3.1102.0",
+    "@aws-sdk/client-lambda": "^3.1102.0",
+    "@aws-sdk/client-rds": "^3.1102.0",
+    "@aws-sdk/client-s3": "^3.1101.0",
+    "@aws-sdk/client-secrets-manager": "^3.1101.0",
+    "@aws-sdk/client-sqs": "^3.1101.0",
+    "@aws-sdk/rds-signer": "^3.1101.0",
+    "@aws-sdk/s3-request-presigner": "^3.1101.0",
+    "@innerpause/shared": "file:../packages/shared",
+    "@types/pg": "^8.20.3",
+    "jose": "^6.2.8",
+    "pg": "^8.22.0",
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
-    "@types/nodemailer": "^8.0.2",
-    "tsx": "^4.21.0",
+    "@types/web-push": "^3.6.4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

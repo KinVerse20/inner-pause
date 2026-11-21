@@ -47,7 +47,7 @@ export function CompactLotus() {
   return (
     <div className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-[var(--ip-ink)]">
       <span className="text-xl text-[var(--ip-purple)]">♧</span>
-      <span className="font-semibold">The Inner Pause</span>
+      <span className="font-semibold">The InnerPause</span>
     </div>
   );
 }

@@ -2,25 +2,35 @@
   "name": "the-innerpause",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend",
-    "shared"
-  ],
   "scripts": {
-    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @inner-pause/backend\" \"npm run dev -w @inner-pause/frontend\"",
-    "dev:frontend": "npm run dev -w @inner-pause/frontend",
-    "dev:backend": "npm run dev -w @inner-pause/backend",
-    "build": "npm run build -w @inner-pause/frontend",
-    "start": "concurrently -n api,web -c cyan,magenta \"npm run start -w @inner-pause/backend\" \"npm run start -w @inner-pause/frontend\"",
-    "lint": "npm run lint -w @inner-pause/frontend",
-    "typecheck": "npm run typecheck -w @inner-pause/backend --if-present",
-    "test:ui": "npm run test:ui -w @inner-pause/frontend"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "npm --prefix frontend run test && npm --prefix backend run test",
+    "test:separation": "npm --prefix frontend run build && npm --prefix frontend run test && npm --prefix backend run build && npm --prefix backend run test",
+    "test:ui": "node scripts/mobile-usability-test.mjs",
+    "aws:verify": "bash scripts/aws-verify-identity.sh",
+    "bootstrap:safe": "bash scripts/cdk-bootstrap-safe.sh",
+    "diff:safe": "bash scripts/cdk-diff-safe.sh"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.111.0",
+    "next": "16.2.12",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
-  },
-  "allowScripts": {
-    "ffmpeg-static@5.3.0": true
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.28.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.12",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }

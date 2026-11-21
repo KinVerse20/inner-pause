@@ -2,49 +2,26 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useMemo } from "react";
 
-import { AppPageHeader, ChakraBadge, ExpandableCard } from "@/components/chakra-path-ui";
-import { GlassCard, GoldButton, MvpShell } from "@/components/mvp-shell";
+import { MvpShell } from "@/components/mvp-shell";
+import { RitualBackdrop, RitualOrb, RitualWeatherCard, inferWeatherTone } from "@/components/inner-world-ritual-ui";
 import { chakraMap } from "@/data/chakras";
-import { defaultPlanCustomisation } from "@/lib/healing-engine";
-import { keepReflectionTemporary, savePlan, saveReflectionToJourney, updateJournalEntry } from "@/lib/mvp-storage";
-import { GuidanceFrequency, HealingPlanCustomisation, MusicStyle, NatureSound, VoiceGuidanceLevel } from "@/lib/mvp-types";
+import { savePlan, saveReflectionToJourney } from "@/lib/mvp-storage";
 import { useMvpState } from "@/lib/use-mvp-state";
+import type { ChakraId } from "@/lib/types";
 
-const durationOptions: Array<number | "full"> = [5, 10, 20, 30, "full"];
-const voiceOptions: Array<{ value: VoiceGuidanceLevel; label: string }> = [
-  { value: "none", label: "None" },
-  { value: "minimal", label: "Minimal" },
-  { value: "balanced", label: "Balanced" },
-  { value: "guided", label: "Guided" },
-];
-const musicStyleOptions: Array<{ value: MusicStyle; label: string }> = [
-  { value: "ambient", label: "Ambient" },
-  { value: "singing-bowls", label: "Singing bowls" },
-  { value: "nature-soundscape", label: "Nature soundscape" },
-  { value: "deep-frequency", label: "Deep frequency" },
-  { value: "soft-meditation", label: "Soft meditation" },
-];
-const natureOptions: Array<{ value: NatureSound; label: string; disabled?: boolean }> = [
-  { value: "none", label: "None" },
-  { value: "rain", label: "Rain", disabled: true },
-  { value: "forest", label: "Forest", disabled: true },
-  { value: "ocean", label: "Ocean", disabled: true },
-  { value: "soft-wind", label: "Soft wind", disabled: true },
-];
-const frequencyOptions: Array<{ value: GuidanceFrequency; label: string }> = [
-  { value: "opening-only", label: "Opening only" },
-  { value: "occasional", label: "Occasional" },
-  { value: "regular", label: "Regular" },
+const fallbackSessions: Array<{ title: string; duration: number; intention: string; chakraId: ChakraId }> = [
+  { title: "Release", duration: 8, intention: "Immediate relief", chakraId: "heart" },
+  { title: "Breathe", duration: 10, intention: "Steady the nervous system", chakraId: "third-eye" },
+  { title: "Restore", duration: 10, intention: "Return to balance", chakraId: "heart" },
+  { title: "Integrate", duration: 20, intention: "Settle and carry forward", chakraId: "crown" },
 ];
 
 export function HealingPlanScreen() {
   const router = useRouter();
   const entryId = useSearchParams().get("entry");
   const state = useMvpState();
-  const [adjusting, setAdjusting] = useState(false);
   const entry = useMemo(() => {
     if (entryId) return state.entries.find((item) => item.id === entryId);
     return state.entries.find((item) => item.plan) ?? state.entries.find((item) => item.analysis);
@@ -54,143 +31,129 @@ export function HealingPlanScreen() {
   if (!entry?.analysis) {
     return (
       <MvpShell>
-        <GlassCard className="mx-auto max-w-xl p-5">
-          <h1 className="font-serif text-2xl text-[var(--ip-ink)]">No personalised reset yet</h1>
-          <p className="mt-2 text-sm text-[var(--ip-body)]">Share what you feel to create your first reset.</p>
-          <Link href="/journal" className="mt-4 inline-flex rounded-full border border-[var(--ip-border)] bg-white px-5 py-3 text-[var(--ip-purple)]">Start Expressing</Link>
-        </GlassCard>
+        <RitualBackdrop tone="neutral" className="px-4 py-6 sm:px-6 lg:px-8">
+          <div className="relative z-10 mx-auto max-w-3xl space-y-5 text-center">
+            <p className="minimal-label text-xs">Heal</p>
+            <h1 className="font-serif text-[clamp(2.7rem,8vw,4.8rem)] leading-[0.95] text-[var(--ip-ink)]">
+              Your healing space opens after reflection.
+            </h1>
+            <p className="mx-auto max-w-xl text-base leading-7 text-[var(--ip-body)]">
+              Begin with Speak or Write, or move straight into a short relief session.
+            </p>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Link href="/journal?mode=speak" className="min-h-12 rounded-full border border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)]">
+                Speak first
+              </Link>
+              <Link href="/player?chakraId=heart&duration=20&mood=calm" className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ip-body)]">
+                I just need relief
+              </Link>
+            </div>
+          </div>
+        </RitualBackdrop>
       </MvpShell>
     );
   }
 
   if (!plan) {
-    return (
-      <MvpShell>
-        <GlassCard className="mx-auto max-w-xl p-5">
-          <h1 className="font-serif text-2xl text-[var(--ip-ink)]">Reset not ready yet</h1>
-          <p className="mt-2 text-sm text-[var(--ip-body)]">Confirm your understanding to create a reset.</p>
-          <GoldButton className="mt-4" onClick={() => { savePlan(entry.id); router.refresh(); }}>Create Reset</GoldButton>
-        </GlassCard>
-      </MvpShell>
-    );
+    savePlan(entry.id);
+    return null;
   }
 
-  const settings: HealingPlanCustomisation = { ...defaultPlanCustomisation, ...(plan.customisation ?? {}), duration: plan.selectedDuration };
-  const updateSettings = (updates: Partial<HealingPlanCustomisation>) => {
-    const next = { ...settings, ...updates };
-    savePlan(entry.id, next.duration, next);
-  };
+  const primaryBlock = plan.blocks[0];
+  const primaryChakra = primaryBlock?.chakraId ? chakraMap[primaryBlock.chakraId] : chakraMap.heart;
+  const tone = inferWeatherTone(
+    `${entry.analysis.emotions.map((item) => item.name).join(" ")} ${entry.analysis.triggers.join(" ")} ${entry.analysis.summary}`,
+  );
+  const sessions = [
+    {
+      title: primaryBlock?.title ?? "Release",
+      duration: primaryBlock?.durationMinutes ?? 20,
+      intention: primaryBlock?.intention ?? primaryChakra.meaning.split(",")[0] ?? "Balance",
+      chakraId: primaryChakra.id,
+      planId: plan.id,
+    },
+    ...fallbackSessions.filter((session) => session.chakraId !== primaryChakra.id),
+  ];
 
   return (
     <MvpShell>
-      <div className="space-y-3.5">
-        <AppPageHeader title="Your Reset" copy="A personalised healing path." backHref="/analysis" />
-
-        <GlassCard className="p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="font-serif text-2xl text-[var(--ip-ink)]">Your personalised reset is ready</h1>
-              <p className="mt-1 text-sm text-[var(--ip-body)]">Total time: {plan.totalDurationMinutes} min</p>
+      <div className="space-y-5">
+        <RitualBackdrop tone={tone} className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] lg:items-center">
+            <div className="grid place-items-center">
+              <RitualOrb stage="transform" tone={tone} intensity={0.9} label="Healing transformation orb" />
             </div>
-            <span className="rounded-full bg-[var(--ip-lavender)] px-3 py-1 text-xs font-semibold text-[var(--ip-purple)]">{plan.blocks.length} steps</span>
-          </div>
-        </GlassCard>
 
-        <div className="space-y-2">
-          {plan.blocks.map((block, index) => {
-            const chakra = chakraMap[block.chakraId];
-            return (
-              <div key={block.id} className="relative pl-8">
-                {index < plan.blocks.length - 1 ? <span className="absolute left-[0.88rem] top-10 h-[calc(100%-1.25rem)] w-px bg-[var(--ip-border-strong)]" /> : null}
-                <span className="absolute left-0 top-4 grid h-7 w-7 place-items-center rounded-full border bg-white text-xs font-semibold" style={{ borderColor: chakra.accent, color: chakra.color }}>{index + 1}</span>
-                <GlassCard className="p-3">
-                  <div className="flex items-center gap-3">
-                    <ChakraBadge chakraId={block.chakraId} />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 font-serif text-xl text-[var(--ip-ink)]">{block.title}</p>
-                      <p className="line-clamp-1 text-sm text-[var(--ip-body)]">{block.intention}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-[var(--ip-ink)]">{block.durationMinutes} min</p>
-                      <p className="text-xl text-[var(--ip-purple)]">▶</p>
-                    </div>
-                  </div>
-                </GlassCard>
+            <div className="space-y-5">
+              <p className="minimal-label text-xs">Heal</p>
+              <h1 className="font-serif text-[clamp(2.7rem,8vw,4.8rem)] leading-[0.95] text-[var(--ip-ink)]">
+                Your healing journey is ready.
+              </h1>
+              <p className="text-base leading-7 text-[var(--ip-body)]">
+                {entry.analysis.healingApproachSummary ?? "Energy is gathering into a gentler sequence designed to help you release, breathe, restore, and integrate."}
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <RitualWeatherCard
+                  title="Primary centre"
+                  line={`${primaryChakra.name} is leading this sequence through ${primaryChakra.frequencyLabel}.`}
+                  tone={tone}
+                />
+                <RitualWeatherCard
+                  title="Intended shift"
+                  line={plan.intendedOutcome}
+                  tone={tone}
+                />
               </div>
-            );
-          })}
-        </div>
 
-        <GlassCard className="p-4">
-          <h2 className="font-serif text-xl text-[var(--ip-ink)]">Would you like to remember this reflection?</h2>
-          <p className="mt-1 text-sm text-[var(--ip-body)]">Saving the summary can help you notice patterns over time.</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <GoldButton onClick={() => saveReflectionToJourney(entry.id)}>Save to My Journey</GoldButton>
-            <button type="button" onClick={() => keepReflectionTemporary(entry.id)} className="min-h-11 rounded-full border border-[var(--ip-border)] bg-white px-4 font-semibold text-[var(--ip-purple)]">Not Now</button>
+              <div className="rounded-[1.45rem] border border-[rgba(244,122,34,0.24)] bg-[rgba(18,20,22,0.56)] p-4 sm:p-5">
+                <p className="minimal-label text-[0.62rem]">Session opening</p>
+                <h2 className="mt-2 font-serif text-3xl text-[var(--ip-ink)]">{sessions[0].title}</h2>
+                <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">
+                  {sessions[0].duration} min • {sessions[0].intention}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/healing/player?plan=${plan.id}`)}
+                  className="min-h-12 rounded-full border border-[rgba(244,122,34,0.55)] bg-[rgba(244,122,34,0.12)] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--gold-light)]"
+                >
+                  Begin healing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveReflectionToJourney(entry.id)}
+                  className="min-h-12 rounded-full border border-white/10 bg-white/[0.035] px-6 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ip-body)]"
+                >
+                  Save to journey
+                </button>
+              </div>
+            </div>
+          </div>
+        </RitualBackdrop>
+
+        <div className="grid gap-3 lg:grid-cols-4">
+          {sessions.slice(0, 4).map((session, index) => (
             <button
+              key={`${session.title}-${session.chakraId}`}
               type="button"
               onClick={() => {
-                const next = window.prompt("Edit Reflection", entry.analysis?.understandingSummary ?? entry.analysis?.summary ?? entry.title);
-                if (next?.trim() && entry.analysis) updateJournalEntry(entry.id, { analysis: { ...entry.analysis, understandingSummary: next.trim(), summary: next.trim() } });
+                if ("planId" in session && session.planId) router.push(`/healing/player?plan=${session.planId}`);
+                else router.push(`/player?chakraId=${session.chakraId}&duration=${session.duration === 8 ? 10 : session.duration}`);
               }}
-              className="min-h-11 rounded-full border border-[var(--ip-border)] bg-white px-4 font-semibold text-[var(--ip-purple)]"
+              className="obsidian-panel rounded-[1.35rem] p-4 text-left"
             >
-              Edit Reflection
+              <p className="minimal-label text-[0.62rem]">Stage {index + 1}</p>
+              <h3 className="mt-2 font-serif text-2xl text-[var(--ip-ink)]">{session.title}</h3>
+              <p className="mt-2 text-sm text-[var(--ip-body)]">{session.duration} min</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--ip-body)]">{session.intention}</p>
             </button>
-          </div>
-        </GlassCard>
-
-        <button type="button" onClick={() => setAdjusting((value) => !value)} className="min-h-11 w-full rounded-full border border-[var(--ip-border)] bg-white font-semibold text-[var(--ip-purple)]">
-          Adjust Session
-        </button>
-
-        {adjusting ? (
-          <ExpandableCard title="Session settings" summary="Duration, voice, music and affirmations" defaultOpen>
-            <div className="space-y-4">
-              <ControlGroup label="Duration">
-                {durationOptions.map((duration) => <ChipButton key={`${duration}`} selected={settings.duration === duration} onClick={() => updateSettings({ duration })}>{duration === "full" ? "Full recommended" : `${duration} min`}</ChipButton>)}
-              </ControlGroup>
-              <ControlGroup label="Voice level">
-                {voiceOptions.map((option) => <ChipButton key={option.value} selected={settings.voiceGuidanceLevel === option.value} onClick={() => updateSettings({ voiceGuidanceLevel: option.value })}>{option.label}</ChipButton>)}
-              </ControlGroup>
-              <ControlGroup label="Music style">
-                {musicStyleOptions.map((option) => <ChipButton key={option.value} selected={settings.musicStyle === option.value} onClick={() => updateSettings({ musicStyle: option.value })}>{option.label}</ChipButton>)}
-              </ControlGroup>
-              <ControlGroup label="Affirmations">
-                <ChipButton selected={settings.affirmationsEnabled} onClick={() => updateSettings({ affirmationsEnabled: true })}>On</ChipButton>
-                <ChipButton selected={!settings.affirmationsEnabled} onClick={() => updateSettings({ affirmationsEnabled: false })}>Off</ChipButton>
-              </ControlGroup>
-              <ControlGroup label="Guidance frequency">
-                {frequencyOptions.map((option) => <ChipButton key={option.value} selected={settings.guidanceFrequency === option.value} onClick={() => updateSettings({ guidanceFrequency: option.value })}>{option.label}</ChipButton>)}
-              </ControlGroup>
-              <ControlGroup label="Nature sound">
-                {natureOptions.map((option) => <ChipButton key={option.value} selected={settings.natureSound === option.value} disabled={option.disabled} onClick={() => updateSettings({ natureSound: option.value })}>{option.label}{option.disabled ? " · Soon" : ""}</ChipButton>)}
-              </ControlGroup>
-            </div>
-          </ExpandableCard>
-        ) : null}
-
-        <GoldButton className="w-full" onClick={() => router.push(`/healing/player?plan=${plan.id}`)}>
-          Start Reset
-        </GoldButton>
+          ))}
+        </div>
       </div>
     </MvpShell>
   );
 }
 
-function ControlGroup({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[var(--ip-muted)]">{label}</p>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
-
-function ChipButton({ selected, disabled = false, onClick, children }: { selected: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" disabled={disabled} onClick={onClick} className={`min-h-10 rounded-full border px-3 py-1.5 text-sm disabled:opacity-45 ${selected ? "border-[var(--ip-purple)] bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "border-[var(--ip-border)] bg-white text-[var(--ip-body)]"}`}>
-      {children}
-    </button>
-  );
-}

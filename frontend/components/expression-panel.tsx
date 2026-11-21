@@ -4,12 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ChakraProcessingScreen } from "@/components/chakra-processing-screen";
-import { ChakraPath } from "@/components/chakra-path-ui";
-import { HelpTooltip } from "@/components/help-tooltip";
-import { GoldButton } from "@/components/mvp-shell";
+import { RitualBackdrop, inferWeatherTone } from "@/components/inner-world-ritual-ui";
+import { BreathingRipple } from "@/components/ritual-motion-visuals";
+import { createFrontendApiClient } from "@/lib/auth/session";
+import { expressionActions, type ExpressionActionDefinition, type ExpressionActionId } from "@/lib/expression-actions";
 import { createJournalEntry, saveAnalysis, savePlan } from "@/lib/mvp-storage";
-import { EmotionalAnalysis } from "@/lib/mvp-types";
-import { apiFetch } from "@/lib/api";
+import type { EmotionalAnalysis } from "@/lib/mvp-types";
 
 type SpeechRecognitionEventLike = Event & {
   results: SpeechRecognitionResultList;
@@ -34,30 +34,32 @@ type SpeechRecognitionLike = {
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
-const emotionChips = ["Anxious", "Angry", "Sad", "Overwhelmed", "Hurt", "Confused", "Tired", "Calm", "Something else"];
+const emotionChips = ["Restless", "Quiet", "Melancholic", "Grounded", "Hopeful", "Anxious", "Overwhelmed", "Peaceful"];
+const journalPrompts = [
+  "What happened that is still sitting with you?",
+  "What are you trying not to carry into tonight?",
+  "What feels most true underneath the surface?",
+  "What would make this feel a little lighter?",
+];
 
-export function ExpressionPanel({
-  compact = false,
-  embedded = false,
-  initialText = "",
-  autoStartVoice = false,
-}: {
-  compact?: boolean;
-  embedded?: boolean;
-  initialText?: string;
-  autoStartVoice?: boolean;
-}) {
+export function ExpressionPanel({ initialMode = "speak" }: { initialMode?: "speak" | "write" }) {
   const router = useRouter();
-  const [text, setText] = useState(initialText);
+  const [mode, setMode] = useState<"speak" | "write">(initialMode);
+  const [text, setText] = useState("");
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [listening, setListening] = useState(false);
-  const [paused, setPaused] = useState(false);
   const [voiceUnsupported, setVoiceUnsupported] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [activeInfo, setActiveInfo] = useState<ExpressionActionId | null>(null);
+  const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [draftForWitness, setDraftForWitness] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const voiceBaseRef = useRef("");
+  const submissionInFlightRef = useRef(false);
 
   const SpeechRecognition = useMemo<SpeechRecognitionConstructor | null>(() => {
     if (typeof window === "undefined") return null;
@@ -73,13 +75,30 @@ export function ExpressionPanel({
       recognitionRef.current?.abort();
       recognitionRef.current = null;
     };
-  }, [SpeechRecognition]);
+  }, []);
+
+  useEffect(() => {
+    if (!listening || !recordingStartedAt) return;
+    const timer = window.setInterval(() => setElapsed(Math.floor((Date.now() - recordingStartedAt) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, [listening, recordingStartedAt]);
+
+  useEffect(() => {
+    if (!activeInfo) return;
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveInfo(null);
+    };
+    document.addEventListener("keydown", dismiss);
+    return () => document.removeEventListener("keydown", dismiss);
+  }, [activeInfo]);
 
   const startVoice = () => {
+    setMode("speak");
     setVoiceError("");
+    setNotice("");
     if (!SpeechRecognition) {
       setVoiceUnsupported(true);
-      setVoiceError("Voice input is not available in this browser. You can still type your thoughts.");
+      setVoiceError("Voice input is not available here. You can continue by writing instead.");
       return;
     }
     if (recognitionRef.current || listening) return;
@@ -106,26 +125,26 @@ export function ExpressionPanel({
     };
 
     recognition.onerror = (event) => {
-      setVoiceError(event.error === "not-allowed" ? "Microphone permission was denied. You can still type your thoughts." : "Voice input stopped. You can continue typing.");
+      setVoiceError(event.error === "not-allowed" ? "Microphone access was denied. You can continue by writing instead." : "Voice input paused. You can still keep going.");
       setListening(false);
-      setPaused(false);
       recognitionRef.current = null;
     };
+
     recognition.onend = () => {
       setListening(false);
-      setPaused(false);
       recognitionRef.current = null;
     };
 
     try {
       recognitionRef.current = recognition;
       setListening(true);
-      setPaused(false);
+      setRecordingStartedAt(Date.now());
+      setElapsed(0);
       recognition.start();
     } catch {
       recognitionRef.current = null;
       setListening(false);
-      setVoiceError("Voice input could not start. You can still type your thoughts.");
+      setVoiceError("Voice input could not start. You can continue by writing instead.");
     }
   };
 
@@ -133,179 +152,256 @@ export function ExpressionPanel({
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     setListening(false);
-    setPaused(false);
   };
 
-  const pauseVoice = () => {
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    setPaused(true);
-    setListening(false);
+  const decoratedText = () => selectedEmotions.length
+    ? `${text.trim()}\n\nEmotions selected: ${selectedEmotions.join(", ")}`
+    : text.trim();
+
+  const validateText = () => {
+    if (text.trim()) return true;
+    setNotice("");
+    setError("Share at least one sentence before continuing.");
+    return false;
   };
 
-  const autoStartedRef = useRef(false);
-  useEffect(() => {
-    if (!autoStartVoice || autoStartedRef.current) return;
-    autoStartedRef.current = true;
-    startVoice();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStartVoice]);
+  const submit = async () => {
+    if (!validateText() || submissionInFlightRef.current) return;
 
-  const toggleEmotion = (emotion: string) => {
-    setSelectedEmotions((current) => (current.includes(emotion) ? current.filter((item) => item !== emotion) : [...current, emotion]));
-  };
-
-  const submit = async (overrideText?: string) => {
-    const sourceText = overrideText ?? text;
-    if (!sourceText.trim()) {
-      setError("Share at least one sentence before continuing.");
-      return;
-    }
+    submissionInFlightRef.current = true;
     stopVoice();
     setLoading(true);
     setError("");
-    const decoratedText = selectedEmotions.length ? `${sourceText.trim()}\n\nEmotions selected: ${selectedEmotions.join(", ")}` : sourceText.trim();
+    setNotice("");
+    const reflection = decoratedText();
+    setDraftForWitness(reflection);
+
     const entry = createJournalEntry({
-      rawText: decoratedText,
+      rawText: reflection,
       saveMode: "temporary_analysis",
       emotionalIntensityBefore: 6,
     });
 
     try {
-      const response = await apiFetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: decoratedText }),
-      });
-      const payload = (await response.json()) as { analysis?: EmotionalAnalysis; error?: string };
-      if (!response.ok || !payload.analysis) throw new Error(payload.error ?? "Insight failed");
+      const api = createFrontendApiClient();
+      const payload = (await api.analyseText(reflection)) as { analysis?: EmotionalAnalysis };
+      if (!payload.analysis) throw new Error("Insight failed");
       saveAnalysis(entry.id, payload.analysis);
       savePlan(entry.id);
-      window.setTimeout(() => router.push(`/analysis?entry=${entry.id}`), 900);
-    } catch {
+      window.setTimeout(() => router.push(`/analysis?entry=${entry.id}`), 1400);
+    } catch (caught) {
+      submissionInFlightRef.current = false;
       setLoading(false);
-      setError("We could not prepare your emotional insight right now. Please try again.");
+      setError(caught instanceof Error ? caught.message : "We could not prepare your emotional insight right now.");
     }
   };
 
-  if (loading) return <ChakraProcessingScreen />;
+  const savePrivate = () => {
+    if (!validateText()) return;
+    stopVoice();
+    createJournalEntry({
+      rawText: decoratedText(),
+      saveMode: "journal_without_analysis",
+      emotionalIntensityBefore: 6,
+    });
+    setError("");
+    setNotice("Saved as a private release. You can return to it in your logs.");
+  };
+
+  const startOver = () => {
+    stopVoice();
+    setText("");
+    setSelectedEmotions([]);
+    setVoiceError("");
+    setError("");
+    setNotice("");
+    setElapsed(0);
+  };
+
+  const switchMode = (nextMode: "speak" | "write") => {
+    if (nextMode === mode) return;
+    if (listening) stopVoice();
+    setMode(nextMode);
+    setVoiceError("");
+  };
+
+  const insertPrompt = () => {
+    const prompt = journalPrompts[Math.floor(Math.random() * journalPrompts.length)];
+    setText((current) => (current.trim() ? `${current.trim()}\n\n${prompt}\n` : `${prompt}\n`));
+  };
+
+  const toggleEmotion = (emotion: string) => {
+    setSelectedEmotions((current) => (current.includes(emotion) ? current.filter((item) => item !== emotion) : [...current, emotion]));
+  };
+
+  const tone = inferWeatherTone(`${selectedEmotions.join(" ")} ${text.slice(0, 180)}`);
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const timerText = `${Math.floor(elapsed / 60)}:${`${elapsed % 60}`.padStart(2, "0")}`;
+
+  if (loading) {
+    return <ChakraProcessingScreen draftText={draftForWitness || text} selectedEmotions={selectedEmotions} />;
+  }
 
   return (
-    <section className="rounded-[1.5rem] border border-[var(--ip-border)] bg-white/82 p-4 shadow-[0_14px_34px_rgba(108,62,244,0.1)] backdrop-blur-xl">
-      {!embedded ? (
-        <div className="mb-3 rounded-[1.25rem] bg-[linear-gradient(180deg,rgba(237,232,255,0.82),rgba(255,255,255,0.62))] py-3">
-          <ChakraPath compact />
-        </div>
-      ) : null}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-serif text-2xl text-[var(--ip-ink)]">{compact ? "What is weighing on you right now?" : "Speak or type what’s on your mind."}</h2>
-          <p className="mt-1 text-sm text-[var(--ip-body)]">{compact ? "Share freely. This is your space." : "Your words stay editable before you continue."}</p>
-        </div>
-        <HelpTooltip label="Microphone information">Speak your thoughts and review the text before continuing. Your voice is converted into text so you can review it before continuing.</HelpTooltip>
-      </div>
+    <div className="journal-motion-flow">
+      <RitualBackdrop tone={tone} className="expression-screen">
+        <div className="expression-layout">
+          <header className="expression-heading journal-prompt-enter">
+            <h2>{mode === "write" ? "Write to release" : "Speak to release"}</h2>
+            <p>{mode === "write" ? "Let it out gently" : "Say it out gently"}</p>
+          </header>
 
-      <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-purple-200 bg-white/70">
-        <div className="flex items-start gap-3 p-3">
-          <button
-            type="button"
-            onClick={listening ? stopVoice : paused ? startVoice : startVoice}
-            className={`grid min-h-11 min-w-11 place-items-center rounded-full border text-lg transition focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] ${
-              listening ? "border-purple-400 bg-purple-100 text-[#6d28d9]" : "border-purple-200 bg-white text-[#7c3aed]"
-            }`}
-            aria-label="Speak your thoughts"
-            aria-pressed={listening}
-          >
-            🎙
-          </button>
-          <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="What is weighing on you right now?"
-            className="min-h-32 w-full resize-y bg-transparent p-1 text-base leading-6 text-[#130b4f] outline-none placeholder:text-[#8f81c2]"
-          />
-        </div>
-      </div>
+          <p className="expression-words-label">Words gathered so far</p>
 
-      {listening || paused ? (
-        <div className="mt-3 rounded-2xl border border-purple-200 bg-purple-50/80 p-3">
-          <p className="font-medium text-[#26156f]">{listening ? "Listening…" : "Paused"}</p>
-          <p className="mt-1 text-sm text-[#6d5ea8]">Speak naturally. Your words will appear here.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {listening ? <button type="button" onClick={pauseVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Pause</button> : null}
-            {paused ? <button type="button" onClick={startVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Continue</button> : null}
-            <button type="button" onClick={stopVoice} className="soft-pill min-h-10 rounded-full px-4 text-sm">Stop</button>
+          <div className="expression-ripple-stage journal-input-enter">
+            <BreathingRipple
+              className="expression-ripple"
+              label=""
+              active={mode === "write" || listening}
+            />
+            <div className="expression-input-card">
+              <textarea
+                value={text}
+                onChange={(event) => {
+                  setText(event.target.value);
+                  setError("");
+                  setNotice("");
+                }}
+                placeholder={mode === "write" ? "Start writing what’s on your mind..." : "Your words will gather here as you speak..."}
+                aria-label={mode === "write" ? "Write your reflection" : "Voice transcript"}
+              />
+              <div className="expression-input-footer">
+                <span>{mode === "speak" && listening ? timerText : `${words} ${words === 1 ? "word" : "words"}`}</span>
+                {mode === "speak" ? (
+                  <button type="button" onClick={listening ? stopVoice : startVoice}>
+                    <span aria-hidden="true">♩</span>
+                    {listening ? "Finish" : "Start speaking"}
+                  </button>
+                ) : (
+                  <button type="button" onClick={insertPrompt}>Add a prompt</button>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      ) : null}
 
-      {voiceUnsupported || voiceError ? <p className="mt-3 rounded-2xl border border-purple-200 bg-white/72 p-3 text-sm text-[#4b3f86]">{voiceError || "Voice input is not available in this browser. You can still type your thoughts."}</p> : null}
-
-      <div className="mt-2 flex items-center justify-between text-xs text-[var(--ip-muted)]">
-        <span>{text.length} characters</span>
-        <span>or type above</span>
-      </div>
-
-      <div className="mt-4 grid place-items-center text-center">
-        <button
-          type="button"
-          onClick={listening ? stopVoice : paused ? startVoice : startVoice}
-          className={`relative grid h-20 w-20 place-items-center rounded-full border text-2xl transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
-            listening ? "border-[var(--ip-purple)] bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "border-[var(--ip-border-strong)] bg-white text-[var(--ip-purple)]"
-          }`}
-          aria-label="Tap to Speak"
-          aria-pressed={listening}
-        >
-          {listening ? <span className="absolute inset-[-0.45rem] animate-ping rounded-full border border-[var(--ip-purple)] opacity-20" /> : null}
-          🎙
-        </button>
-        <p className="mt-2 text-sm font-semibold text-[var(--ip-ink)]">Tap to Speak</p>
-        <p className="text-xs text-[var(--ip-muted)]">or type above</p>
-      </div>
-
-      <div className="mt-4">
-        <p className="text-sm font-medium text-[#26156f]">What emotion are you experiencing?</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {emotionChips.map((emotion) => (
-            <button
-              key={emotion}
-              type="button"
-              onClick={() => toggleEmotion(emotion)}
-              className={`min-h-10 rounded-full border px-3 text-sm transition ${
-                selectedEmotions.includes(emotion) ? "border-purple-400 bg-purple-100 text-[#6d28d9]" : "border-purple-200 bg-white/70 text-[#4b3f86]"
-              }`}
-            >
-              {emotion}
+          <div className="expression-mode-toggle" aria-label="Expression mode">
+            <button type="button" aria-pressed={mode === "speak"} onClick={() => switchMode("speak")}>
+              <span aria-hidden="true">♩</span> Speak
             </button>
-          ))}
+            <button type="button" aria-pressed={mode === "write"} onClick={() => switchMode("write")}>
+              <span aria-hidden="true">✎</span> Write
+            </button>
+          </div>
+
+          <div className="expression-actions">
+            <ExpressionAction
+              definition={expressionActions.insight}
+              emphasis="primary"
+              onAction={submit}
+              onInfo={() => setActiveInfo("insight")}
+            />
+            <ExpressionAction
+              definition={expressionActions.private}
+              emphasis="secondary"
+              onAction={savePrivate}
+              onInfo={() => setActiveInfo("private")}
+            />
+            <ExpressionAction
+              definition={expressionActions.reset}
+              emphasis="tertiary"
+              onAction={startOver}
+              onInfo={() => setActiveInfo("reset")}
+            />
+          </div>
+
+          {voiceUnsupported || voiceError || error || notice ? (
+            <div className={`expression-message ${notice ? "is-success" : ""}`} role={notice ? "status" : "alert"}>
+              {notice || voiceError || error || "Voice input is not available here."}
+            </div>
+          ) : null}
+
+          <details className="expression-emotions">
+            <summary>Add how it feels <span>(optional)</span></summary>
+            <div>
+              {emotionChips.map((emotion) => (
+                <button
+                  key={emotion}
+                  type="button"
+                  aria-pressed={selectedEmotions.includes(emotion)}
+                  onClick={() => toggleEmotion(emotion)}
+                >
+                  {emotion}
+                </button>
+              ))}
+            </div>
+          </details>
         </div>
-      </div>
+      </RitualBackdrop>
 
-      {error ? <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+      {activeInfo ? (
+        <ExpressionInfoPopover
+          definition={expressionActions[activeInfo]}
+          onDismiss={() => setActiveInfo(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <GoldButton className="flex-1" disabled={!text.trim()} onClick={() => submit()}>Continue</GoldButton>
-        <button
-          type="button"
-          onClick={() => {
-            void submit("I just want a quick reset.");
-          }}
-          className="min-h-11 rounded-full border border-[var(--ip-border)] bg-white px-4 py-2.5 font-semibold text-[var(--ip-purple)]"
-        >
-          I just want a quick reset
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (text && window.confirm("Remove the words currently written on this screen? Saved reflections will remain safe.")) setText("");
-          }}
-          className="min-h-11 rounded-full border border-purple-200 bg-white px-4 py-2.5 font-semibold text-[#6d28d9]"
-          aria-label="Clear Entry"
-          title="Remove the words currently written on this screen. Saved reflections will remain safe."
-        >
-          Clear Entry
-        </button>
+function ExpressionAction({
+  definition,
+  emphasis,
+  onAction,
+  onInfo,
+}: {
+  definition: ExpressionActionDefinition;
+  emphasis: "primary" | "secondary" | "tertiary";
+  onAction: () => void;
+  onInfo: () => void;
+}) {
+  const descriptionId = `expression-action-${definition.id}`;
+  return (
+    <div className={`expression-action-row is-${emphasis}`}>
+      <button type="button" className="expression-action-button" onClick={onAction} aria-describedby={descriptionId}>
+        <span className="expression-action-button__icon" aria-hidden="true">
+          {definition.id === "insight" ? "✦" : definition.id === "private" ? "▢" : "↶"}
+        </span>
+        <span>{definition.label}</span>
+      </button>
+      <button
+        type="button"
+        className="expression-info-button"
+        onClick={onInfo}
+        aria-label={`About ${definition.label}`}
+        aria-describedby={descriptionId}
+      >
+        i
+      </button>
+      <div id={descriptionId} role="tooltip" className="expression-action-tooltip">
+        <strong>{definition.label}</strong>
+        <span>{definition.text}</span>
       </div>
-    </section>
+    </div>
+  );
+}
+
+function ExpressionInfoPopover({
+  definition,
+  onDismiss,
+}: {
+  definition: ExpressionActionDefinition;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="expression-info-overlay" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onDismiss();
+    }}>
+      <section className="expression-info-sheet" role="dialog" aria-modal="true" aria-labelledby="expression-info-title">
+        <button type="button" className="expression-info-close" onClick={onDismiss} aria-label="Close explanation">×</button>
+        <p className="minimal-label">What this does</p>
+        <h3 id="expression-info-title">{definition.label}</h3>
+        <p>{definition.text}</p>
+      </section>
+    </div>
   );
 }

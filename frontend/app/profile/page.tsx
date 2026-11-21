@@ -1,5 +1,5 @@
-import { YouHomeScreen } from "@/components/you-home-screen";
+import { ProfileScreen } from "@/components/profile-screen";
 
 export default function ProfilePage() {
-  return <YouHomeScreen />;
+  return <ProfileScreen />;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { usePlayer } from "@/components/player-provider";
@@ -10,23 +10,10 @@ export function PwaRegistration() {
   const { isPlaying } = usePlayer();
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
+  const refreshRequested = useRef(false);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-
-    // A worker registered by an earlier production run (`npm run start`)
-    // outlives it and keeps serving cached /_next/ files cache-first, so a
-    // dev server's fresh code never reaches the page. In development,
-    // remove any such worker and its caches, then reload once onto the
-    // live code.
-    if (process.env.NODE_ENV !== "production") {
-      void navigator.serviceWorker.getRegistrations().then(async (registrations) => {
-        if (registrations.length === 0) return;
-        await Promise.all(registrations.map((item) => item.unregister()));
-        const keys = await caches.keys();
-        await Promise.all(keys.filter((key) => key.startsWith("innerpause-")).map((key) => caches.delete(key)));
-        window.location.reload();
-      });
+    if (process.env.NEXT_PUBLIC_SHARED_TEST_AUTH === 'true' || process.env.NODE_ENV !== "production" || typeof window === "undefined" || !("serviceWorker" in navigator)) {
       return;
     }
 
@@ -57,13 +44,12 @@ export function PwaRegistration() {
         // ignore registration failures and keep the app usable in the browser
       });
 
-    // Reload only when a new version replaces one that was already running
-    // (the "New version available → Refresh" flow). On a first visit the
-    // worker takes control via clients.claim() too, and reloading then
-    // would yank the page out from under someone who just arrived.
-    const hadController = Boolean(navigator.serviceWorker.controller);
     const handleControllerChange = () => {
-      if (hadController) window.location.reload();
+      // First installation also claims the page. Preserve drafts and playback
+      // unless this tab explicitly requested the update.
+      if (!refreshRequested.current) return;
+      refreshRequested.current = false;
+      window.location.reload();
     };
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
@@ -74,7 +60,7 @@ export function PwaRegistration() {
     };
   }, []);
 
-  const hidden = pathname === "/player" || pathname.endsWith("/player");
+  const hidden = pathname === "/revised" || pathname === "/player" || pathname.endsWith("/player");
 
   if (!updateReady || hidden) return null;
 
@@ -90,7 +76,11 @@ export function PwaRegistration() {
         <button
           type="button"
           disabled={isPlaying}
-          onClick={() => registration?.waiting?.postMessage({ type: "SKIP_WAITING" })}
+          onClick={() => {
+            if (!registration?.waiting) return;
+            refreshRequested.current = true;
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          }}
           className="rounded-full bg-white/92 px-4 py-2 text-xs font-medium text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Refresh

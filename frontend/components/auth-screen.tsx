@@ -1,38 +1,29 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { LandscapeScene } from "@/components/landscape-scene";
-import { IconApple, IconChevronRight, IconGoogle, IconMail } from "@/components/pause-icons";
-import { Reveal } from "@/components/reveal";
-import { applyServerAccount } from "@/lib/account-store";
-import { login, requestPasswordReset, signup } from "@/lib/auth-client";
-import { setMvpAuthenticatedUser, upsertProfile } from "@/lib/mvp-storage";
+import { BrandLogo, GlassCard, GoldButton, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { useAuth } from "@/lib/auth/auth-provider";
+
+type AuthMode = "login" | "signup" | "verify" | "forgot";
 
 export function AuthScreen() {
   const router = useRouter();
+  const auth = useAuth();
   const searchParams = useSearchParams();
-  // Same-site paths only: "//host" and "/\host" would leave the app (an
-  // open redirect after sign-in).
-  const requested = searchParams.get("redirectTo") ?? "";
-  const redirectTo = requested.startsWith("/") && !requested.startsWith("//") && !requested.startsWith("/\\") ? requested : "/";
+  const redirectTo = searchParams.get("redirectTo")?.startsWith("/") ? searchParams.get("redirectTo") : "/";
   const routeMessage = searchParams.get("message");
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("signup");
-  const [showEmail, setShowEmail] = useState(false);
+  const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(routeMessage ?? "");
   const [error, setError] = useState("");
 
-  const rememberUser = (user: { id: string; email: string; fullName: string }) => {
-    setMvpAuthenticatedUser(user.id);
-    upsertProfile({ fullName: user.fullName, email: user.email });
-    applyServerAccount(user);
-  };
+  if (process.env.NEXT_PUBLIC_LOCAL_TEST_AUTH === 'true' || process.env.NEXT_PUBLIC_SHARED_TEST_AUTH === 'true') return <MvpShell hideNav><GlassCard className="local-sign-in p-8"><h1>Welcome to Inner Pause</h1><p>Use your test session to explore the revised journey.</p><a className="live-primary" href="/local-test-sign-in">Open test sign-in</a></GlassCard></MvpShell>;
 
   const submit = async () => {
     setError("");
@@ -46,8 +37,9 @@ export function AuthScreen() {
     setLoading(true);
     try {
       if (mode === "forgot") {
-        await requestPasswordReset(email);
-        setStatus("If an account exists for that email, we've sent it a link to choose a new password. The link works for 1 hour.");
+        await auth.forgotPassword(email);
+        setStatus("Password reset code sent. Check your inbox.");
+        router.push(`/auth/reset-password?email=${encodeURIComponent(email)}`);
         return;
       }
 
@@ -57,15 +49,15 @@ export function AuthScreen() {
       }
 
       if (mode === "signup") {
-        const user = await signup({ email, password, fullName: name });
-        rememberUser(user);
-        router.replace(redirectTo ?? "/");
-        router.refresh();
+        await auth.signUp({ email, password, fullName: name });
+        setStatus("Check your email for the verification code.");
+        setVerificationCode("");
+        setMode("verify");
         return;
       }
 
-      const user = await login({ email, password });
-      rememberUser(user);
+      await auth.signIn({ email, password, fullName: name });
+
       router.replace(redirectTo ?? "/");
       router.refresh();
     } catch (caught) {
@@ -75,154 +67,129 @@ export function AuthScreen() {
     }
   };
 
-  const showProviderNotice = (provider: string) => {
-    window.alert(`${provider} sign-in is not connected yet. Use email and password.`);
+  const verifyAccount = async () => {
+    setError("");
+    setStatus("");
+    if (!email) {
+      setError("Email is required.");
+      return;
+    }
+    if (!verificationCode) {
+      setError("Verification code is required.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await auth.confirmSignUp({ email, code: verificationCode });
+      setStatus("Account verified. You can now log in.");
+      setVerificationCode("");
+      setMode("login");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not verify account.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const headline = mode === "forgot" ? "Reset password" : mode === "login" ? "Welcome back" : "Create your account";
-  const subhead =
-    mode === "forgot"
-      ? "We’ll send a reset link if that email is on file."
-      : "Start your journey with Inner Pause.";
+  const resendVerification = async () => {
+    setError("");
+    setStatus("");
+    if (!email) {
+      setError("Enter your email first.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await auth.resendVerification(email);
+      setStatus("Verification email resent. Check your inbox.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not resend verification email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setError("");
+    setStatus("");
+  };
+
+  const title = mode === "signup" ? "Create Account" : mode === "verify" ? "Verify Account" : mode === "forgot" ? "Reset Password" : "Login";
+  const copy =
+    mode === "signup"
+      ? "Create your account to keep your Inner Pause reflections connected."
+      : mode === "verify"
+        ? "Enter the verification code sent to your email."
+        : mode === "forgot"
+          ? "Enter your email and we will send a password reset code."
+          : "Sign in to continue your Inner Pause practice.";
 
   return (
-    <div
-      className="relative min-h-dvh overflow-hidden"
-      style={{ background: "var(--ds-bg)", color: "var(--ds-text)", fontFamily: "var(--ds-font-sans)" }}
-    >
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]">
-        <LandscapeScene variant="dawn" className="h-full w-full opacity-70" />
-      </div>
-
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
-        <header className="flex items-center justify-between">
-          <Link
-            href="/"
-            aria-label="Back to Home"
-            className="ds-icon-btn ds-tap focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-            style={{ color: "var(--ds-text)" }}
-          >
-            <IconChevronRight className="h-5 w-5" style={{ transform: "scaleX(-1)" }} />
-          </Link>
-        </header>
-
-        <Reveal className="mt-8">
-          <h1 className="ds-display text-[2rem] sm:text-[2.25rem]">{headline}</h1>
-          <p className="mt-2 text-[0.95rem]" style={{ color: "var(--ds-text-secondary)" }}>
-            {subhead}
-          </p>
-        </Reveal>
-
-        <Reveal className="mt-8 space-y-3" delay={0.1}>
-          <button type="button" onClick={() => showProviderNotice("Apple")} className="ds-outlined ds-tap w-full">
-            <IconApple className="h-5 w-5" />
-            Continue with Apple
-          </button>
-          <button type="button" onClick={() => showProviderNotice("Google")} className="ds-outlined ds-tap w-full">
-            <IconGoogle className="h-5 w-5" />
-            Continue with Google
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setShowEmail(true);
-              setMode(mode === "forgot" ? "signup" : mode);
-            }}
-            className="ds-outlined ds-tap w-full"
-          >
-            <IconMail className="h-5 w-5" />
-            Continue with Email
-          </button>
-        </Reveal>
-
-        {showEmail || mode === "forgot" ? (
-          <form
-            className="ds-card mt-6 space-y-3 p-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void submit();
-            }}
-          >
-            {mode === "signup" ? (
-              <label className="block">
-                <span className="text-sm font-medium">Full name</span>
-                <input value={name} onChange={(event) => setName(event.target.value)} className="ds-field mt-1.5" autoComplete="name" />
-              </label>
-            ) : null}
+    <MvpShell hideNav>
+      <div className="mx-auto max-w-xl space-y-5">
+        <BrandLogo />
+        <SectionTitle title={title} copy={copy} />
+        <GlassCard className="space-y-4 p-5">
+          {mode === "signup" ? (
             <label className="block">
-              <span className="text-sm font-medium">Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="ds-field mt-1.5"
-                autoComplete="email"
-              />
+              <span className="text-sm text-[#4b3f86]">Full name</span>
+              <input value={name} onChange={(event) => setName(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
             </label>
-            {mode !== "forgot" ? (
-              <label className="block">
-                <span className="text-sm font-medium">Password</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="ds-field mt-1.5"
-                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                />
-              </label>
-            ) : null}
-            {status ? (
-              <p className="rounded-[var(--ds-radius-md)] px-3 py-2 text-sm" style={{ background: "var(--ds-accent-soft)", color: "var(--ds-success)" }}>
-                {status}
-              </p>
-            ) : null}
-            {error ? (
-              <p className="rounded-[var(--ds-radius-md)] px-3 py-2 text-sm" style={{ background: "color-mix(in srgb, var(--ds-error) 12%, white)", color: "var(--ds-error)" }}>
-                {error}
-              </p>
-            ) : null}
-            <button type="submit" disabled={loading} className="ds-filled ds-tap w-full disabled:opacity-70">
-              {loading ? "Please wait…" : mode === "forgot" ? "Send reset link" : mode === "login" ? "Sign in" : "Create account"}
-            </button>
-          </form>
-        ) : null}
-
-        <p className="mt-6 text-center text-[0.75rem] leading-5" style={{ color: "var(--ds-text-muted)" }}>
-          By continuing, you agree to our{" "}
-          <Link href="/terms" className="underline underline-offset-2">
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy-policy" className="underline underline-offset-2">
-            Privacy Policy
-          </Link>
-          .
-        </p>
-
-        <div className="relative z-10 mt-auto space-y-2 bg-gradient-to-t from-[var(--ds-bg)] via-[var(--ds-bg)] to-transparent pt-10 pb-2 text-center text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-          {mode === "login" ? (
-            <button type="button" onClick={() => setMode("signup")} className="ds-tap inline-flex min-h-11 items-center font-medium">
-              New here? <span style={{ color: "var(--ds-accent)" }}>Create an account</span>
-            </button>
+          ) : null}
+          {mode !== "verify" ? (
+            <label className="block">
+              <span className="text-sm text-[#4b3f86]">Email</span>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+            </label>
+          ) : null}
+          {mode === "login" || mode === "signup" ? (
+            <label className="block">
+              <span className="text-sm text-[#4b3f86]">Password</span>
+              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+            </label>
+          ) : null}
+          {mode === "verify" ? (
+            <label className="block">
+              <span className="text-sm text-[#4b3f86]">Email</span>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+            </label>
+          ) : null}
+          {mode === "verify" ? (
+            <label className="block">
+              <span className="text-sm text-[#4b3f86]">Verification code</span>
+              <input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value)} className="soft-input mt-2 w-full rounded-2xl p-3" />
+            </label>
+          ) : null}
+          {status ? <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{status}</p> : null}
+          {error ? <p className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+          {mode === "verify" ? (
+            <GoldButton className="w-full" disabled={loading || !email || !verificationCode} onClick={verifyAccount}>
+              {loading ? "Please wait..." : "Verify Account"}
+            </GoldButton>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setMode("login");
-                setShowEmail(true);
-              }}
-              className="ds-tap inline-flex min-h-11 items-center font-medium"
-            >
-              Already have an account? <span style={{ color: "var(--ds-accent)" }}>Sign in</span>
-            </button>
+            <GoldButton className="w-full" disabled={loading} onClick={submit}>
+              {loading ? "Please wait..." : mode === "forgot" ? "Send Reset Link" : mode === "signup" ? "Create Account" : "Login"}
+            </GoldButton>
           )}
-          <div className="mt-2">
-            <button type="button" onClick={() => setMode("forgot")} className="ds-tap inline-flex min-h-11 items-center px-2 text-xs" style={{ color: "var(--ds-text-muted)" }}>
-              Forgot password?
+          {mode === "verify" ? (
+            <button type="button" disabled={loading} onClick={resendVerification} className="min-h-11 w-full rounded-full border border-purple-200 bg-white text-sm text-[#6d28d9] disabled:opacity-45">
+              Resend verification email
             </button>
+          ) : null}
+          <div className="grid gap-2 text-sm text-[#6d5ea8]">
+            {mode === "login" ? (
+              <>
+                <button type="button" onClick={() => switchMode("forgot")}>Forgot password?</button>
+                <button type="button" onClick={() => switchMode("signup")}>Create new account</button>
+              </>
+            ) : null}
+            {mode === "signup" || mode === "verify" || mode === "forgot" ? (
+              <button type="button" onClick={() => switchMode("login")}>Back to Login</button>
+            ) : null}
           </div>
-        </div>
+        </GlassCard>
       </div>
-    </div>
+    </MvpShell>
   );
 }

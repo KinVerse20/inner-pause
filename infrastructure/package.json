@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
+    "test": "npm run synth -- --quiet >/dev/null && node --test tests/*.test.mjs",
     "synth": "cdk synth",
     "diff": "cdk diff",
+    "diff:safe": "bash ../scripts/cdk-diff-safe.sh",
+    "bootstrap:safe": "bash ../scripts/cdk-bootstrap-safe.sh",
     "deploy": "cdk deploy --all",
     "destroy": "cdk destroy --all"
   },
@@ -16,7 +19,8 @@
   },
   "devDependencies": {
     "@types/node": "^20",
-    "aws-cdk": "^2.1024.0",
+    "aws-cdk": "^2.1149.0",
+    "esbuild": "^0.28.1",
     "ts-node": "^10.9.2",
     "typescript": "^5"
   }

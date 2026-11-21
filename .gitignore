@@ -13,17 +13,19 @@
 
 # testing
 /coverage
+/frontend/test-results/revised/
+/frontend/playwright-report/
+/frontend/test-results/
 
 # next.js
 /.next/
-/frontend/.next/
+**/.next/
 /out/
 **/cdk.out
+.aws-review/
 
 # production
 /build
-/backend/dist
-/backend/uploads
 
 # misc
 .DS_Store
@@ -47,6 +49,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# graphify (local knowledge-graph tool output/cache, not app code)
-/graphify-out/

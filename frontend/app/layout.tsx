@@ -1,18 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import { PlayerProvider } from "@/components/player-provider";
 import { PwaRegistration } from "@/components/pwa-registration";
-import { AccountInvitationGate } from "@/components/account-invitation-gate";
-import { AuthSessionSync } from "@/components/auth-session-sync";
-import { ContentSync } from "@/components/content-sync";
-import { EntryGate } from "@/components/entry-gate";
-import { SmoothScroll } from "@/components/smooth-scroll";
-import { ThemeApplier } from "@/components/theme-applier";
+import { AuthProvider } from "@/lib/auth/auth-provider";
 import "./globals.css";
+import "./live-theme.css";
+import "./phase-one.css";
 
-const geistSans = Geist({
+const cormorant = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -20,29 +18,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Approved typeface per docs/BRAND_IDENTITY.md §5 — additive alongside the
-// existing Geist variable so not-yet-rebuilt screens are unaffected. Used
-// via --ds-font-sans (app/globals.css) by the new design-system screens.
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://theinnerpause.app"),
-  title: "The Inner Pause",
-  applicationName: "The Inner Pause",
-  description: "Guided reflective expression, emotional insight and personalised reset sessions.",
+  title: "Inner Pause",
+  applicationName: "Inner Pause",
+  description: "Pause the noise. Return to you.",
   manifest: "/manifest.webmanifest",
   openGraph: {
-    title: "The Inner Pause",
-    description: "A daily ritual for release, reflection and renewal.",
+    title: "Inner Pause",
+    description: "Pause the noise. Return to you.",
     images: ["/branding/innerpause-logo.png"],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "The Inner Pause",
+    title: "Inner Pause",
   },
   icons: {
     icon: [
@@ -54,11 +44,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f0e6" },
-    { media: "(prefers-color-scheme: dark)", color: "#1d1b4c" },
-  ],
-  colorScheme: "light dark",
+  themeColor: "#f8f3ec",
+  colorScheme: "light",
   viewportFit: "cover",
 };
 
@@ -70,21 +57,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
-      suppressHydrationWarning
+      className={`${cormorant.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-[var(--ds-bg)] text-[var(--ds-text)]">
-        <div className="ds-grain" aria-hidden="true" />
+      <body className="min-h-full bg-[var(--background)] text-[var(--foreground)] flex flex-col">
         <PlayerProvider>
-          <SmoothScroll>
-            <AuthSessionSync />
-            <ContentSync />
-            <EntryGate />
-            <ThemeApplier />
+          <AuthProvider>
             {children}
-            <AccountInvitationGate />
             <PwaRegistration />
-          </SmoothScroll>
+          </AuthProvider>
         </PlayerProvider>
       </body>
     </html>

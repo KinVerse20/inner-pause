@@ -1,32 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { LiveShell } from '@/components/live-shell';
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
-
-// 4-tab IA (Design 6 redesign). Express (/journal) is intentionally not a
-// tab: it's reached via CTAs on the Pause home screen, not persistent nav.
-// Journey temporarily points at /history until Phase 4 merges Insights in.
-const navItems = [
-  { href: "/", label: "Pause", icon: "⌂" },
-  { href: "/practice", label: "Practice", icon: "◈" },
-  { href: "/history", label: "Journey", icon: "♧" },
-  { href: "/profile", label: "You", icon: "♙" },
-];
+import type { ReactNode } from "react";
 
 export function MvpShell({ children, hideNav = false }: { children: ReactNode; hideNav?: boolean }) {
-  return (
-    <div className="mvp-bg min-h-dvh overflow-x-hidden text-[var(--cream)]">
-      <main
-        className="mx-auto min-h-dvh w-full max-w-[28rem] px-3.5 pt-[calc(0.65rem+env(safe-area-inset-top))] sm:px-5 md:max-w-[44rem]"
-        style={{ paddingBottom: hideNav ? "calc(1rem + env(safe-area-inset-bottom))" : "var(--page-bottom-padding)" }}
-      >
-        {children}
-      </main>
-      {!hideNav ? <MvpBottomNav /> : null}
-    </div>
-  );
+  return <LiveShell hideNav={hideNav}>{children}</LiveShell>;
 }
 
 export function BrandLogo({
@@ -37,44 +17,17 @@ export function BrandLogo({
   className?: string;
 }) {
   return (
-    <Link href="/" className={`inline-flex items-center gap-3 ${className}`} aria-label="The Inner Pause home">
-      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--ip-border)] bg-white shadow-[0_8px_24px_rgba(108,62,244,0.12)]">
+    <Link href="/" className={`inline-flex items-center gap-3 ${className}`} aria-label="The InnerPause home">
+      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/10 bg-[#232527] shadow-[0_0_24px_rgba(255,138,50,0.12)]">
         <Image src="/branding/innerpause-icon.png" alt="" fill sizes="36px" className="object-cover" priority={compact} />
       </span>
       {!compact ? (
         <span>
-          <span className="block font-serif text-xl leading-none text-[var(--gold-light)]">The Inner Pause</span>
-          <span className="mt-1 block text-xs uppercase tracking-[0.22em] text-[var(--gold-muted)]">Pause and reset</span>
+          <span className="block text-xl leading-none text-[var(--ip-ink)]">The InnerPause</span>
+          <span className="mt-1 block text-xs uppercase tracking-[0.32em] text-[var(--gold-muted)]">Pause</span>
         </span>
       ) : null}
     </Link>
-  );
-}
-
-function MvpBottomNav() {
-  const pathname = usePathname();
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 min-h-[var(--bottom-nav-height)] border-t border-[var(--ip-border)] bg-white/90 shadow-[0_-14px_36px_rgba(108,62,244,0.12)] backdrop-blur-2xl">
-      <div className="mx-auto grid max-w-[28rem] grid-cols-4 gap-1 px-2 pb-[calc(0.42rem+env(safe-area-inset-bottom))] pt-1.5 md:max-w-[44rem]">
-        {navItems.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={`grid min-h-12 place-items-center rounded-xl text-center text-[0.75rem] transition focus:outline-none focus:ring-2 focus:ring-[var(--ip-purple)] ${
-                active ? "bg-[var(--ip-lavender)] text-[var(--ip-purple)]" : "text-[var(--ip-muted)] hover:text-[var(--ip-ink)]"
-              }`}
-            >
-              <span className="text-lg leading-none">{item.icon}</span>
-              <span>{item.label}</span>
-              <span className={`h-0.5 w-5 rounded-full ${active ? "bg-[var(--ip-purple)] shadow-[0_0_12px_rgba(108,62,244,0.28)]" : "bg-transparent"}`} />
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
   );
 }
 
@@ -86,48 +39,26 @@ export function GoldButton({
   return (
     <button
       {...props}
-      className={`min-h-11 rounded-full border border-[var(--ip-gold-border)] bg-[linear-gradient(135deg,var(--ip-gold-2),var(--ip-gold))] px-4 py-2.5 font-semibold text-[#241b10] shadow-[var(--ip-shadow-md)] transition hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={`live-primary ${className}`}
     >
       {children}
     </button>
   );
 }
 
-// Category tones for Design 6 tiles/cards (Sleep, Reset, Focus, Confidence,
-// Calm). Backed by the --ip-cat-* tokens in app/globals.css. Optional and
-// additive: GlassCard renders identically to before when `tone` is omitted.
-export type CategoryTone = "sleep" | "reset" | "focus" | "confidence" | "calm" | "release";
-
-const categoryToneVars: Record<CategoryTone, { bg: string; border: string; accent: string }> = {
-  sleep: { bg: "var(--ip-cat-sleep-soft)", border: "var(--ip-cat-sleep)", accent: "var(--ip-cat-sleep)" },
-  reset: { bg: "var(--ip-cat-reset-soft)", border: "var(--ip-cat-reset)", accent: "var(--ip-cat-reset)" },
-  focus: { bg: "var(--ip-cat-focus-soft)", border: "var(--ip-cat-focus)", accent: "var(--ip-cat-focus)" },
-  confidence: { bg: "var(--ip-cat-confidence-soft)", border: "var(--ip-cat-confidence)", accent: "var(--ip-cat-confidence)" },
-  calm: { bg: "var(--ip-cat-calm-soft)", border: "var(--ip-cat-calm)", accent: "var(--ip-cat-calm)" },
-  release: { bg: "var(--ip-cat-release-soft)", border: "var(--ip-cat-release)", accent: "var(--ip-cat-release)" },
-};
-
-export function categoryToneStyle(tone?: CategoryTone): React.CSSProperties | undefined {
-  if (!tone) return undefined;
-  const vars = categoryToneVars[tone];
-  return { backgroundColor: vars.bg, borderColor: vars.border, ["--ip-tile-color" as string]: vars.accent };
-}
-
 export function GlassCard({
   children,
   className = "",
   style,
-  tone,
 }: {
   children: ReactNode;
   className?: string;
   style?: React.CSSProperties;
-  tone?: CategoryTone;
 }) {
   return (
     <section
-      className={`rounded-[1.25rem] border border-[var(--ip-border)] bg-[var(--ip-card)] shadow-[0_14px_34px_rgba(108,62,244,0.09)] backdrop-blur-xl ${className}`}
-      style={{ ...categoryToneStyle(tone), ...style }}
+      className={`live-card ${className}`}
+      style={style}
     >
       {children}
     </section>
@@ -137,8 +68,8 @@ export function GlassCard({
 export function SectionTitle({ eyebrow, title, copy }: { eyebrow?: string; title: string; copy?: string }) {
   return (
     <div>
-      {eyebrow ? <p className="text-xs uppercase tracking-[0.28em] text-[var(--gold-muted)]">{eyebrow}</p> : null}
-      <h1 className="mt-1 font-serif text-3xl leading-tight text-[var(--ip-ink)] sm:text-5xl">{title}</h1>
+      {eyebrow ? <p className="minimal-label text-xs">{eyebrow}</p> : null}
+      <h1 className="mt-1 text-3xl font-medium leading-tight text-[var(--ip-ink)] sm:text-5xl">{title}</h1>
       {copy ? <p className="mt-2 max-w-2xl text-sm leading-5 text-[var(--ip-body)]">{copy}</p> : null}
     </div>
   );

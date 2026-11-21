@@ -1,621 +1,193 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
-import { LandscapeScene } from "@/components/landscape-scene";
-import { IconChevronRight } from "@/components/pause-icons";
-import { PauseShell } from "@/components/pause-shell";
-import { Stagger, StaggerItem } from "@/components/reveal";
-import { hasActivePass, setDevHasPass } from "@/lib/entitlements";
-import { computeGrowthStatements, type GrowthStatement } from "@/lib/growth-model";
-import { getLinkedJournalEntries, listHighlights, type Highlight } from "@/lib/journey-highlights";
-import { listMomentRecords } from "@/lib/moment-storage";
-import { listPauseRecords } from "@/lib/pause-storage";
-import {
-  generatePatternCandidates,
-  resolvePatternHighlights,
-} from "@/lib/pattern-engine";
-import {
-  listPatterns,
-  markPatternsGenerated,
-  setPatternStatus,
-  shouldRegeneratePatterns,
-  upsertGeneratedPattern,
-  type PatternRecord,
-} from "@/lib/pattern-storage";
-import { deleteTellEntry, listTellEntries, type TellEntry } from "@/lib/tell-storage";
-import { getPatternAnalysisConsent } from "@/lib/privacy-controls";
+import { MvpShell } from "@/components/mvp-shell";
+import { chakras } from "@/data/chakras";
+import { getSessionKey, isChakraUnlocked, isSessionUnlocked } from "@/lib/progress";
+import { useProgressStore } from "@/lib/use-progress-store";
+import type { ChakraDefinition, ChakraId, ProgressState, SessionDefinition } from "@/lib/types";
 
-type Tab = "highlights" | "journal" | "patterns" | "growth";
+const visualOrder = [...chakras].reverse();
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "highlights", label: "Highlights" },
-  { id: "journal", label: "Journal" },
-  { id: "patterns", label: "Patterns" },
-  { id: "growth", label: "Growth" },
-];
+const sanskrit: Record<ChakraId, string> = {
+  crown: "Sahasrara",
+  "third-eye": "Ajna",
+  throat: "Vishuddha",
+  heart: "Anahata",
+  "solar-plexus": "Manipura",
+  sacral: "Svadhisthana",
+  root: "Muladhara",
+};
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function currentChakraId(progress: ProgressState): ChakraId {
+  const next = chakras.find((chakra) => {
+    if (!isChakraUnlocked(progress, chakra.index)) return false;
+    return chakra.sessions.some((session) => !progress.completedSessionKeys.includes(getSessionKey(chakra.id, session.id)));
+  });
+  return next?.id ?? "heart";
 }
 
-function localDayKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function pauseDayStreak(): number {
-  const days = new Set(
-    listPauseRecords()
-      .filter((record) => record.completedAt)
-      .map((record) => localDayKey(new Date(record.completedAt!))),
-  );
-  let streak = 0;
-  const cursor = new Date();
-  for (let i = 0; i < 365; i += 1) {
-    const key = localDayKey(cursor);
-    if (!days.has(key)) {
-      if (i === 0) {
-        cursor.setDate(cursor.getDate() - 1);
-        continue;
-      }
-      break;
-    }
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
-
-function JourneyStats() {
-  const [pauses, setPauses] = useState(0);
-  const [moments, setMoments] = useState(0);
-  const [streak, setStreak] = useState(0);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPauses(listPauseRecords().filter((record) => record.completedAt).length);
-    setMoments(listMomentRecords().length);
-    setStreak(pauseDayStreak());
-  }, []);
-
-  const items = [
-    { value: pauses, label: "Pauses" },
-    { value: streak, label: "Day streak" },
-    { value: moments, label: "Moments" },
-  ];
-  return (
-    <div className="ds-card grid grid-cols-3 overflow-hidden">
-      {items.map((item) => (
-        <div key={item.label} className="px-3 py-4 text-center">
-          <p className="ds-display text-[1.65rem]">{item.value}</p>
-          <p className="mt-0.5 text-[0.75rem]" style={{ color: "var(--ds-text-secondary)" }}>
-            {item.label}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function JourneyScreen() {
-  const [tab, setTab] = useState<Tab>("highlights");
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [journalEntries, setJournalEntries] = useState<TellEntry[]>([]);
-  const [patterns, setPatterns] = useState<PatternRecord[]>([]);
-  const [growthStatements, setGrowthStatements] = useState<GrowthStatement[]>([]);
-  const [pass, setPass] = useState(false);
-
-  const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(null);
-  const [selectedEntry, setSelectedEntry] = useState<TellEntry | null>(null);
-  const [entryOrigin, setEntryOrigin] = useState<"list" | "highlight">("list");
-  const [expandedPatternId, setExpandedPatternId] = useState<string | null>(null);
-
-  const refresh = () => {
-    setHighlights(listHighlights());
-    setJournalEntries(listTellEntries());
-    setPatterns(listPatterns());
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPass(hasActivePass());
-    refresh();
-  }, []);
-
-  useEffect(() => {
-    if (tab !== "patterns") return;
-    const scope = hasActivePass() ? "pass" : "free";
-    // You -> Data & Privacy's "used for deeper pattern analysis" control
-    // (docs/PRODUCT_FLOW.md §35): declining only stops *new* generation —
-    // already-generated patterns stay visible and correctable, same as any
-    // other earned history.
-    if (getPatternAnalysisConsent() && shouldRegeneratePatterns()) {
-      for (const candidate of generatePatternCandidates(scope)) {
-        upsertGeneratedPattern({ ...candidate, scope });
-      }
-      markPatternsGenerated();
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPatterns(listPatterns());
-  }, [tab]);
-
-  useEffect(() => {
-    if (tab !== "growth") return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGrowthStatements(computeGrowthStatements(hasActivePass() ? "pass" : "free"));
-  }, [tab]);
-
-  const hasAnyHistory = highlights.length > 0 || journalEntries.length > 0;
-
-  const openHighlight = (highlight: Highlight) => {
-    setSelectedHighlight(highlight);
-    setSelectedEntry(null);
-  };
-  const openEntryFromList = (entry: TellEntry) => {
-    setSelectedEntry(entry);
-    setEntryOrigin("list");
-  };
-  const openEntryFromHighlight = (entry: TellEntry) => {
-    setSelectedEntry(entry);
-    setEntryOrigin("highlight");
-  };
-  const closeEntry = () => {
-    if (entryOrigin === "highlight") {
-      setSelectedEntry(null);
-    } else {
-      setSelectedEntry(null);
-    }
-  };
-  const deleteEntry = (id: string) => {
-    deleteTellEntry(id);
-    setSelectedEntry(null);
-    refresh();
-  };
-
-  const togglePass = () => {
-    const next = !pass;
-    setDevHasPass(next);
-    setPass(next);
-  };
+export function JourneyScreen({ focusedChakraId }: { focusedChakraId?: string }) {
+  const progress = useProgressStore();
+  const initial = chakras.some((chakra) => chakra.id === focusedChakraId) ? (focusedChakraId as ChakraId) : currentChakraId(progress);
+  const [selectedChakraId, setSelectedChakraId] = useState<ChakraId>(initial);
+  const selectedChakra = useMemo(() => chakras.find((chakra) => chakra.id === selectedChakraId) ?? chakras.find((chakra) => chakra.id === "heart") ?? chakras[0], [selectedChakraId]);
+  const completedCount = selectedChakra.sessions.filter((session) => progress.completedSessionKeys.includes(getSessionKey(selectedChakra.id, session.id))).length;
+  const selectedUnlockedForJourney = isChakraUnlocked(progress, selectedChakra.index);
 
   return (
-    <PauseShell>
-      <Stagger className="space-y-5 pb-4 pt-2">
-        <StaggerItem>
-          <header>
-            <h1 className="ds-display text-[1.85rem]">Your journey</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-              Help me understand myself.
-            </p>
-          </header>
-        </StaggerItem>
+    <MvpShell>
+      <div className="space-y-4 lg:space-y-5">
+        <header className="text-center">
+          <p className="minimal-label text-xs">Chakra</p>
+          <h1 className="mt-1 text-[clamp(2.05rem,7vw,4.6rem)] font-medium leading-tight text-[var(--ip-ink)] sm:mt-2">Topology</h1>
+          <p className="mx-auto mt-2 hidden max-w-xl text-base text-[var(--ip-body)] sm:block">Browse all seven centres. Journey locks remain separate from this map.</p>
+        </header>
 
-        <StaggerItem>
-          <div className="relative overflow-hidden rounded-[var(--ds-radius-lg)]">
-            <LandscapeScene variant="day" className="h-28 w-full opacity-80" />
-          </div>
-        </StaggerItem>
-
-        <StaggerItem>
-          <JourneyStats />
-        </StaggerItem>
-
-        <StaggerItem className="space-y-5">
-        {!hasAnyHistory ? (
-          <section className="space-y-2 rounded-[var(--ds-radius-lg)] px-5 py-8 text-center" style={{ background: "var(--ds-surface)" }}>
-            <p className="text-[1.05rem] font-semibold">Your Journey starts here.</p>
-            <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-              Your Pauses, moments and reflections will gather here over time.
-            </p>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+          <section className="relative min-w-0 overflow-hidden border-y border-white/10 bg-white/[0.018] p-3 sm:rounded-[1.1rem] sm:border sm:p-4 lg:min-h-[calc(100dvh-11rem)] lg:border-y lg:bg-transparent">
+            <div className="mb-3 text-center">
+              <p className="minimal-label text-xs">Energy body</p>
+              <p className="mt-2 text-sm text-[var(--ip-muted)]">Tap any node</p>
+            </div>
+            <div className="obsidian-chakra-body">
+              <div className="obsidian-chakra-line" />
+              {visualOrder.map((chakra, index) => {
+                const active = chakra.id === selectedChakra.id;
+                return (
+                  <button
+                    key={chakra.id}
+                    type="button"
+                    onClick={() => setSelectedChakraId(chakra.id)}
+                    className={`obsidian-chakra-node ${active ? "obsidian-chakra-node--active" : ""}`}
+                    style={{ top: `${10 + index * 13.25}%` }}
+                    aria-pressed={active}
+                    aria-label={`Open ${chakra.name}`}
+                  >
+                    <span className="relative z-10 text-xs font-semibold">{visualOrder.length - index}</span>
+                    <span className="obsidian-chakra-label">{chakra.name.replace(" Chakra", "")}</span>
+                  </button>
+                );
+              })}
+            </div>
           </section>
-        ) : (
-          <>
-            <div className="inline-flex flex-wrap gap-1 rounded-full p-1" style={{ background: "var(--ds-accent-soft)" }}>
-              {TABS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setTab(item.id);
-                    setSelectedHighlight(null);
-                    setSelectedEntry(null);
-                  }}
-                  aria-pressed={tab === item.id}
-                  className="ds-tap inline-flex min-h-11 items-center rounded-full px-3.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-                  style={{
-                    background: tab === item.id ? "var(--ds-accent)" : "transparent",
-                    color: tab === item.id ? "var(--ds-accent-on)" : "var(--ds-text-secondary)",
-                    transition: "background-color 380ms var(--ds-ease), color 380ms var(--ds-ease)",
-                  }}
-                >
-                  {item.label}
-                </button>
+
+          <MobileChakraPanel chakra={selectedChakra} completedCount={completedCount} selectedUnlockedForJourney={selectedUnlockedForJourney} />
+
+          <div className="grid min-w-0 gap-3.5">
+            <DesktopChakraPanel chakra={selectedChakra} completedCount={completedCount} selectedUnlockedForJourney={selectedUnlockedForJourney} />
+
+            <div className="grid gap-2">
+              {selectedChakra.sessions.map((session, index) => (
+                <JourneySessionCard key={session.id} chakra={selectedChakra} session={session} progress={progress} index={index} />
               ))}
             </div>
-
-            {tab === "highlights" ? (
-              selectedHighlight ? (
-                <HighlightDetail
-                  highlight={selectedHighlight}
-                  onBack={() => setSelectedHighlight(null)}
-                  onOpenEntry={openEntryFromHighlight}
-                />
-              ) : (
-                <HighlightsList highlights={highlights} onOpen={openHighlight} />
-              )
-            ) : null}
-
-            {tab === "journal" ? (
-              <JournalList entries={journalEntries} onOpen={openEntryFromList} />
-            ) : null}
-
-            {tab === "patterns" ? (
-              <PatternsList
-                patterns={patterns}
-                expandedId={expandedPatternId}
-                onToggleExpand={(id) => setExpandedPatternId((current) => (current === id ? null : id))}
-                onRespond={(id, status) => {
-                  setPatternStatus(id, status);
-                  refresh();
-                }}
-                pass={pass}
-              />
-            ) : null}
-
-            {tab === "growth" ? <GrowthList statements={growthStatements} pass={pass} /> : null}
-          </>
-        )}
-
-        {selectedEntry ? (
-          <JournalEntryDetailOverlay entry={selectedEntry} onClose={closeEntry} onDelete={deleteEntry} />
-        ) : null}
-
-        {process.env.NODE_ENV === "development" ? (
-          <section
-            aria-label="Dev: Journey testing"
-            className="space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs"
-            style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
-          >
-            <p className="font-semibold">DEV — Journey testing</p>
-            <button
-              type="button"
-              onClick={togglePass}
-              className="ds-tap min-h-11 rounded-full border px-3 font-medium"
-              style={{ borderColor: "var(--ds-border)" }}
-            >
-              {pass ? "Pass: ON (tap to turn off)" : "Pass: OFF (tap to turn on)"}
-            </button>
-          </section>
-        ) : null}
-        </StaggerItem>
-      </Stagger>
-    </PauseShell>
-  );
-}
-
-function HighlightsList({ highlights, onOpen }: { highlights: Highlight[]; onOpen: (h: Highlight) => void }) {
-  if (highlights.length === 0) {
-    return (
-      <p className="pt-4 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-        Meaningful moments from Moments and Practice will appear here.
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-2.5">
-      {highlights.map((highlight) => (
-        <button
-          key={highlight.id}
-          type="button"
-          onClick={() => onOpen(highlight)}
-          className="ds-tap flex w-full items-center justify-between gap-3 rounded-[var(--ds-radius-md)] px-4 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-          style={{ background: "var(--ds-surface)" }}
-        >
-          <span className="min-w-0">
-            <span className="block text-[0.98rem] font-semibold">{highlight.title}</span>
-            <span className="mt-0.5 block text-[0.78rem]" style={{ color: "var(--ds-text-secondary)" }}>
-              {highlight.timingLabel} · {formatDate(highlight.createdAt)}
-            </span>
-          </span>
-          <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function HighlightDetail({
-  highlight,
-  onBack,
-  onOpenEntry,
-}: {
-  highlight: Highlight;
-  onBack: () => void;
-  onOpenEntry: (entry: TellEntry) => void;
-}) {
-  const linkedEntries = getLinkedJournalEntries(highlight);
-  return (
-    <section className="space-y-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-        style={{ color: "var(--ds-text-secondary)" }}
-      >
-        <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
-        Highlights
-      </button>
-
-      <div className="space-y-3 rounded-[var(--ds-radius-lg)] px-5 py-6" style={{ background: "var(--ds-surface)" }}>
-        <div>
-          <h1 className="text-[1.25rem] font-semibold leading-tight">{highlight.title}</h1>
-          <p className="mt-0.5 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-            {highlight.timingLabel} · {formatDate(highlight.createdAt)}
-          </p>
-        </div>
-
-        {highlight.expression ? (
-          <blockquote className="border-l-2 pl-3 text-sm italic leading-6" style={{ borderColor: "var(--ds-accent)", color: "var(--ds-text)" }}>
-            &ldquo;{highlight.expression}&rdquo;
-          </blockquote>
-        ) : null}
-
-        {highlight.feedback ? (
-          <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-            Outcome: <span style={{ color: "var(--ds-text)" }}>{highlight.feedback === "better" ? "Felt better" : highlight.feedback === "same" ? "Felt the same" : "Didn't help much"}</span>
-          </p>
-        ) : null}
-
-        {highlight.returnToMe ? (
-          <div className="rounded-[var(--ds-radius-sm)] border px-3 py-2.5" style={{ borderColor: "var(--ds-border)" }}>
-            <p className="text-xs font-semibold" style={{ color: "var(--ds-text-muted)" }}>
-              Return to Me
-            </p>
-            {highlight.returnToMe.responseText ? (
-              <p className="mt-1 text-sm italic">&ldquo;{highlight.returnToMe.responseText}&rdquo;</p>
-            ) : (
-              <p className="mt-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-                {highlight.returnToMe.status === "dismissed" ? "Dismissed — no response given." : "Not yet responded to."}
-              </p>
-            )}
           </div>
-        ) : null}
-      </div>
-
-      {linkedEntries.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ds-text-muted)" }}>
-            Linked Journal entries
-          </p>
-          {linkedEntries.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => onOpenEntry(entry)}
-              className="ds-tap block w-full rounded-[var(--ds-radius-sm)] border px-3.5 py-3 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-              style={{ borderColor: "var(--ds-border)" }}
-            >
-              {entry.text.length > 90 ? `${entry.text.slice(0, 90)}…` : entry.text}
-            </button>
-          ))}
         </div>
-      ) : null}
+      </div>
+    </MvpShell>
+  );
+}
+
+function MobileChakraPanel({
+  chakra,
+  completedCount,
+  selectedUnlockedForJourney,
+}: {
+  chakra: ChakraDefinition;
+  completedCount: number;
+  selectedUnlockedForJourney: boolean;
+}) {
+  return (
+    <section className="min-w-0 max-w-full rounded-[1.15rem] border border-[rgba(255,138,42,0.24)] bg-[#202326]/82 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:hidden">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="minimal-label text-[0.58rem]">{sanskrit[chakra.id]}</p>
+          <h2 className="mt-1 truncate text-2xl font-medium text-[var(--ip-ink)]">{chakra.name.replace(" Chakra", "")}</h2>
+          <p className="mt-1 text-sm text-[var(--ip-body)]">{chakra.meaning.split(",")[0] ?? "Balance"}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs text-[var(--gold-light)]">{chakra.frequencyLabel}</span>
+      </div>
+      <p className="mt-2 line-clamp-2 text-sm leading-5 text-[var(--ip-body)]">{chakra.purpose}</p>
+      <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-3">
+        <p className="text-xs uppercase tracking-[0.18em] text-[var(--ip-muted)]">{selectedUnlockedForJourney ? `${completedCount} of 5 complete` : "Browse mode"}</p>
+        <Link href={`/player?chakraId=${chakra.id}&duration=20`} className="tap-ripple inline-flex min-h-11 items-center rounded-full border border-[rgba(255,138,42,0.5)] bg-[rgba(244,122,34,0.12)] px-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--gold-light)]">
+          Open Session
+        </Link>
+      </div>
     </section>
   );
 }
 
-function JournalList({ entries, onOpen }: { entries: TellEntry[]; onOpen: (entry: TellEntry) => void }) {
-  if (entries.length === 0) {
-    return (
-      <p className="pt-4 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-        What you write or say to Inner Pause will appear here.
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-2.5">
-      {entries.map((entry) => (
-        <button
-          key={entry.id}
-          type="button"
-          onClick={() => onOpen(entry)}
-          className="ds-tap block w-full rounded-[var(--ds-radius-md)] px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-          style={{ background: "var(--ds-surface)" }}
-        >
-          <span className="flex items-center gap-2 text-[0.75rem] font-semibold uppercase tracking-wide" style={{ color: "var(--ds-text-muted)" }}>
-            <span>{entry.source === "speak" ? "Spoken" : "Written"}</span>
-            <span>·</span>
-            <span>{formatDate(entry.createdAt)}</span>
-          </span>
-          <span className="mt-1 block text-sm leading-5">{entry.text.length > 120 ? `${entry.text.slice(0, 120)}…` : entry.text}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function JournalEntryDetailOverlay({
-  entry,
-  onClose,
-  onDelete,
+function DesktopChakraPanel({
+  chakra,
+  completedCount,
+  selectedUnlockedForJourney,
 }: {
-  entry: TellEntry;
-  onClose: () => void;
-  onDelete: (id: string) => void;
+  chakra: ChakraDefinition;
+  completedCount: number;
+  selectedUnlockedForJourney: boolean;
 }) {
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-label="Journal entry"
-        className="w-full max-w-[26rem] space-y-4 rounded-[var(--ds-radius-lg)] p-5"
-        style={{ background: "var(--ds-bg)" }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ds-text-muted)" }}>
-            {entry.source === "speak" ? "Spoken" : "Written"} · {formatDate(entry.createdAt)}
-          </p>
-          <button type="button" onClick={onClose} aria-label="Close" className="ds-tap text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-            Close
-          </button>
+    <section className="hidden border-b border-white/10 pb-4 lg:block">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="minimal-label text-xs">{sanskrit[chakra.id]}</p>
+          <h2 className="mt-2 text-4xl font-medium leading-tight text-[var(--ip-ink)]">{chakra.name}</h2>
+          <p className="mt-3 text-base leading-7 text-[var(--ip-body)]">{chakra.meaning}</p>
         </div>
-        <p className="text-base leading-6">{entry.text}</p>
-
-        {confirmingDelete ? (
-          <div className="flex gap-2.5">
-            <button
-              type="button"
-              onClick={() => onDelete(entry.id)}
-              className="ds-tap min-h-11 flex-1 rounded-full text-sm font-semibold"
-              style={{ background: "var(--ds-error)", color: "#fff" }}
-            >
-              Delete permanently
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              className="ds-tap min-h-11 rounded-full px-4 text-sm font-medium"
-              style={{ color: "var(--ds-text-secondary)" }}
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmingDelete(true)}
-            className="ds-tap text-sm font-medium"
-            style={{ color: "var(--ds-error)" }}
-          >
-            Delete entry
-          </button>
-        )}
+        <span className="shrink-0 rounded-full border border-[rgba(255,138,42,0.38)] px-3 py-1 text-sm text-[var(--gold-light)]">{chakra.frequencyLabel}</span>
       </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <Detail label="Association" value={chakra.meaning.split(",")[0] ?? "Balance"} />
+        <Detail label="Intention" value={chakra.purpose} />
+        <Detail label="Recommended" value={chakra.sessions[Math.min(completedCount, 4)]?.name ?? "Sound reset"} />
+        <Detail label="Journey" value={selectedUnlockedForJourney ? `${completedCount} of 5 complete` : "Available in map"} />
+      </div>
+
+      <Link href={`/player?chakraId=${chakra.id}&duration=20`} className="tap-ripple mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[rgba(255,138,42,0.58)] bg-[rgba(244,122,34,0.12)] px-5 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--gold-light)] shadow-[0_0_26px_rgba(244,122,34,0.12)]">
+        Balance
+      </Link>
+    </section>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+      <p className="minimal-label text-[0.62rem]">{label}</p>
+      <p className="mt-2 text-base leading-6 text-[var(--ip-body)]">{value}</p>
     </div>
   );
 }
 
-function PatternsList({
-  patterns,
-  expandedId,
-  onToggleExpand,
-  onRespond,
-  pass,
+function JourneySessionCard({
+  chakra,
+  session,
+  progress,
+  index,
 }: {
-  patterns: PatternRecord[];
-  expandedId: string | null;
-  onToggleExpand: (id: string) => void;
-  onRespond: (id: string, status: "relevant" | "not-relevant") => void;
-  pass: boolean;
+  chakra: ChakraDefinition;
+  session: SessionDefinition;
+  progress: ProgressState;
+  index: number;
 }) {
-  const router = useRouter();
-  const visible = patterns.filter((p) => p.status !== "not-relevant");
-
-  return (
-    <div className="space-y-3">
-      {!pass ? (
-        <p className="rounded-[var(--ds-radius-sm)] border px-3.5 py-2.5 text-xs" style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}>
-          Showing patterns from your recent history. A Pass unlocks longitudinal analysis across your full Journey.
-        </p>
-      ) : null}
-
-      {visible.length === 0 ? (
-        <p className="pt-2 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-          Not enough repeated material yet to show a pattern — keep using Inner Pause and one may appear here.
-        </p>
-      ) : (
-        visible.map((pattern) => {
-          const expanded = expandedId === pattern.id;
-          const supporting = resolvePatternHighlights(pattern.supportingHighlightIds);
-          return (
-            <div key={pattern.id} className="space-y-2.5 rounded-[var(--ds-radius-md)] px-4 py-4" style={{ background: "var(--ds-surface)" }}>
-              <p className="text-sm leading-5">{pattern.text}</p>
-
-              {pattern.supportingHighlightIds.length > 0 || pattern.supportingJournalEntryIds.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => onToggleExpand(pattern.id)}
-                  className="ds-tap text-xs font-medium underline decoration-dotted underline-offset-4"
-                  style={{ color: "var(--ds-accent)" }}
-                >
-                  {expanded ? "Hide supporting entries" : "Show supporting entries"}
-                </button>
-              ) : null}
-
-              {expanded ? (
-                <ul className="space-y-1 text-xs" style={{ color: "var(--ds-text-secondary)" }}>
-                  {supporting.map((item) => (
-                    <li key={item.id}>
-                      {item.title} — {formatDate(item.createdAt)}
-                    </li>
-                  ))}
-                  {pattern.supportingJournalEntryIds.length > 0 ? <li>{pattern.supportingJournalEntryIds.length} Journal entries</li> : null}
-                </ul>
-              ) : null}
-
-              {pattern.status === "candidate" ? (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => onRespond(pattern.id, "relevant")}
-                    className="ds-tap min-h-11 rounded-full border px-3.5 text-xs font-semibold"
-                    style={{ borderColor: "var(--ds-border)" }}
-                  >
-                    Relevant
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onRespond(pattern.id, "not-relevant")}
-                    className="ds-tap min-h-11 rounded-full border px-3.5 text-xs font-semibold"
-                    style={{ borderColor: "var(--ds-border)" }}
-                  >
-                    Not really
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/tell")}
-                    className="ds-tap min-h-11 rounded-full border px-3.5 text-xs font-semibold"
-                    style={{ borderColor: "var(--ds-accent)", color: "var(--ds-accent)" }}
-                  >
-                    Tell Pause more
-                  </button>
-                </div>
-              ) : (
-                <p className="text-xs font-medium" style={{ color: "var(--ds-accent)" }}>
-                  Marked relevant
-                </p>
-              )}
-            </div>
-          );
-        })
-      )}
+  const completed = progress.completedSessionKeys.includes(getSessionKey(chakra.id, session.id));
+  const unlocked = isSessionUnlocked(progress, chakra, index);
+  const content = (
+    <div className={`tap-ripple flex items-center gap-3 rounded-[1.15rem] border p-3 ${unlocked ? "border-white/10 bg-white/[0.035]" : "border-white/[0.07] bg-white/[0.02]"}`}>
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(255,138,42,0.35)] text-sm font-semibold text-[var(--gold-light)]">{index + 1}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xl text-[var(--ip-ink)]">{session.name}</span>
+        <span className="block truncate text-sm text-[var(--ip-body)]">{session.durationMinutes} min · {session.instructions}</span>
+      </span>
+      <span className="text-sm font-semibold text-[var(--gold-light)]">{completed ? "Done" : unlocked ? "Open" : "Locked"}</span>
     </div>
   );
-}
 
-function GrowthList({ statements, pass }: { statements: GrowthStatement[]; pass: boolean }) {
-  if (statements.length === 0) {
-    return (
-      <p className="pt-4 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-        Not enough history yet to show meaningful change.
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-2.5">
-      {statements.map((statement) => (
-        <div key={statement.id} className="rounded-[var(--ds-radius-md)] px-4 py-4" style={{ background: "var(--ds-surface)" }}>
-          <p className="text-sm leading-5">{statement.text}</p>
-        </div>
-      ))}
-      {!pass ? (
-        <p className="rounded-[var(--ds-radius-sm)] border px-3.5 py-2.5 text-xs" style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}>
-          A Pass unlocks a then-vs-now comparison across your full history.
-        </p>
-      ) : null}
-    </div>
-  );
+  if (!unlocked) return <div className="min-w-0 max-w-full">{content}</div>;
+  return <Link href={`/session/${chakra.id}/${session.id}/setup`} className="block min-w-0 max-w-full">{content}</Link>;
 }

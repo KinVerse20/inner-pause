@@ -1,4 +1,4 @@
-import { ChakraId, MoodValue } from "@/lib/types";
+import { ChakraId } from "@/lib/types";
 
 export type SaveMode =
   | "journal_and_analysis"
@@ -53,7 +53,6 @@ export interface JournalEntry {
   analysis?: EmotionalAnalysis;
   plan?: HealingPlan;
   feedback?: SessionFeedback;
-  favourite?: boolean;
 }
 
 export interface HealingPlanBlock {
@@ -110,22 +109,11 @@ export interface SessionFeedback {
   createdAt: string;
 }
 
-export interface Reminder {
-  id: string;
-  label: string;
-  time: string;
-  days: string;
-  enabled: boolean;
-}
-
 export interface HealingProfile {
   fullName: string;
   email: string;
   phone: string;
   onboardingCompleted: boolean;
-  concerns: string[];
-  dailyGoal: string;
-  onboardingMood?: MoodValue;
   preferredSessionDuration: number;
   preferredVoice: string;
   preferredMusicStyle: string;
@@ -135,7 +123,6 @@ export interface HealingProfile {
   aiMemoryEnabled: boolean;
   morningGuidanceEnabled: boolean;
   guidanceTime: string;
-  reminders: Reminder[];
 }
 
 export interface MvpState {
