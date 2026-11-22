@@ -53,7 +53,7 @@ export function PauseHomeScreen() {
   };
 
   return (
-    <PauseShell>
+    <PauseShell glow="sunrise">
       <Stagger className="space-y-7 pb-4 pt-2">
         <StaggerItem>
           <header className="flex items-start justify-between gap-4">

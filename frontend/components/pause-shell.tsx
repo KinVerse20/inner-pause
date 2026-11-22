@@ -16,14 +16,17 @@ const destinations: Array<{ href: string; label: string; Icon: ComponentType<{ c
   { href: "/profile", label: "You", Icon: IconYouTab },
 ];
 
-export function PauseShell({ children }: { children: ReactNode }) {
+// Every tab opens onto a soft wash of brand color at the top (a glow, not
+// a fill); Home gets the warmer "sunrise" version. Purely decorative.
+export function PauseShell({ children, glow = "soft" }: { children: ReactNode; glow?: "soft" | "sunrise" }) {
   return (
     <div
-      className="min-h-dvh overflow-x-hidden"
+      className="relative min-h-dvh overflow-x-hidden"
       style={{ background: "var(--ds-bg)", color: "var(--ds-text)", fontFamily: "var(--ds-font-sans)" }}
     >
+      <div className={`app-glow app-glow--${glow}`} aria-hidden="true" />
       <main
-        className="mx-auto min-h-dvh w-full max-w-[30rem] px-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 md:max-w-[40rem]"
+        className="relative mx-auto min-h-dvh w-full max-w-[30rem] px-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 md:max-w-[40rem]"
         style={{ paddingBottom: "calc(7.5rem + env(safe-area-inset-bottom))" }}
       >
         {children}

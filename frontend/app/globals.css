@@ -576,7 +576,9 @@
 /* Keepsake paper: a touch warmer than the surface, soft lift, a strip of
    tape — your own words, kept. */
 .journal-paper {
-  background: color-mix(in srgb, var(--ds-surface) 92%, #f3e6cf);
+  background:
+    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--paper-tint, #f3e6cf) 12%, transparent) 0%, transparent 70%),
+    color-mix(in srgb, var(--ds-surface) 92%, #f3e6cf);
   box-shadow: 0 1px 2px rgba(29, 27, 76, 0.05), 0 8px 22px -10px rgba(29, 27, 76, 0.18);
   border: 1px solid color-mix(in srgb, var(--ds-text) 5%, transparent);
 }
@@ -595,7 +597,7 @@
   width: 3.6rem;
   height: 1rem;
   transform: translateX(-50%) rotate(-2deg);
-  background: color-mix(in srgb, var(--ds-accent-secondary) 22%, transparent);
+  background: color-mix(in srgb, var(--paper-tint, var(--ds-accent-secondary)) 30%, transparent);
   border-radius: 2px;
 }
 /* Ruled lines under the writing, like a page. */
@@ -727,8 +729,78 @@
   overflow: hidden;
   isolation: isolate;
   background:
-    radial-gradient(110% 85% at 100% 0%, color-mix(in srgb, var(--tile-color) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(110% 85% at 100% 0%, color-mix(in srgb, var(--tile-color) 22%, transparent) 0%, transparent 62%),
+    linear-gradient(165deg, color-mix(in srgb, var(--tile-color) 5%, var(--ds-surface)) 0%, color-mix(in srgb, var(--tile-color) 11%, var(--ds-surface)) 100%);
+  border-color: color-mix(in srgb, var(--tile-color) 16%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+   Color, lively but on-brand (BRAND_IDENTITY.md §4.4, revised 2026-11-22):
+   the six tints may now appear as soft washes (about 5-22%) behind content,
+   never as solid fills, and never behind body text at a strength that
+   costs contrast. Text and buttons keep their neutral/accent roles.
+   --------------------------------------------------------------------------- */
+
+/* A glow of brand color at the top of every tab: lavender from the right,
+   warm peach from the left. Home's "sunrise" is a little warmer. */
+.app-glow {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 30rem;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 92% 0%, color-mix(in srgb, var(--ds-accent-secondary) 16%, transparent) 0%, transparent 70%),
+    radial-gradient(55% 45% at 0% 6%, color-mix(in srgb, #f3c7a0 26%, transparent) 0%, transparent 72%);
+}
+.app-glow--sunrise {
+  height: 34rem;
+  background:
+    radial-gradient(62% 55% at 95% 0%, color-mix(in srgb, var(--ds-accent-secondary) 22%, transparent) 0%, transparent 70%),
+    radial-gradient(60% 50% at 0% 4%, color-mix(in srgb, #f3c7a0 40%, transparent) 0%, transparent 72%),
+    radial-gradient(45% 35% at 50% 0%, color-mix(in srgb, #e0a868 14%, transparent) 0%, transparent 75%);
+}
+:root[data-theme="dark"] .app-glow {
+  background:
+    radial-gradient(65% 55% at 92% 0%, color-mix(in srgb, #7c6aed 30%, transparent) 0%, transparent 70%),
+    radial-gradient(55% 45% at 0% 6%, color-mix(in srgb, #4338ca 34%, transparent) 0%, transparent 72%);
+}
+:root[data-theme="dark"] .app-glow--sunrise {
+  background:
+    radial-gradient(65% 55% at 95% 0%, color-mix(in srgb, #7c6aed 34%, transparent) 0%, transparent 70%),
+    radial-gradient(58% 48% at 0% 4%, color-mix(in srgb, #b4587a 22%, transparent) 0%, transparent 72%),
+    radial-gradient(45% 35% at 50% 0%, color-mix(in srgb, #e0a868 12%, transparent) 0%, transparent 75%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .app-glow {
+    background:
+      radial-gradient(65% 55% at 92% 0%, color-mix(in srgb, #7c6aed 30%, transparent) 0%, transparent 70%),
+      radial-gradient(55% 45% at 0% 6%, color-mix(in srgb, #4338ca 34%, transparent) 0%, transparent 72%);
+  }
+  :root:not([data-theme="light"]) .app-glow--sunrise {
+    background:
+      radial-gradient(65% 55% at 95% 0%, color-mix(in srgb, #7c6aed 34%, transparent) 0%, transparent 70%),
+      radial-gradient(58% 48% at 0% 4%, color-mix(in srgb, #b4587a 22%, transparent) 0%, transparent 72%),
+      radial-gradient(45% 35% at 50% 0%, color-mix(in srgb, #e0a868 12%, transparent) 0%, transparent 75%);
+  }
+}
+
+/* A warm wash for summary/feature cards (Journey month, You profile). */
+.ds-wash {
+  background:
+    radial-gradient(90% 80% at 100% 0%, color-mix(in srgb, var(--ds-accent-secondary) 14%, transparent) 0%, transparent 65%),
+    radial-gradient(80% 70% at 0% 100%, color-mix(in srgb, #f3c7a0 22%, transparent) 0%, transparent 70%),
     var(--ds-surface);
+}
+
+/* Completion: a warm gold glow — the one celebratory color. */
+.celebrate-glow {
+  background: radial-gradient(circle, color-mix(in srgb, #e0a868 70%, transparent) 0%, color-mix(in srgb, #e0a868 26%, transparent) 42%, transparent 70%);
+}
+
+/* Icon circles stay crisp on a tinted tile. */
+.outcome-tile .ds-outcome-icon {
+  background: color-mix(in srgb, var(--tile-color) 18%, var(--ds-surface-raised));
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--tile-color) 18%, transparent);
 }
 .outcome-tile > :not(.tile-motif) {
   position: relative;

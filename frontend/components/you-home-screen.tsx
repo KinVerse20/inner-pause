@@ -73,7 +73,7 @@ export function YouHomeScreen() {
         </StaggerItem>
 
         <StaggerItem>
-          <section aria-label="Your profile" className="ds-card px-4 py-4">
+          <section aria-label="Your profile" className="ds-card ds-wash px-4 py-4">
             <div className="flex items-center gap-3.5">
               <span
                 className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-xl font-semibold"

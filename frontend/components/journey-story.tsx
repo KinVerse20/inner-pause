@@ -121,7 +121,7 @@ export function JourneySummary({ pauses, entries, moments }: { pauses: PauseReco
   });
 
   return (
-    <section aria-label="Your month" className="ds-card overflow-hidden px-5 py-5">
+    <section aria-label="Your month" className="ds-card ds-wash overflow-hidden px-5 py-5">
       <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
         This month
       </p>
@@ -340,10 +340,17 @@ export function StoryTimeline({
 function EntryCard({ item, onOpen }: { item: Extract<StoryItem, { kind: "entry" }>; onOpen: () => void }) {
   const { entry, pause } = item;
   const long = entry.text.length > 220;
+  // Each keepsake carries the color of what it led to (or a quiet violet).
+  const tint = pause?.outcomeId ? `var(--ds-outcome-${pause.outcomeId})` : "var(--ds-accent-secondary)";
   return (
-    <button type="button" onClick={onOpen} className="journal-paper ds-tap relative block w-full rounded-[var(--ds-radius-lg)] px-5 pb-4 pt-8 text-left">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="journal-paper ds-tap relative block w-full rounded-[var(--ds-radius-lg)] px-5 pb-4 pt-8 text-left"
+      style={{ ["--paper-tint" as string]: tint }}
+    >
       <span className="journal-tape" aria-hidden="true" />
-      <svg viewBox="0 0 24 18" className="absolute left-4 top-3 h-4 w-5" style={{ color: "var(--ds-accent-secondary)", opacity: 0.45 }} aria-hidden="true">
+      <svg viewBox="0 0 24 18" className="absolute left-4 top-3 h-4 w-5" style={{ color: tint, opacity: 0.55 }} aria-hidden="true">
         <path fill="currentColor" d="M0 18V10.6C0 4.9 2.9 1.4 8.6 0l1 2.1C6.5 3.2 5 5.2 4.9 8.2H9.5V18H0Zm14.5 0V10.6C14.5 4.9 17.4 1.4 23.1 0l.9 2.1c-3.1 1.1-4.6 3.1-4.7 6.1H24V18h-9.5Z" />
       </svg>
       <span className="block whitespace-pre-line text-[1rem] leading-7">{long ? `${entry.text.slice(0, 220).trimEnd()}…` : entry.text}</span>

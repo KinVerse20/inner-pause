@@ -424,12 +424,11 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
 
         {loaded && stage === "complete" && enrollment ? (
           <div className="grid justify-items-center gap-5 pt-6 text-center">
-            <span
-              className="ds-outcome-icon grid h-16 w-16 place-items-center rounded-full"
-              style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${tone})` }}
-              aria-hidden="true"
-            >
-              <IconCheck className="h-7 w-7" />
+            <span className="relative grid h-32 w-32 place-items-center" aria-hidden="true">
+              <span className="celebrate-glow ds-breathe absolute inset-0 rounded-full" />
+              <span className="relative grid h-14 w-14 place-items-center rounded-full" style={{ background: "#e0a868", color: "#fff" }}>
+                <IconCheck className="h-7 w-7" />
+              </span>
             </span>
             <div>
               <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
