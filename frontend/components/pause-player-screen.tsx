@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { BreathingGuide, breathAt } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
-import { IconCheck, IconClose, IconPauseGlyph, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
+import { IconCheck, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
 import { SoundSheet } from "@/components/sound-sheet";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
+import { createTellEntry, linkTellEntryToPause, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
 import {
   completePauseRecord,
   getPauseRecord,
@@ -79,6 +80,10 @@ export function PausePlayerScreen() {
   const [notBetterStreak, setNotBetterStreak] = useState(false);
   const [checkinStage, setCheckinStage] = useState<CheckinStage>("question");
   const [acknowledgedText, setAcknowledgedText] = useState("");
+  // Kinverse's "Anything you want to remember?" — an optional note saved to
+  // the journal, linked to this Pause.
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState("");
   // You -> Preferences -> Ambient sound and Frequency. Read after mount:
   // preferences live in localStorage, which the server render can't see
   // (same reasoning as components/you-preferences-screen.tsx).
@@ -439,6 +444,7 @@ export function PausePlayerScreen() {
   const handleTopChoice = (feedback: PauseFeedback) => {
     if (!record) return;
     haptic("success");
+    saveNote();
     completePauseRecord(record.id, feedback);
     // A Pause inside a flow (a Practice day or skill session) always returns
     // to that flow, whatever the answer — the flow carries the next step.
@@ -460,8 +466,16 @@ export function PausePlayerScreen() {
     setCheckinStage("not-better-options");
   };
 
+  const saveNote = () => {
+    if (!record || !note.trim()) return;
+    const entry = createTellEntry({ text: note.trim(), source: "write", chips: [], interpretation: NOT_ROUTED_INTERPRETATION });
+    linkTellEntryToPause(entry.id, record.id);
+    setNote("");
+  };
+
   const handleSkip = () => {
     if (!record) return;
+    saveNote();
     completePauseRecord(record.id, undefined);
     router.push(record.returnTo ?? "/");
   };
@@ -712,6 +726,35 @@ export function PausePlayerScreen() {
                   <CheckinButton label="Not better" onClick={() => handleTopChoice("not-better")} />
                 </div>
               </div>
+              {noteOpen ? (
+                <label className="ds-settle block w-full text-left">
+                  <span className="ds-caption" style={{ color: "var(--ds-on-navy-muted)" }}>
+                    Saved privately to your journal
+                  </span>
+                  <textarea
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="A thought, a feeling, a small shift"
+                    rows={3}
+                    autoFocus
+                    className="mt-1.5 w-full resize-none rounded-[var(--ds-radius-md)] px-4 py-3 text-[0.95rem] leading-6 outline-none"
+                    style={{ background: "rgba(248,250,252,0.08)", color: "var(--ds-on-navy)", border: "1px solid rgba(248,250,252,0.16)" }}
+                  />
+                </label>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    haptic("tap");
+                    setNoteOpen(true);
+                  }}
+                  className="ds-tap inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-medium"
+                  style={{ color: "#C4B5FD" }}
+                >
+                  <IconPencil className="h-4 w-4" />
+                  Add a few words
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSkip}

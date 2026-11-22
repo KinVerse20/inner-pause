@@ -570,6 +570,97 @@
   50% { transform: scale(1.03); }
 }
 
+/* ---------------------------------------------------------------------------
+   Journey as a journal (components/journey-story.tsx)
+   --------------------------------------------------------------------------- */
+/* Keepsake paper: a touch warmer than the surface, soft lift, a strip of
+   tape — your own words, kept. */
+.journal-paper {
+  background: color-mix(in srgb, var(--ds-surface) 92%, #f3e6cf);
+  box-shadow: 0 1px 2px rgba(29, 27, 76, 0.05), 0 8px 22px -10px rgba(29, 27, 76, 0.18);
+  border: 1px solid color-mix(in srgb, var(--ds-text) 5%, transparent);
+}
+:root[data-theme="dark"] .journal-paper {
+  background: color-mix(in srgb, var(--ds-surface) 94%, #c4b5fd);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .journal-paper {
+    background: color-mix(in srgb, var(--ds-surface) 94%, #c4b5fd);
+  }
+}
+.journal-tape {
+  position: absolute;
+  top: -0.45rem;
+  left: 50%;
+  width: 3.6rem;
+  height: 1rem;
+  transform: translateX(-50%) rotate(-2deg);
+  background: color-mix(in srgb, var(--ds-accent-secondary) 22%, transparent);
+  border-radius: 2px;
+}
+/* Ruled lines under the writing, like a page. */
+.journal-lines {
+  background-image: linear-gradient(transparent calc(2rem - 1px), color-mix(in srgb, var(--ds-text) 9%, transparent) calc(2rem - 1px));
+  background-size: 100% 2rem;
+  background-attachment: local;
+}
+
+/* Moments as polaroids: white frame, deeper bottom, the slightest tilt. */
+.polaroid {
+  padding: 0.6rem 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--ds-surface-raised);
+  box-shadow: 0 2px 4px rgba(29, 27, 76, 0.06), 0 14px 30px -12px rgba(29, 27, 76, 0.28);
+  transform: rotate(var(--tilt, 0deg));
+}
+.polaroid:active {
+  transform: rotate(var(--tilt, 0deg)) scale(0.98);
+}
+
+/* The thread that ties a day together. */
+.story-thread {
+  position: relative;
+  padding-left: 1.5rem;
+}
+.story-thread::before {
+  content: "";
+  position: absolute;
+  left: 0.35rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 1.5px;
+  background: color-mix(in srgb, var(--ds-accent-secondary) 30%, transparent);
+  border-radius: 1px;
+}
+.story-node {
+  position: relative;
+}
+.story-node::before {
+  content: "";
+  position: absolute;
+  left: -1.42rem;
+  top: 1.1rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--ds-bg);
+  border: 2px solid var(--ds-accent-secondary);
+}
+.story-node--small::before {
+  top: 0.75rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  left: -1.35rem;
+  border-width: 0;
+  background: color-mix(in srgb, var(--ds-accent-secondary) 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .polaroid,
+  .polaroid:active {
+    transform: none;
+  }
+}
+
 /* Bottom sheets: the panel rises from where the thumb is, the backdrop
    fades; both ease-in-out, nothing bounces. */
 .sheet-panel {
