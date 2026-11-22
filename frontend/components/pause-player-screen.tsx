@@ -377,6 +377,12 @@ export function PausePlayerScreen() {
     if (!record) return;
     haptic("success");
     completePauseRecord(record.id, feedback);
+    // A Pause inside a flow (a Practice day or skill session) always returns
+    // to that flow, whatever the answer — the flow carries the next step.
+    if (record.returnTo && record.pauseType === "practice") {
+      finalizeAndLeave(feedback === "better" ? "Glad that helped." : "Thank you for noticing.", record.returnTo);
+      return;
+    }
     if (feedback === "better") {
       // Practice sessions resume at the Activity step after a helpful Pause
       // (lib/practice-engine.ts's `returnTo`); every other Pause type keeps

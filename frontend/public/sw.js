@@ -184,3 +184,40 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// Practice reminders — closed-app web push (ported from Kinverse's
+// feature/practice-guided-breathing-mindspace). The server sends
+// { title, body, tag, url }; tapping opens the app on that url.
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data?.json() || {};
+  } catch {
+    payload = { body: event.data?.text() };
+  }
+  const title = payload.title || "Your Practice is ready";
+  const options = {
+    body: payload.body || "Take a few minutes to return to yourself.",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: payload.tag || "innerpause-daily-practice",
+    renotify: false,
+    data: { url: payload.url || "/practice" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const destination = new URL(event.notification.data?.url || "/practice", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((client) => client.url.startsWith(self.location.origin));
+      if (existing) {
+        existing.navigate(destination);
+        return existing.focus();
+      }
+      return self.clients.openWindow(destination);
+    }),
+  );
+});
