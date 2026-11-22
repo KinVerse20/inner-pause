@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Guided reflective expression, emotional insight and personalised reset sessions.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f8f4ff",
-    theme_color: "#f8f4ff",
+    background_color: "#faf7f2",
+    theme_color: "#faf7f2",
     orientation: "portrait",
     icons: [
       {

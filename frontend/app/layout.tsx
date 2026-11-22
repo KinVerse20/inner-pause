@@ -6,7 +6,6 @@ import { AccountInvitationGate } from "@/components/account-invitation-gate";
 import { AuthSessionSync } from "@/components/auth-session-sync";
 import { ContentSync } from "@/components/content-sync";
 import { EntryGate } from "@/components/entry-gate";
-import { SmoothScroll } from "@/components/smooth-scroll";
 import { ThemeApplier } from "@/components/theme-applier";
 import "./globals.css";
 
@@ -55,7 +54,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f0e6" },
+    { media: "(prefers-color-scheme: light)", color: "#faf7f2" },
     { media: "(prefers-color-scheme: dark)", color: "#1d1b4c" },
   ],
   colorScheme: "light dark",
@@ -74,17 +73,14 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-[var(--ds-bg)] text-[var(--ds-text)]">
-        <div className="ds-grain" aria-hidden="true" />
         <PlayerProvider>
-          <SmoothScroll>
-            <AuthSessionSync />
-            <ContentSync />
-            <EntryGate />
-            <ThemeApplier />
-            {children}
-            <AccountInvitationGate />
-            <PwaRegistration />
-          </SmoothScroll>
+          <AuthSessionSync />
+          <ContentSync />
+          <EntryGate />
+          <ThemeApplier />
+          {children}
+          <AccountInvitationGate />
+          <PwaRegistration />
         </PlayerProvider>
       </body>
     </html>

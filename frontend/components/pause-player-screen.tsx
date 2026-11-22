@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { BreathingGuide, breathAt } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
-import { LandscapeScene } from "@/components/landscape-scene";
 import { IconCheck, IconClose, IconPauseGlyph, IconPlayGlyph, IconRestart, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
+import { haptic } from "@/lib/haptics";
 import {
   completePauseRecord,
   getPauseRecord,
@@ -156,7 +157,10 @@ export function PausePlayerScreen() {
   useEffect(() => {
     if (phase !== "transition" || !record || record.requiresArrive) return;
     const delayMs = record.arrivalGuidance.length > 0 ? COMFORTABLE_SECONDS * 1000 : 0;
-    const timer = window.setTimeout(() => setPhase("playing"), delayMs);
+    const timer = window.setTimeout(() => {
+      haptic("moment");
+      setPhase("playing");
+    }, delayMs);
     return () => window.clearTimeout(timer);
   }, [phase, record]);
 
@@ -248,10 +252,12 @@ export function PausePlayerScreen() {
 
   const handleReady = () => {
     if (!record) return;
+    haptic("moment");
     setPhase("playing");
   };
 
   const finishToCheckin = () => {
+    haptic("tap");
     audioRef.current?.pause();
     setPhase("checkin");
   };
@@ -261,6 +267,7 @@ export function PausePlayerScreen() {
   // to check-in (docs/UX_ARCHITECTURE.md's Pause Player exit points).
   const beginClosing = () => {
     audioRef.current?.pause();
+    haptic("moment");
     setPhase("closing");
     window.setTimeout(() => setPhase("checkin"), CLOSING_BEAT_MS);
   };
@@ -308,6 +315,7 @@ export function PausePlayerScreen() {
   // Always interactive, even after a load failure — a failed placeholder
   // track should offer a retry, not a permanently dead control.
   const togglePlayback = () => {
+    haptic("tap");
     if (!soundUrl) {
       setPlaying((current) => !current);
       return;
@@ -333,6 +341,7 @@ export function PausePlayerScreen() {
 
   const handleRestart = () => {
     if (!record) return;
+    haptic("tap");
     closingFadeStartedRef.current = false;
     if (!soundUrl) {
       setElapsed(0);
@@ -354,17 +363,19 @@ export function PausePlayerScreen() {
   };
 
   const toggleMute = () => {
+    haptic("tap");
     setMuted(!muted);
   };
 
   const finalizeAndLeave = (message: string, destination = "/") => {
     setAcknowledgedText(message);
     setCheckinStage("acknowledged");
-    window.setTimeout(() => router.push(destination), 900);
+    window.setTimeout(() => router.push(destination), 1400);
   };
 
   const handleTopChoice = (feedback: PauseFeedback) => {
     if (!record) return;
+    haptic("success");
     completePauseRecord(record.id, feedback);
     if (feedback === "better") {
       // Practice sessions resume at the Activity step after a helpful Pause
@@ -387,20 +398,25 @@ export function PausePlayerScreen() {
   };
 
   if (record === undefined) {
-    return <PlayerFrame><p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>Preparing your Pause…</p></PlayerFrame>;
+    return (
+      <PlayerFrame>
+        <div className="grid flex-1 place-items-center">
+          <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(44vw,12rem)] opacity-70" />
+          <p className="sr-only">Preparing your Pause</p>
+        </div>
+      </PlayerFrame>
+    );
   }
 
   if (record === null) {
     return (
       <PlayerFrame>
-        <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>We couldn&rsquo;t find that Pause.</p>
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="ds-filled ds-tap mt-4 min-h-11 px-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-        >
-          Back to Home
-        </button>
+        <div className="grid flex-1 place-items-center text-center">
+          <div className="grid justify-items-center gap-4">
+            <p className="text-base" style={{ color: "var(--ds-on-navy)" }}>We couldn&rsquo;t find that Pause.</p>
+            <NavyButton onClick={() => router.push("/")}>Back to Home</NavyButton>
+          </div>
+        </div>
       </PlayerFrame>
     );
   }
@@ -409,104 +425,129 @@ export function PausePlayerScreen() {
   const cueIndex = currentCueIndex(elapsed, record.durationSeconds, record.playbackCues.length);
   const currentCue = record.playbackCues[cueIndex];
   const closingCue = record.playbackCues[record.playbackCues.length - 1];
+  const breath = breathAt(elapsed);
+  const breathClass =
+    phase !== "playing" || !playing || breath.kind === "message"
+      ? "harmony-breath--rest"
+      : breath.kind === "in"
+        ? "harmony-breath--in"
+        : "";
+  const subtitle = [record.chakraName, record.frequencyLabel].filter(Boolean).join(" · ");
 
   return (
     <PlayerFrame>
-      <header className="flex items-center justify-between">
+      <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2">
         <button
           type="button"
-          onClick={finishToCheckin}
-          aria-label="Exit Pause"
-          className="ds-tap grid h-11 w-11 place-items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-          style={{ color: "var(--ds-text-secondary)" }}
+          onClick={phase === "checkin" ? handleSkip : finishToCheckin}
+          aria-label={phase === "checkin" ? "Close" : "End Pause"}
+          className="ds-tap grid h-11 w-11 place-items-center rounded-full"
+          style={{ color: "var(--ds-on-navy-muted)" }}
         >
           <IconClose className="h-5 w-5" />
         </button>
-        <div className="text-center">
-          <p className="text-sm font-semibold">{record.title}</p>
+        <div className="min-w-0 text-center">
+          <p className="truncate text-sm font-semibold" style={{ color: "var(--ds-on-navy)" }}>
+            {plainTitle(record.title)}
+          </p>
+          {subtitle ? (
+            <p className="ds-caption truncate" style={{ color: "var(--ds-on-navy-muted)" }}>
+              {subtitle}
+            </p>
+          ) : null}
         </div>
         <span className="h-11 w-11" aria-hidden="true" />
       </header>
 
       {phase === "transition" ? (
         <div className="grid flex-1 place-items-center text-center">
-          <div>
-            <HarmonyFormVisual playing={false} className="mx-auto w-[min(52vw,15rem)]" />
-            <div className="mt-6 space-y-1.5">
+          <div className="grid justify-items-center">
+            <div className="harmony-breath harmony-breath--rest">
+              <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(56vw,16rem)]" />
+            </div>
+            <div className="mt-8 max-w-[18rem] space-y-1.5">
               {record.arrivalGuidance.map((line, index) => (
-                <p key={index} className="text-base font-medium">
+                <p
+                  key={index}
+                  className={index === 0 ? "text-lg font-semibold" : "text-sm leading-6"}
+                  style={{ color: index === 0 ? "var(--ds-on-navy)" : "var(--ds-on-navy-muted)" }}
+                >
                   {line}
                 </p>
               ))}
             </div>
             {record.requiresArrive ? (
-              <button
-                type="button"
-                onClick={handleReady}
-                className="ds-filled ds-tap mt-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              >
+              <NavyButton onClick={handleReady} className="mt-8 px-8">
                 I&rsquo;m ready
-              </button>
+              </NavyButton>
             ) : null}
           </div>
         </div>
       ) : null}
 
       {phase === "playing" ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-          <HarmonyFormVisual playing={playing} progress={progress} className="w-[min(64vw,18rem)]" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
+          <div className={`harmony-breath ${breathClass}`}>
+            <HarmonyFormVisual playing={playing} progress={progress} dark className="w-[min(68vw,19rem)]" />
+          </div>
 
-          <div className="max-w-[16rem] space-y-1">
+          <BreathingGuide elapsed={elapsed} playing={playing} />
+
+          <div className="min-h-[2.75rem] max-w-[17rem] space-y-1">
             {currentCue?.lines.map((line, index) => (
               <p
-                key={index}
-                className={index === 0 ? "text-base font-semibold" : "text-sm"}
-                style={{ color: index === 0 ? "var(--ds-text)" : "var(--ds-text-secondary)" }}
+                key={`${cueIndex}-${index}`}
+                className={`ds-settle ${index === 0 ? "text-[0.95rem] leading-6" : "text-sm leading-6"}`}
+                style={{ color: index === 0 ? "var(--ds-on-navy)" : "var(--ds-on-navy-muted)" }}
               >
                 {line}
               </p>
             ))}
           </div>
 
-          <p className="text-xs tabular-nums" style={{ color: "var(--ds-text-muted)" }}>
+          <p className="ds-caption ds-num" style={{ color: "var(--ds-on-navy-muted)" }}>
             {formatTime(elapsed)} · {formatTime(Math.max(0, record.durationSeconds - elapsed))} left
           </p>
 
           {audioError ? (
-            <p className="max-w-[18rem] text-xs" style={{ color: "#D97B70" }}>
-              This Pause&rsquo;s sound couldn&rsquo;t load. Tap play to try again.
+            <p role="status" className="max-w-[18rem] text-xs leading-5" style={{ color: "#F2B8B0" }}>
+              The sound couldn&rsquo;t load. Tap play to try again.
             </p>
           ) : null}
 
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-5">
             <button
               type="button"
               onClick={handleRestart}
-              aria-label="Restart Pause"
-              className="ds-icon-btn ds-tap focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              style={{ background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }}
+              aria-label="Start this Pause again"
+              className="ds-tap grid h-12 w-12 place-items-center rounded-full"
+              style={{ background: "rgba(248,250,252,0.1)", color: "var(--ds-on-navy)" }}
             >
-              <IconRestart className="h-4 w-4" />
+              <IconRestart className="h-[1.1rem] w-[1.1rem]" />
             </button>
 
             <button
               type="button"
               onClick={togglePlayback}
-              aria-label={playing ? "Pause playback" : audioError ? "Retry playback" : "Resume playback"}
-              className="ds-filled ds-tap grid h-16 w-16 place-items-center !min-h-16 !px-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              aria-label={playing ? "Pause" : audioError ? "Try playing again" : "Play"}
+              className="ds-tap grid h-[4.5rem] w-[4.5rem] place-items-center rounded-full"
+              style={{ background: "var(--ds-on-navy)", color: "var(--ds-navy)", boxShadow: "0 10px 30px rgba(0,0,0,0.28)" }}
             >
-              {playing ? <IconPauseGlyph className="h-6 w-6" /> : <IconPlayGlyph className="h-6 w-6" />}
+              {playing ? <IconPauseGlyph className="h-7 w-7" /> : <IconPlayGlyph className="ml-0.5 h-7 w-7" />}
             </button>
 
             <button
               type="button"
               onClick={toggleMute}
-              aria-label={muted ? "Unmute" : "Mute"}
+              aria-label={muted ? "Turn sound on" : "Mute"}
               aria-pressed={muted}
-              className="ds-icon-btn ds-tap focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              style={{ background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }}
+              className="ds-tap grid h-12 w-12 place-items-center rounded-full"
+              style={{
+                background: muted ? "rgba(248,250,252,0.22)" : "rgba(248,250,252,0.1)",
+                color: "var(--ds-on-navy)",
+              }}
             >
-              {muted ? <IconVolumeOff className="h-4 w-4" /> : <IconVolumeOn className="h-4 w-4" />}
+              {muted ? <IconVolumeOff className="h-[1.1rem] w-[1.1rem]" /> : <IconVolumeOn className="h-[1.1rem] w-[1.1rem]" />}
             </button>
           </div>
 
@@ -517,6 +558,7 @@ export function PausePlayerScreen() {
               frequencyLabel: record.frequencyLabel,
               intentLabel: record.intentLabel,
             }}
+            dark
           />
 
           {process.env.NODE_ENV === "development" ? (
@@ -535,10 +577,12 @@ export function PausePlayerScreen() {
 
       {phase === "closing" ? (
         <div className="grid flex-1 place-items-center text-center">
-          <div>
-            <HarmonyFormVisual playing={false} progress={1} className="mx-auto w-[min(64vw,18rem)]" />
-            <p className="mt-6 max-w-[16rem] text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-              {closingCue?.lines[0] ?? ""}
+          <div className="grid justify-items-center">
+            <div className="harmony-breath harmony-breath--rest">
+              <HarmonyFormVisual playing={false} progress={1} dark className="w-[min(68vw,19rem)]" />
+            </div>
+            <p className="ds-settle mt-8 max-w-[17rem] text-[0.95rem] leading-6" style={{ color: "var(--ds-on-navy)" }}>
+              {closingCue?.lines[0] ?? "Take a moment before you go."}
             </p>
           </div>
         </div>
@@ -547,44 +591,54 @@ export function PausePlayerScreen() {
       {phase === "checkin" ? (
         <div className="grid flex-1 place-items-center text-center">
           {checkinStage === "acknowledged" ? (
-            <CompletionCard
-              title="Well done"
-              body={acknowledgedText}
-              durationSeconds={record.durationSeconds}
-            />
+            <div className="ds-settle grid justify-items-center gap-5">
+              <CompletionGlow />
+              <p className="text-lg font-semibold" style={{ color: "var(--ds-on-navy)" }}>
+                {acknowledgedText}
+              </p>
+            </div>
           ) : checkinStage === "question" ? (
-            <div className="w-full max-w-[22rem] space-y-5">
-              <CompletionCard
-                title="Well done"
-                body="You took a moment for you."
-                durationSeconds={record.durationSeconds}
-              />
-              <p className="text-lg font-semibold">How do you feel now?</p>
-              <div className="grid grid-cols-3 gap-2.5">
-                <CheckinButton label="Better" onClick={() => handleTopChoice("better")} />
-                <CheckinButton label="Same" onClick={() => handleTopChoice("same")} />
-                <CheckinButton label="Not better" onClick={() => handleTopChoice("not-better")} />
+            <div className="ds-settle grid w-full max-w-[22rem] justify-items-center gap-6">
+              <CompletionGlow />
+              <div className="space-y-2">
+                <h1 className="ds-h1" style={{ color: "var(--ds-on-navy)" }}>
+                  Welcome back.
+                </h1>
+                <p className="inline-flex items-center gap-1.5 text-sm" style={{ color: "var(--ds-on-navy-muted)" }}>
+                  <IconCheck className="h-4 w-4" />
+                  {Math.max(1, Math.round(record.durationSeconds / 60))} minute Pause
+                </p>
+              </div>
+              <div className="w-full space-y-3">
+                <p className="text-base font-medium" style={{ color: "var(--ds-on-navy)" }}>
+                  How do you feel now?
+                </p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <CheckinButton label="Better" onClick={() => handleTopChoice("better")} />
+                  <CheckinButton label="Same" onClick={() => handleTopChoice("same")} />
+                  <CheckinButton label="Not better" onClick={() => handleTopChoice("not-better")} />
+                </div>
               </div>
               <button
                 type="button"
                 onClick={handleSkip}
-                className="ds-tap inline-flex min-h-11 items-center px-3 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-                style={{ color: "var(--ds-text-muted)" }}
+                className="ds-tap inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium"
+                style={{ color: "var(--ds-on-navy-muted)" }}
               >
-                Skip
+                Skip for now
               </button>
             </div>
           ) : checkinStage === "same-options" ? (
-            <div className="w-full max-w-[20rem] space-y-4">
-              <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>What would help?</p>
+            <div className="ds-settle w-full max-w-[20rem] space-y-4">
+              <p className="text-base font-medium" style={{ color: "var(--ds-on-navy)" }}>What would help?</p>
               <div className="flex flex-col gap-2.5">
                 <CheckinButton label="Try another Pause" onClick={() => finalizeAndLeave("Let's find another Pause.", "/")} wide />
                 <CheckinButton label="Tell Inner Pause what's still going on" onClick={() => finalizeAndLeave("Tell Inner Pause what's on your mind.", "/tell")} wide />
               </div>
             </div>
           ) : (
-            <div className="w-full max-w-[20rem] space-y-4">
-              <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
+            <div className="ds-settle w-full max-w-[20rem] space-y-4">
+              <p className="text-base font-medium" style={{ color: "var(--ds-on-navy)" }}>
                 {notBetterStreak ? "Let's try something different this time." : "That's alright. What would help?"}
               </p>
               <div className="flex flex-col gap-2.5">
@@ -701,49 +755,50 @@ function DevFrequencyTester({
   );
 }
 
+// Copy rule (DESIGN_SYSTEM.md §14): no em/en dashes in user-facing copy.
+// Some stored titles predate the rule ("Difficult conversation — Stay
+// steady"); render them with the centered-dot separator instead.
+function plainTitle(title: string) {
+  return title.replace(/\s+[—–-]\s+/g, " · ");
+}
+
+function NavyButton({ children, onClick, className = "" }: { children: ReactNode; onClick: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`ds-tap inline-flex min-h-12 items-center justify-center rounded-full px-6 text-[0.95rem] font-semibold ${className}`}
+      style={{ background: "var(--ds-on-navy)", color: "var(--ds-navy)" }}
+    >
+      {children}
+    </button>
+  );
+}
+
 function CheckinButton({ label, onClick, wide = false }: { label: string; onClick: () => void; wide?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`${wide ? "ds-outlined w-full" : "ds-tonal"} ds-tap min-h-11 px-3 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2`}
+      className={`ds-tap min-h-12 rounded-full px-4 text-sm font-semibold ${wide ? "w-full" : ""}`}
+      style={{ background: "rgba(248,250,252,0.12)", color: "var(--ds-on-navy)", border: "1px solid rgba(248,250,252,0.14)" }}
     >
       {label}
     </button>
   );
 }
 
-function CompletionCard({
-  title,
-  body,
-  durationSeconds,
-}: {
-  title: string;
-  body: string;
-  durationSeconds: number;
-}) {
-  const minutes = Math.max(1, Math.round(durationSeconds / 60));
+// The end of the brand story ("You return to yourself", BRAND_IDENTITY.md
+// Harmony Form board): after the session the rings settle into one quiet,
+// glowing center. Peak-end: the last thing felt is calm, not a scoreboard.
+function CompletionGlow() {
   return (
-    <div className="ds-card ds-settle w-full overflow-hidden text-center">
-      <div className="relative h-36">
-        <LandscapeScene variant="complete" className="absolute inset-0 h-full w-full" />
-      </div>
-      <div className="space-y-3 px-5 py-5">
-        <h2 className="ds-display text-[1.85rem]">{title}</h2>
-        <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-          {body}
-        </p>
-        <p
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
-          style={{ background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }}
-        >
-          <IconCheck className="h-3.5 w-3.5" />
-          {minutes} min Pause completed
-        </p>
-        <p className="text-[0.8rem] leading-5" style={{ color: "var(--ds-text-muted)" }}>
-          Small pauses create a calmer, stronger you.
-        </p>
-      </div>
+    <div className="relative grid h-28 w-28 place-items-center" aria-hidden="true">
+      <span
+        className="ds-breathe absolute inset-0 rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(196,181,253,0.55) 0%, rgba(124,106,237,0.22) 42%, transparent 70%)" }}
+      />
+      <span className="h-3 w-3 rounded-full" style={{ background: "var(--ds-on-navy)", boxShadow: "0 0 24px 6px rgba(196,181,253,0.6)" }} />
     </div>
   );
 }
@@ -751,8 +806,13 @@ function CompletionCard({
 function PlayerFrame({ children }: { children: ReactNode }) {
   return (
     <div
-      className="ds-page-enter flex min-h-dvh flex-col overflow-x-hidden px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
-      style={{ background: "var(--ds-bg)", color: "var(--ds-text)", fontFamily: "var(--ds-font-sans)" }}
+      className="ds-page-enter flex min-h-dvh flex-col overflow-x-hidden px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+      style={{
+        background: "radial-gradient(120% 70% at 50% 38%, #262357 0%, var(--ds-navy) 62%)",
+        color: "var(--ds-on-navy)",
+        fontFamily: "var(--ds-font-sans)",
+        colorScheme: "dark",
+      }}
     >
       {children}
     </div>

@@ -144,25 +144,30 @@
    ============================================================================ */
 :root {
   /* Color roles — light is the default experience (BRAND_IDENTITY.md §4.2).
-     Primary CTA is brand navy (sheet + Material 3 filled buttons), not indigo. */
-  --ds-bg: #f6f0e6;
-  --ds-surface: #fffbf6;
+     Locked by the brand doc: change BRAND_IDENTITY.md first, then here. */
+  --ds-bg: #faf7f2;
+  --ds-surface: #ffffff;
   --ds-surface-raised: #ffffff;
-  --ds-border: #e4d9cb;
-  --ds-text: #1b2742;
-  --ds-text-secondary: #4a5568;
+  --ds-border: #cbd5e1;
+  --ds-text: #0f172a;
+  --ds-text-secondary: #334155;
   /* Locked Neutral 500. Measures ~4.5:1 against --ds-bg — a floor, not a
      default (BRAND_IDENTITY.md §4.3): fine at 14px-medium and above, prefer
      --ds-text-secondary for anything smaller. */
   --ds-text-muted: #64748b;
-  --ds-accent: #1d1b4c;
-  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 8%, var(--ds-bg));
-  --ds-accent-on: #faf7f2;
+  --ds-accent: #4338ca;
+  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 10%, var(--ds-bg));
+  --ds-accent-on: #f8fafc;
   --ds-accent-secondary: #7c6aed;
   --ds-success: #4f8f6d;
   --ds-warning: #c98a4b;
   --ds-error: #b4483f;
   --ds-chakra: #7c6aed;
+  /* Brand navy: the immersive player surface and the identity color. */
+  --ds-navy: #1d1b4c;
+  --ds-on-navy: #f8fafc;
+  --ds-on-navy-muted: rgba(248, 250, 252, 0.72);
+  --ds-focus-ring: color-mix(in srgb, var(--ds-accent) 55%, transparent);
 
   /* Right Now outcome tints — icon accents only, never full tile backgrounds
      (DESIGN_SYSTEM.md §11). Four brand-derived families
@@ -175,15 +180,16 @@
   --ds-outcome-calm: #7c6aed;
   --ds-outcome-release: #6b9080;
 
-  --ds-radius-sm: 0.75rem;
-  --ds-radius-md: 1.25rem;
-  --ds-radius-lg: 1.75rem;
+  --ds-radius-sm: 0.85rem;
+  --ds-radius-md: 1.15rem;
+  --ds-radius-lg: 1.6rem;
 
-  --ds-shadow-raised: 0 8px 24px rgba(29, 27, 76, 0.08);
-  --ds-elevation-1: 0 1px 2px rgba(29, 27, 76, 0.06), 0 2px 8px rgba(29, 27, 76, 0.04);
-  --ds-elevation-2: 0 4px 12px rgba(29, 27, 76, 0.08), 0 1px 3px rgba(29, 27, 76, 0.05);
+  --ds-shadow-raised: 0 10px 28px rgba(29, 27, 76, 0.08);
+  --ds-elevation-1: 0 1px 2px rgba(29, 27, 76, 0.05), 0 4px 14px rgba(29, 27, 76, 0.05);
+  --ds-elevation-2: 0 6px 18px rgba(29, 27, 76, 0.08), 0 1px 3px rgba(29, 27, 76, 0.05);
 
-  --ds-ease: cubic-bezier(0.2, 0, 0, 1);
+  /* Ease-in-out only — no bounce, no overshoot (DESIGN_SYSTEM.md §10). */
+  --ds-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ds-duration-micro: 120ms;
   --ds-duration-base: 260ms;
   --ds-duration-slow: 520ms;
@@ -201,9 +207,9 @@
     --ds-text: #f8fafc;
     --ds-text-secondary: #c4b5fd;
     --ds-text-muted: #9c93c4;
-    --ds-accent: #e8e4f5;
-    --ds-accent-soft: color-mix(in srgb, #c4b5fd 18%, var(--ds-bg));
-    --ds-accent-on: #1d1b4c;
+    --ds-accent: #7c6aed;
+    --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 16%, var(--ds-bg));
+    --ds-accent-on: #f8fafc;
     --ds-accent-secondary: #c4b5fd;
     --ds-success: #6cae8b;
     --ds-warning: #e0a868;
@@ -235,9 +241,9 @@
   --ds-text: #f8fafc;
   --ds-text-secondary: #c4b5fd;
   --ds-text-muted: #9c93c4;
-  --ds-accent: #e8e4f5;
-  --ds-accent-soft: color-mix(in srgb, #c4b5fd 18%, var(--ds-bg));
-  --ds-accent-on: #1d1b4c;
+  --ds-accent: #7c6aed;
+  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 16%, var(--ds-bg));
+  --ds-accent-on: #f8fafc;
   --ds-accent-secondary: #c4b5fd;
   --ds-success: #6cae8b;
   --ds-warning: #e0a868;
@@ -255,16 +261,16 @@
 }
 
 :root[data-theme="light"] {
-  --ds-bg: #f6f0e6;
-  --ds-surface: #fffbf6;
+  --ds-bg: #faf7f2;
+  --ds-surface: #ffffff;
   --ds-surface-raised: #ffffff;
-  --ds-border: #e4d9cb;
-  --ds-text: #1b2742;
-  --ds-text-secondary: #4a5568;
+  --ds-border: #cbd5e1;
+  --ds-text: #0f172a;
+  --ds-text-secondary: #334155;
   --ds-text-muted: #64748b;
-  --ds-accent: #1d1b4c;
-  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 8%, var(--ds-bg));
-  --ds-accent-on: #faf7f2;
+  --ds-accent: #4338ca;
+  --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 10%, var(--ds-bg));
+  --ds-accent-on: #f8fafc;
   --ds-accent-secondary: #7c6aed;
   --ds-success: #4f8f6d;
   --ds-warning: #c98a4b;
@@ -293,23 +299,58 @@
   50% { transform: scale(1.04); opacity: 1; }
 }
 
-.ds-tap {
-  transition: transform var(--ds-duration-micro) var(--ds-ease), background-color var(--ds-duration-base) var(--ds-ease), border-color var(--ds-duration-base) var(--ds-ease), opacity var(--ds-duration-base) var(--ds-ease), box-shadow var(--ds-duration-base) var(--ds-ease), filter var(--ds-duration-base) var(--ds-ease);
+/* ---------------------------------------------------------------------------
+   Interaction feedback — one system for every pressable element.
+   Every button, link-card, row and chip carries .ds-tap, so a press always
+   answers within ~120ms: a small scale-down, a softened surface, and (via
+   lib/haptics.ts) a light haptic where the device supports it. Hover is for
+   fine pointers only, so touch screens never get "stuck" hover states.
+   --------------------------------------------------------------------------- */
+.ds-tap,
+.ds-filled,
+.ds-outlined,
+.ds-tonal,
+.ds-icon-btn,
+.ds-chip {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  transition:
+    transform var(--ds-duration-micro) var(--ds-ease),
+    background-color var(--ds-duration-base) var(--ds-ease),
+    border-color var(--ds-duration-base) var(--ds-ease),
+    box-shadow var(--ds-duration-base) var(--ds-ease),
+    opacity var(--ds-duration-base) var(--ds-ease);
 }
 
-.ds-tap:active {
-  transform: scale(0.975);
+:is(.ds-tap, .ds-filled, .ds-outlined, .ds-tonal, .ds-icon-btn, .ds-chip):active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(0.97);
+}
+
+:is(.ds-tap, .ds-filled, .ds-outlined, .ds-tonal, .ds-icon-btn, .ds-chip):is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Keyboard focus is always visible, never on mouse/touch press. */
+:where(a, button, [role="button"], [role="tab"], [role="option"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--ds-focus-ring);
+  outline-offset: 3px;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .ds-filled:hover {
-    filter: brightness(1.08);
+    background: color-mix(in srgb, var(--ds-accent) 90%, var(--ds-text));
   }
-  .ds-outlined:hover {
-    background: var(--ds-accent-soft);
+  .ds-outlined:hover,
+  .ds-tonal:hover,
+  .ds-icon-btn:hover,
+  .ds-chip:hover {
+    background: color-mix(in srgb, var(--ds-accent) 8%, var(--ds-surface));
   }
   .ds-card-lift:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     box-shadow: var(--ds-elevation-2);
   }
 }
@@ -318,105 +359,78 @@
   background: var(--ds-surface);
   border-radius: var(--ds-radius-lg);
   box-shadow: var(--ds-elevation-1);
-  border: 1px solid color-mix(in srgb, var(--ds-text) 5%, transparent);
-  transition: transform 420ms var(--ds-ease), box-shadow 420ms var(--ds-ease);
+  border: 1px solid color-mix(in srgb, var(--ds-text) 6%, transparent);
+  transition: transform var(--ds-duration-base) var(--ds-ease), box-shadow var(--ds-duration-base) var(--ds-ease);
 }
 
 .ds-nav {
   /* Nearly opaque, so content scrolling underneath never shows through —
      the blur only softens what little does, where it's supported. */
   background: color-mix(in srgb, var(--ds-surface) 95%, transparent);
-  backdrop-filter: blur(28px) saturate(1.2);
-  -webkit-backdrop-filter: blur(28px) saturate(1.2);
-  box-shadow: 0 -1px 0 color-mix(in srgb, var(--ds-text) 6%, transparent);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--ds-text) 7%, transparent);
 }
 
-.ds-fab-glow {
-  animation: ds-fab-glow 5.6s ease-in-out infinite;
-}
-
-@keyframes ds-fab-glow {
-  0%, 100% { filter: drop-shadow(0 8px 16px rgba(29, 27, 76, 0.22)); }
-  50% { filter: drop-shadow(0 10px 22px rgba(29, 27, 76, 0.34)); }
-}
-
+/* Moments card art (components/landscape-scene.tsx) — static by design.
+   Your environment is suggested, never animated as a scene
+   (DESIGN_SYSTEM.md §8); used on Moments cards only. */
 .landscape-scene {
   display: block;
 }
 
-.landscape-orb {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: landscape-glow 8s ease-in-out infinite;
+/* Button & field primitives on Inner Pause tokens. */
+/* Type scale — BRAND_IDENTITY.md §5. Inter only. .ds-display is the
+   screen-defining headline (H1 weight/tracking); size is set per screen.
+   True Display (800) is reserved for brand moments: .ds-brand-display. */
+.ds-display,
+.ds-h1 {
+  font-family: var(--ds-font-display);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
 }
 
-.landscape-hills {
-  transform-box: fill-box;
-  transform-origin: center bottom;
-  animation: landscape-drift 18s ease-in-out infinite;
-}
+.ds-h1 { font-size: 1.75rem; }
 
-.landscape-water {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: landscape-flow 11s ease-in-out infinite;
-}
-
-.landscape-trees {
-  transform-box: fill-box;
-  transform-origin: center bottom;
-  animation: landscape-sway 9s ease-in-out infinite;
-}
-
-@keyframes landscape-glow {
-  0%, 100% { opacity: 0.92; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.06); }
-}
-
-@keyframes landscape-drift {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(6px); }
-}
-
-@keyframes landscape-flow {
-  0%, 100% { transform: translateX(0) translateY(0); }
-  50% { transform: translateX(-8px) translateY(2px); }
-}
-
-@keyframes landscape-sway {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(1.4deg); }
-}
-
-.ds-grain {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  opacity: 0.035;
-  z-index: 3;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-:root[data-theme="dark"] .ds-grain {
-  opacity: 0.07;
-  mix-blend-mode: overlay;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .ds-grain {
-    opacity: 0.07;
-    mix-blend-mode: overlay;
-  }
-}
-
-/* Material 3 patterns mapped onto Inner Pause tokens — filled/outlined
-   buttons, tonal cards, nav indicator pills, chips. No extra library. */
-.ds-display {
+.ds-brand-display {
   font-family: var(--ds-font-display);
   font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.ds-h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+}
+
+.ds-h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ds-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.ds-caption {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  color: var(--ds-text-muted);
+}
+
+.ds-num {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .ds-filled {
@@ -432,7 +446,6 @@
   background: var(--ds-accent);
   color: var(--ds-accent-on);
   box-shadow: var(--ds-elevation-1);
-  transition: filter 420ms var(--ds-ease), box-shadow 420ms var(--ds-ease), transform 280ms var(--ds-ease);
 }
 
 .ds-outlined {
@@ -448,7 +461,6 @@
   font-weight: 600;
   background: var(--ds-surface);
   color: var(--ds-text);
-  transition: background-color 420ms var(--ds-ease), border-color 420ms var(--ds-ease), transform 280ms var(--ds-ease);
 }
 
 .ds-tonal {
@@ -510,7 +522,6 @@
   font-weight: 500;
   color: var(--ds-text-secondary);
   background: transparent;
-  transition: background-color 360ms var(--ds-ease), border-color 360ms var(--ds-ease), color 360ms var(--ds-ease), transform 280ms var(--ds-ease);
 }
 
 .ds-chip[aria-pressed="true"] {
@@ -546,9 +557,32 @@
   50% { transform: scale(1.03); }
 }
 
+/* Guided breathing drives the whole form: it opens over the 4s in-breath
+   and settles over the 6s out-breath (components/breathing-guide.tsx). */
+.harmony-breath {
+  transform: scale(0.96);
+  transition: transform 6s cubic-bezier(0.37, 0, 0.63, 1);
+  will-change: transform;
+}
+
+.harmony-breath--in {
+  transform: scale(1.05);
+  transition-duration: 4s;
+}
+
+.harmony-breath--rest {
+  transform: scale(1);
+  transition-duration: 1.2s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .harmony-form-ring {
     animation: none !important;
+  }
+  .harmony-breath,
+  .harmony-breath--in {
+    transform: none !important;
+    transition: none !important;
   }
 }
 
@@ -649,20 +683,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ds-breathe,
-  .ds-fab-glow,
-  .landscape-orb,
-  .landscape-hills,
-  .landscape-water,
-  .landscape-trees,
   .ds-settle,
   .ds-page-enter {
     animation: none !important;
   }
-  .ds-tap {
-    transition: none !important;
+  /* Keep the color/opacity feedback, drop the movement. */
+  :is(.ds-tap, .ds-filled, .ds-outlined, .ds-tonal, .ds-icon-btn, .ds-chip) {
+    transition-property: background-color, border-color, opacity !important;
   }
-  .ds-tap:active {
-    transform: none;
+  :is(.ds-tap, .ds-filled, .ds-outlined, .ds-tonal, .ds-icon-btn, .ds-chip):active {
+    transform: none !important;
   }
   .ds-card-lift:hover {
     transform: none;
@@ -676,25 +706,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Native scrolling everywhere — no scroll hijacking (feels wrong on phones). */
 html {
-  scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--ds-accent) 32%, transparent) transparent;
-}
-
-html.lenis {
-  scroll-behavior: auto;
-  height: auto;
-}
-
-html.lenis, html.lenis body {
-  height: auto;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  scrollbar-color: color-mix(in srgb, var(--ds-text) 22%, transparent) transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 * {
