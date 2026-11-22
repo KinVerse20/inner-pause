@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 
 import type { PublicCard } from "@inner-pause/shared";
 
-import { LandscapeScene } from "@/components/landscape-scene";
 import { IconChevronRight } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
+import { haptic } from "@/lib/haptics";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { getCard, subscribeAppContent } from "@/lib/content-store";
 import { composeCardPause } from "@/lib/pause-engine";
@@ -51,10 +51,12 @@ export function CategorySoundsScreen({ cardId }: { cardId: string }) {
   const category = card;
   const sounds = card.sounds;
 
-  const start = (soundId: string | null) => {
+  // undefined = the card's default (or the user's library sound); null = no sound.
+  const start = (soundId: string | null | undefined) => {
     if (startingId) return;
-    setStartingId(soundId ?? "none");
-    const record = createPauseRecord(composeCardPause(card, { ambientSoundId: soundId }));
+    haptic("moment");
+    setStartingId(soundId ?? (soundId === null ? "none" : "default"));
+    const record = createPauseRecord(composeCardPause(card, soundId === undefined ? {} : { ambientSoundId: soundId }));
     router.push(`/pause/player?session=${record.id}`);
   };
 
@@ -81,11 +83,11 @@ export function CategorySoundsScreen({ cardId }: { cardId: string }) {
         <StaggerItem>
           {sounds.length === 0 ? (
             <div className="ds-card space-y-3 px-5 py-6 text-center">
-              <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-                No sounds have been added to {category.label} yet.
+              <p className="text-sm leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                Begin with your usual sound. You can change it while you listen.
               </p>
-              <button type="button" onClick={() => start(null)} disabled={startingId !== null} className="ds-filled ds-tap">
-                Start Pause
+              <button type="button" onClick={() => start(undefined)} disabled={startingId !== null} className="ds-filled">
+                {startingId ? "Starting your Pause" : "Start Pause"}
               </button>
             </div>
           ) : (
@@ -103,12 +105,15 @@ export function CategorySoundsScreen({ cardId }: { cardId: string }) {
                       // eslint-disable-next-line @next/next/no-img-element -- admin-uploaded image served by the backend, not a build-time asset
                       <img src={sound.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
                     ) : (
-                      <LandscapeScene variant="day" className="absolute inset-0 h-full w-full scale-110" />
+                      <span
+                        className="absolute inset-0"
+                        style={{ background: `radial-gradient(120% 90% at 30% 20%, color-mix(in srgb, var(--ds-outcome-${card.tone}) 34%, var(--ds-surface)), color-mix(in srgb, var(--ds-outcome-${card.tone}) 12%, var(--ds-surface)))` }}
+                      />
                     )}
                   </span>
                   <span className="block px-3.5 py-3">
                     <span className="block text-[0.95rem] font-semibold leading-snug">
-                      {startingId === sound.soundId ? "Preparing…" : sound.name}
+                      {startingId === sound.soundId ? "Starting" : sound.name}
                     </span>
                     {sound.description ? (
                       <span className="mt-0.5 block text-[0.75rem] leading-snug" style={{ color: "var(--ds-text-secondary)" }}>
