@@ -9,6 +9,7 @@ import { DEFAULT_CARDS, type PublicCard } from "@inner-pause/shared";
 import { CardIcon } from "@/components/card-icon";
 import { IconBubbles, IconCalendar, IconChevronRight, IconMic, IconPencil, IconYouTab } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
+import { TileMotif } from "@/components/tile-motif";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
 import { getVisibleCards, subscribeAppContent } from "@/lib/content-store";
@@ -88,9 +89,13 @@ export function PauseHomeScreen() {
                   disabled={startingId !== null && !isStarting}
                   aria-busy={isStarting || undefined}
                   onClick={() => handleRightNow(card)}
-                  className="ds-card ds-card-lift ds-tap flex min-h-[7.6rem] flex-col items-center justify-center gap-1.5 px-1.5 py-3.5 text-center"
-                  style={isStarting ? { borderColor: `var(--ds-outcome-${card.tone})` } : undefined}
+                  className="ds-card ds-card-lift ds-tap outcome-tile flex min-h-[7.6rem] flex-col items-center justify-center gap-1.5 px-1.5 py-3.5 text-center"
+                  style={{
+                    ["--tile-color" as string]: `var(--ds-outcome-${card.tone})`,
+                    ...(isStarting ? { borderColor: `var(--ds-outcome-${card.tone})` } : {}),
+                  }}
                 >
+                  <TileMotif id={card.id} />
                   <span
                     className={`ds-outcome-icon grid h-12 w-12 place-items-center rounded-full ${isStarting ? "ds-breathe" : ""}`}
                     style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${card.tone})` }}

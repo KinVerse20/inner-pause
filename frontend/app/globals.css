@@ -719,6 +719,50 @@
   }
 }
 
+/* Home outcome tiles: a whisper of the outcome's tint from the corner the
+   motif sits in, the motif itself at low opacity. On press or hover the
+   motif drifts a few pixels, so the card answers without shouting. */
+.outcome-tile {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(110% 85% at 100% 0%, color-mix(in srgb, var(--tile-color) 12%, transparent) 0%, transparent 60%),
+    var(--ds-surface);
+}
+.outcome-tile > :not(.tile-motif) {
+  position: relative;
+  z-index: 1;
+}
+.tile-motif {
+  z-index: 0;
+  color: var(--tile-color);
+  opacity: 0.2;
+  transition: transform 520ms var(--ds-ease), opacity 520ms var(--ds-ease);
+}
+:root[data-theme="dark"] .tile-motif { opacity: 0.3; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tile-motif { opacity: 0.3; }
+}
+.outcome-tile:active .tile-motif {
+  transform: translate(-3px, 3px) scale(1.04);
+  opacity: 0.32;
+}
+@media (hover: hover) and (pointer: fine) {
+  .outcome-tile:hover .tile-motif {
+    transform: translate(-3px, 3px) scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile-motif {
+    transition: none;
+  }
+  .outcome-tile:active .tile-motif,
+  .outcome-tile:hover .tile-motif {
+    transform: none;
+  }
+}
+
 .ds-outcome-icon {
   background: color-mix(in srgb, var(--ds-outcome-color, var(--ds-accent)) 14%, var(--ds-surface));
   color: var(--ds-outcome-color, var(--ds-accent));
