@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
 import { ToggleSwitch } from "@/components/toggle-switch";
+import { BUILT_IN_SOUNDS, UNDERTONE_LEVELS } from "@/lib/sound-library";
 import { clearOfflineSounds, downloadPauseSoundsForOffline } from "@/lib/offline-audio";
 import {
   DEFAULT_PREFERENCES,
@@ -118,6 +119,62 @@ export function YouPreferencesScreen() {
               onChange={(value) => set({ soundToneLayerEnabled: value })}
             />
           </div>
+        </section>
+
+        {/* Kinverse's Sound preferences: the sound a Pause starts with, and
+            how present the frequency undertone is. Both also change from the
+            player's Sound sheet. */}
+        <section className="space-y-2">
+          <SettingsSectionTitle>Your usual sound</SettingsSectionTitle>
+          <div role="radiogroup" aria-label="Your usual sound" className="ds-card divide-y overflow-hidden">
+            {BUILT_IN_SOUNDS.map((sound) => {
+              const selected = preferences.defaultSound === sound.id;
+              return (
+                <button
+                  key={sound.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => set({ defaultSound: sound.id })}
+                  className="ds-tap flex min-h-[3.5rem] w-full items-center gap-3 px-4 py-2.5 text-left"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.95rem] font-medium">{sound.label}</span>
+                    <span className="block text-[0.8rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+                      {sound.copy}
+                      {sound.headphoneOnly ? " · headphones" : ""}
+                    </span>
+                  </span>
+                  <span
+                    className="grid h-5 w-5 shrink-0 place-items-center rounded-full"
+                    style={selected ? { background: "var(--ds-accent)", color: "var(--ds-accent-on)" } : { border: "1.5px solid var(--ds-border)" }}
+                    aria-hidden="true"
+                  >
+                    {selected ? <span className="h-2 w-2 rounded-full" style={{ background: "var(--ds-accent-on)" }} /> : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div role="radiogroup" aria-label="Frequency undertone" className="grid grid-cols-3 gap-1 rounded-full p-1" style={{ background: "var(--ds-surface)" }}>
+            {UNDERTONE_LEVELS.map((level) => {
+              const selected = preferences.undertone === level.id;
+              return (
+                <button
+                  key={level.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => set({ undertone: level.id })}
+                  className="ds-tap min-h-11 rounded-full text-sm font-semibold"
+                  style={{ background: selected ? "var(--ds-accent)" : "transparent", color: selected ? "var(--ds-accent-on)" : "var(--ds-text-secondary)" }}
+                >
+                  {level.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="ds-caption px-1">Undertone strength beneath your sound. Balanced is a good place to start.</p>
         </section>
 
         <section className="space-y-2">

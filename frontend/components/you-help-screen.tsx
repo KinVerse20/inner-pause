@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { SUPPORT_EMAIL } from "@inner-pause/shared";
 
+import { AboutStory } from "@/components/about-story";
 import { IconChevronDown } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsRow, SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
@@ -66,6 +67,8 @@ export function YouHelpScreen() {
     <PauseShell>
       <div className="space-y-6 pb-4 pt-2">
         <YouScreenHeader title="Help / About" />
+
+        <AboutStory />
 
         <section className="space-y-2">
           {SECTIONS.map((section) => {
