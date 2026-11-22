@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { CardIcon } from "@/components/card-icon";
 import { IconChevronRight } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
+import { TileMotif } from "@/components/tile-motif";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { chakraMap } from "@/data/chakras";
 import { composeBigMomentPause } from "@/lib/big-moment-engine";
 import { getCard } from "@/lib/content-store";
+import { haptic } from "@/lib/haptics";
 import { createMomentRecord } from "@/lib/moment-storage";
 import { pauseCategoryMap, type PauseCategoryId } from "@/lib/pause-categories";
 import { composeRightNowPause } from "@/lib/pause-engine";
@@ -47,6 +50,7 @@ export function TellRecommendedScreen() {
   // expression is itself meaningful specific content.
   const startPause = (categoryId: PauseCategoryId) => {
     if (!entry || starting) return;
+    haptic("moment");
     setStarting(true);
     const definition = entry.momentMode
       ? composeBigMomentPause(entry.momentMode, { categoryId })
@@ -74,7 +78,7 @@ export function TellRecommendedScreen() {
     return (
       <PauseShell>
         <p className="pt-8 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-          Finding the right Pause…
+          Finding the right Pause
         </p>
       </PauseShell>
     );
@@ -105,17 +109,19 @@ export function TellRecommendedScreen() {
 
   return (
     <PauseShell>
-      <div className="space-y-5 pb-4 pt-2">
+      <div className="ds-settle space-y-6 pb-4 pt-2">
         <header>
           <Link
             href={tellHref}
-            className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-            style={{ color: "var(--ds-text-secondary)" }}
+            aria-label="Back to what's on your mind"
+            className="ds-icon-btn"
+            style={{ background: "var(--ds-surface)", color: "var(--ds-text)", boxShadow: "var(--ds-elevation-1)" }}
           >
-            <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
-            Back
+            <IconChevronRight className="h-4 w-4" style={{ transform: "scaleX(-1)" }} />
           </Link>
         </header>
+
+        <WhatYouShared entry={entry} />
 
         {isConfident && interpretation.primary ? (
           <ConfidentPause
@@ -127,17 +133,58 @@ export function TellRecommendedScreen() {
         ) : interpretation.status === "unclear" ? (
           <UnclearFallback candidates={interpretation.candidates} onChoose={startPause} starting={starting} tellHref={tellHref} />
         ) : (
-          <AmbiguousChoices
-            reflection={interpretation.reflection}
-            candidates={interpretation.candidates}
-            onChoose={startPause}
-            starting={starting}
-          />
+          <section className="space-y-3">
+            <h1 className="ds-h2">A few Pauses could help</h1>
+            <p className="text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+              Pick the one that feels closest right now.
+            </p>
+            <CandidateList candidates={interpretation.candidates} onChoose={startPause} starting={starting} />
+          </section>
         )}
       </div>
     </PauseShell>
   );
 }
+
+// What the person shared, kept as a small keepsake (the same paper as the
+// journal), so the recommendation is visibly about their words. Feelings
+// picked without writing show as the feelings themselves.
+function WhatYouShared({ entry }: { entry: TellEntry }) {
+  const feelingsOnly = entry.chips.length > 0 && entry.text === entry.chips.join(", ");
+  return (
+    <section aria-label="What you shared" className="journal-paper relative rounded-[var(--ds-radius-lg)] px-5 pb-4 pt-6">
+      <span className="journal-tape" aria-hidden="true" />
+      <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+        {feelingsOnly ? "How you feel" : entry.source === "speak" ? "What you said" : "What you wrote"}
+      </p>
+      {feelingsOnly ? (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {entry.chips.map((chip) => (
+            <span key={chip} className="rounded-full px-3 py-1.5 text-sm font-medium" style={{ background: "var(--ds-accent-soft)" }}>
+              {chip}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-1.5 text-[1rem] leading-7">
+          {entry.text.length > 200 ? `${entry.text.slice(0, 200).trimEnd()}…` : entry.text}
+        </p>
+      )}
+      <p className="ds-caption mt-3">Saved to your journal</p>
+    </section>
+  );
+}
+
+// Why this one, in our voice — gentle, never presuming too much. Falls back
+// to the classifier's own line for admin-created categories.
+const WHY_THIS_ONE: Partial<Record<PauseCategoryId, string>> = {
+  sleep: "It sounds like your mind is still awake. This Pause helps it slow down for rest.",
+  reset: "It sounds like a lot is happening at once. This Pause gives you a fresh start.",
+  focus: "It sounds like your attention is pulled in many directions. This Pause helps you find one clear point.",
+  confidence: "It sounds like something ahead matters to you. This Pause helps you feel steady and capable.",
+  calm: "It sounds like you are on edge. This Pause helps your body slow down and settle.",
+  release: "It sounds like you are carrying something heavy. This Pause helps you set a little of it down.",
+};
 
 function ConfidentPause({
   categoryId,
@@ -150,17 +197,33 @@ function ConfidentPause({
   onStart: () => void;
   starting: boolean;
 }) {
-  const category = getCard(categoryId) ?? pauseCategoryMap[categoryId];
+  const card = getCard(categoryId);
+  const category = card ?? pauseCategoryMap[categoryId];
   const chakra = chakraMap[category.chakraId];
 
   return (
-    <section className="space-y-4 rounded-[var(--ds-radius-lg)] px-5 py-6 text-center" style={{ background: "var(--ds-surface)" }}>
-      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ds-text-muted)" }}>
-        Recommended for you
-      </p>
-      <h1 className="text-[1.5rem] font-semibold leading-tight tracking-[-0.01em]">{category.label} Pause</h1>
-      <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-        {rationale}
+    <section
+      className="outcome-tile ds-card space-y-4 px-5 pb-5 pt-6"
+      style={{ ["--tile-color" as string]: `var(--ds-outcome-${categoryId})` }}
+    >
+      <TileMotif id={categoryId} size="h-32 w-32" />
+      <div className="flex items-center gap-3">
+        <span
+          className="ds-outcome-icon grid h-12 w-12 shrink-0 place-items-center rounded-full"
+          style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${categoryId})` }}
+          aria-hidden="true"
+        >
+          {card ? <CardIcon icon={card.icon} className="h-[1.3rem] w-[1.3rem]" /> : null}
+        </span>
+        <div>
+          <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+            A Pause for you
+          </p>
+          <h1 className="ds-display text-[1.6rem]">{category.label} Pause</h1>
+        </div>
+      </div>
+      <p className="text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+        {WHY_THIS_ONE[categoryId] ?? rationale}
       </p>
 
       <WhyThisPausePanel
@@ -172,44 +235,9 @@ function ConfidentPause({
         }}
       />
 
-      <button
-        type="button"
-        disabled={starting}
-        onClick={onStart}
-        className="ds-tap min-h-12 w-full rounded-full text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-        style={{ background: "var(--ds-accent)", color: "var(--ds-accent-on)" }}
-      >
-        {starting ? "Preparing…" : "Start Pause"}
+      <button type="button" disabled={starting} onClick={onStart} className="ds-filled w-full">
+        {starting ? "Starting your Pause" : "Start Pause"}
       </button>
-    </section>
-  );
-}
-
-// Ambiguous state (docs/PRODUCT_FLOW.md §16): a candidate set, connected
-// back to what the user actually said via the reflection line — never bare
-// category cards.
-function AmbiguousChoices({
-  reflection,
-  candidates,
-  onChoose,
-  starting,
-}: {
-  reflection?: string;
-  candidates: PauseCategoryId[];
-  onChoose: (categoryId: PauseCategoryId) => void;
-  starting: boolean;
-}) {
-  return (
-    <section className="space-y-3.5">
-      {reflection ? (
-        <p className="text-sm italic" style={{ color: "var(--ds-text-secondary)" }}>
-          {reflection}
-        </p>
-      ) : null}
-      <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-        A few different Pauses could help. Pick what feels closest.
-      </p>
-      <CandidateList candidates={candidates} onChoose={onChoose} starting={starting} />
     </section>
   );
 }
@@ -230,19 +258,18 @@ function UnclearFallback({
 }) {
   return (
     <section className="space-y-5">
-      <div className="space-y-3.5 rounded-[var(--ds-radius-lg)] px-5 py-6 text-center" style={{ background: "var(--ds-surface)" }}>
-        <p className="text-base font-semibold">I want to make sure I get this right.</p>
-        <Link
-          href={tellHref}
-          className="ds-tap inline-flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2"
-          style={{ background: "var(--ds-accent)", color: "var(--ds-accent-on)" }}
-        >
+      <div className="ds-card ds-wash space-y-3 px-5 py-6 text-center">
+        <h1 className="ds-h2">I want to get this right.</h1>
+        <p className="text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+          A few more words would help me find the right Pause.
+        </p>
+        <Link href={tellHref} className="ds-filled" onClick={() => haptic("tap")}>
           Tell me a little more
         </Link>
       </div>
 
       <div className="space-y-2.5">
-        <p className="text-xs font-medium" style={{ color: "var(--ds-text-muted)" }}>
+        <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
           Or start with one of these
         </p>
         <CandidateList candidates={candidates} onChoose={onChoose} starting={starting} />
@@ -251,6 +278,7 @@ function UnclearFallback({
   );
 }
 
+// Candidates look like the Home tiles they are: tint, motif, icon.
 function CandidateList({
   candidates,
   onChoose,
@@ -263,19 +291,28 @@ function CandidateList({
   return (
     <div className="space-y-2.5">
       {candidates.map((categoryId) => {
-        const category = getCard(categoryId) ?? pauseCategoryMap[categoryId];
+        const card = getCard(categoryId);
+        const category = card ?? pauseCategoryMap[categoryId];
         return (
           <button
             key={categoryId}
             type="button"
             disabled={starting}
             onClick={() => onChoose(categoryId)}
-            className="ds-tap flex w-full items-center justify-between gap-3 rounded-[var(--ds-radius-md)] px-4 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] disabled:cursor-not-allowed disabled:opacity-60"
-            style={{ background: "var(--ds-surface)" }}
+            className="ds-card ds-tap outcome-tile flex min-h-[4.75rem] w-full items-center gap-3.5 px-4 py-3.5 text-left"
+            style={{ ["--tile-color" as string]: `var(--ds-outcome-${categoryId})` }}
           >
-            <span className="min-w-0">
-              <span className="block text-[0.98rem] font-semibold">{category.label}</span>
-              <span className="block text-[0.8rem]" style={{ color: "var(--ds-text-secondary)" }}>
+            <TileMotif id={categoryId} />
+            <span
+              className="ds-outcome-icon grid h-11 w-11 shrink-0 place-items-center rounded-full"
+              style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${categoryId})` }}
+              aria-hidden="true"
+            >
+              {card ? <CardIcon icon={card.icon} className="h-5 w-5" /> : null}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="ds-h3 block">{category.label}</span>
+              <span className="block text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
                 {category.tagline}
               </span>
             </span>

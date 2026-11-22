@@ -23,12 +23,14 @@ export interface WhyThisPauseContent {
 
 export function buildWhyThisPauseContent(input: WhyThisPauseInput): WhyThisPauseContent {
   const shortChakraName = input.chakraName.replace(" Chakra", "");
-  const intent = input.intentLabel.toLowerCase();
+  // Sentence-safe: "Recognise doubt." → "recognise doubt" (no double period).
+  const intent = input.intentLabel.trim().replace(/[.!]+$/, "").replace(/^./, (c) => c.toLowerCase());
 
+  // Four parts, each saying one different thing (no repeated intent).
   return {
-    chakra: `${input.chakraName} is traditionally associated with ${input.traditionalAssociation.toLowerCase()}.`,
-    frequency: `This Pause's sound is tuned to ${input.frequencyLabel}, chosen to complement its intent: ${intent}.`,
-    together: `The ${shortChakraName} association and the ${input.frequencyLabel} frequency work together here. One carries the feeling, the other carries the sound, and both point toward the same thing: ${intent}.`,
-    whyThisHelps: `This Pause is here for one simple reason: ${intent}.`,
+    chakra: `Traditionally, the ${shortChakraName.toLowerCase()} is linked with ${input.traditionalAssociation.toLowerCase()}.`,
+    frequency: `The sound is tuned to ${input.frequencyLabel}, the tone that tradition pairs with the ${shortChakraName.toLowerCase()}.`,
+    together: "The tradition sets the feeling; the frequency carries it in sound.",
+    whyThisHelps: `It is here for one simple reason: to help you ${intent}.`,
   };
 }

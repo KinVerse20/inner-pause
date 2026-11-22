@@ -61,11 +61,11 @@ const FALLBACK = (
   </>
 );
 
-export function TileMotif({ id }: { id: string }) {
+export function TileMotif({ id, size = "h-[66%] w-[66%]" }: { id: string; size?: string }) {
   return (
     <svg
       viewBox="0 0 140 140"
-      className="tile-motif pointer-events-none absolute -right-5 -top-5 h-[66%] w-[66%]"
+      className={`tile-motif pointer-events-none absolute -right-5 -top-5 ${size}`}
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
