@@ -10,6 +10,9 @@ import { applyServerAccount } from "@/lib/account-store";
 import { login, requestPasswordReset, signup } from "@/lib/auth-client";
 import { setMvpAuthenticatedUser, upsertProfile } from "@/lib/mvp-storage";
 
+// Flip on once Apple/Google sign-in is wired to the backend.
+const SOCIAL_SIGN_IN_ENABLED = false;
+
 export function AuthScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -110,14 +113,20 @@ export function AuthScreen() {
         </Reveal>
 
         <Reveal className="mt-8 space-y-3" delay={0.1}>
-          <button type="button" onClick={() => showProviderNotice("Apple")} className="ds-outlined ds-tap w-full">
-            <IconApple className="h-5 w-5" />
-            Continue with Apple
-          </button>
-          <button type="button" onClick={() => showProviderNotice("Google")} className="ds-outlined ds-tap w-full">
-            <IconGoogle className="h-5 w-5" />
-            Continue with Google
-          </button>
+          {/* Apple and Google appear once they are actually connected; a
+              button that only says "not connected yet" is a dead end. */}
+          {SOCIAL_SIGN_IN_ENABLED ? (
+            <>
+              <button type="button" onClick={() => showProviderNotice("Apple")} className="ds-outlined ds-tap w-full">
+                <IconApple className="h-5 w-5" />
+                Continue with Apple
+              </button>
+              <button type="button" onClick={() => showProviderNotice("Google")} className="ds-outlined ds-tap w-full">
+                <IconGoogle className="h-5 w-5" />
+                Continue with Google
+              </button>
+            </>
+          ) : null}
           <button
             type="button"
             onClick={() => {
@@ -197,7 +206,7 @@ export function AuthScreen() {
 
         <div className="relative z-10 mt-auto space-y-2 bg-gradient-to-t from-[var(--ds-bg)] via-[var(--ds-bg)] to-transparent pt-10 pb-2 text-center text-sm" style={{ color: "var(--ds-text-secondary)" }}>
           {mode === "login" ? (
-            <button type="button" onClick={() => setMode("signup")} className="ds-tap inline-flex min-h-11 items-center font-medium">
+            <button type="button" onClick={() => setMode("signup")} className="ds-tap inline-flex min-h-11 items-center gap-1 font-medium">
               New here? <span style={{ color: "var(--ds-accent)" }}>Create an account</span>
             </button>
           ) : (
@@ -207,7 +216,7 @@ export function AuthScreen() {
                 setMode("login");
                 setShowEmail(true);
               }}
-              className="ds-tap inline-flex min-h-11 items-center font-medium"
+              className="ds-tap inline-flex min-h-11 items-center gap-1 font-medium"
             >
               Already have an account? <span style={{ color: "var(--ds-accent)" }}>Sign in</span>
             </button>

@@ -14,7 +14,7 @@ export const NOTIFICATION_CATEGORIES: Array<{ id: NotificationCategory; label: s
   {
     id: "gentle-pause",
     label: "Gentle Pause",
-    description: "Something small, with nothing asked back. No CTA, no streak.",
+    description: "Something small, with nothing asked of you in return.",
   },
 ];
 

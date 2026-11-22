@@ -20,19 +20,18 @@ import {
 import { PaymentCancelledError, buyPass, getPassOffer, type PassOffer } from "@/lib/pass-client";
 
 const PASS_BENEFITS = [
-  "Unlimited Practice: every course and every session",
-  "Longitudinal pattern analysis across your full history",
-  "Deeper cross-entry connections",
-  "Growth comparisons over time, then and now",
-  "Richer, more personalised Journey interpretation",
+  "Patterns across your whole story, not just recent weeks",
+  "Connections between your entries, Pauses and Moments",
+  "Growth over time, then and now, side by side",
+  "A richer, more personal reading of your Journey",
 ];
 
 const FREE_INCLUDES = [
   "Every Pause, Tell and Moments",
-  "Two Practice sessions to try it",
+  "All five Practice paths",
   "The complete Journal, always",
-  "The complete Highlights history, always",
-  "Basic recent Patterns",
+  "Your whole story in Journey, always",
+  "Recent Patterns",
 ];
 
 function formatDate(iso: string) {
@@ -120,7 +119,7 @@ export function YouPassScreen() {
             <>
               <p className="text-[0.98rem] font-semibold">Free</p>
               <p className="text-[0.82rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                Pauses, Tell, Moments and your Journal are free, always. The Pass adds unlimited Practice and deeper Journey insight.
+                Pauses, Moments, Practice and your journal are free, always. The Pass adds a deeper reading of your Journey.
               </p>
             </>
           )}

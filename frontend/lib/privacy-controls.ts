@@ -19,6 +19,7 @@ import {
   type PracticeEnrollment,
   type PracticeSessionRecord,
 } from "@/lib/practice-storage";
+import { readProgrammeState, type ProgrammeState } from "@/lib/programme-storage";
 import { deleteTellEntry, listTellEntries, type TellEntry } from "@/lib/tell-storage";
 import { clearAccount } from "@/lib/account-store";
 import { logout } from "@/lib/auth-client";
@@ -38,6 +39,10 @@ const ALL_LOCAL_DATA_KEYS = [
   "inner-pause:practice-enrollments",
   "inner-pause:practice-sessions",
   "inner-pause:practice-checkins",
+  // The five Practice paths (lib/programme-storage.ts) and a reminder
+  // subscription waiting to reach the server.
+  "innerpause-practices-v1",
+  "innerpause-pending-push-subscription",
   "inner-pause:dev-has-pass",
   "inner-pause:pass-activated-at",
   "inner-pause:local-account",
@@ -79,7 +84,10 @@ export function getDataSummary(): DataSummary {
     journalEntryCount: listTellEntries().length,
     momentCount: listMomentRecords().length,
     patternCount: listPatterns().length,
-    practiceSessionCount: listPracticeSessionRecords().length,
+    // Days completed on Practice paths, plus any older skill sessions.
+    practiceSessionCount:
+      readProgrammeState().enrollments.reduce((sum, enrollment) => sum + enrollment.completions.length, 0) +
+      listPracticeSessionRecords().length,
     pauseCount: listPauseRecords().length,
   };
 }
@@ -97,6 +105,8 @@ interface ExportBundle {
     sessions: PracticeSessionRecord[];
     checkIns: PracticeCheckInRecord[];
   };
+  /** The five Practice paths: enrollments, daily check-ins, completions. */
+  practicePaths: ProgrammeState;
 }
 
 export function buildExportBundle(): ExportBundle {
@@ -111,6 +121,7 @@ export function buildExportBundle(): ExportBundle {
       sessions: listPracticeSessionRecords(),
       checkIns: listPracticeCheckIns(),
     },
+    practicePaths: readProgrammeState(),
   };
 }
 
