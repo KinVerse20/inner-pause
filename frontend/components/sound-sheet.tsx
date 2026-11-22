@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { IconCheck } from "@/components/pause-icons";
-import { BUILT_IN_SOUNDS, UNDERTONE_LEVELS, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
+import { BUILT_IN_SOUNDS, SOUND_GROUPS, UNDERTONE_LEVELS, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 
 // The player's Sound sheet: change the sound live, set how present the
 // frequency undertone is, or mute. A bottom sheet (thumb reach, one layer,
@@ -68,11 +68,18 @@ export function SoundSheet({
         </div>
 
         <div role="radiogroup" aria-label="Sound" className="mt-3 grid gap-1">
-          {BUILT_IN_SOUNDS.map((sound) => {
+          {BUILT_IN_SOUNDS.map((sound, index) => {
             const selected = sound.id === currentId;
+            const groupStart = index === 0 || BUILT_IN_SOUNDS[index - 1].group !== sound.group;
+            const groupLabel = SOUND_GROUPS.find((group) => group.id === sound.group)?.label;
             return (
+              <div key={sound.id} className="contents">
+              {groupStart && sound.group !== "frequency" ? (
+                <p className="ds-label px-3 pb-1 pt-3 uppercase" style={{ color: "var(--ds-on-navy-muted)" }} aria-hidden="true">
+                  {groupLabel}
+                </p>
+              ) : null}
               <button
-                key={sound.id}
                 type="button"
                 role="radio"
                 aria-checked={selected}
@@ -95,6 +102,7 @@ export function SoundSheet({
                   {selected ? <IconCheck className="h-3.5 w-3.5" /> : null}
                 </span>
               </button>
+              </div>
             );
           })}
         </div>
