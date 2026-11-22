@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { SUPPORT_EMAIL } from "@inner-pause/shared";
 
 import { AboutStory } from "@/components/about-story";
-import { IconChevronDown } from "@/components/pause-icons";
+import { IconChevronDown, IconChevronRight } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsRow, SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
 import { submitFeedback, type FeedbackKind } from "@/lib/feedback-store";
@@ -69,6 +70,19 @@ export function YouHelpScreen() {
         <YouScreenHeader title="Help / About" />
 
         <AboutStory />
+
+        <Link href="/chakras" className="ds-tap ds-card flex items-center gap-3.5 px-4 py-4">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full" style={{ background: "var(--ds-accent-soft)" }} aria-hidden="true">
+            <span className="h-3 w-3 rounded-full" style={{ background: "conic-gradient(#c45b5b, #d7823d, #d4a128, #4eaa75, #4499c7, #6665bd, #8d64bd, #c45b5b)" }} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="ds-h3 block">The seven energy centres</span>
+            <span className="block text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+              What each Pause&rsquo;s frequency is traditionally linked to
+            </span>
+          </span>
+          <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
+        </Link>
 
         <section className="space-y-2">
           {SECTIONS.map((section) => {
