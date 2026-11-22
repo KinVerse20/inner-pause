@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
-import { IconCheck, IconChevronRight, IconFeather } from "@/components/pause-icons";
+import { IconCheck, IconFeather } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
-import { JournalComposer, JourneySummary, StoryTimeline, buildStory } from "@/components/journey-story";
+import { JournalComposer, JourneySummary, MomentOpened, StoryTimeline, buildStory } from "@/components/journey-story";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
 import { hasActivePass, setDevHasPass } from "@/lib/entitlements";
@@ -174,7 +174,7 @@ export function JourneyScreen() {
 
           {tab === "story" ? (
             selectedHighlight ? (
-              <HighlightDetail highlight={selectedHighlight} onBack={() => setSelectedHighlight(null)} onOpenEntry={openEntryFromHighlight} />
+              <MomentOpened highlight={selectedHighlight} linkedEntries={getLinkedJournalEntries(selectedHighlight)} onBack={() => setSelectedHighlight(null)} onOpenEntry={openEntryFromHighlight} />
             ) : (
               <StoryTimeline items={story} onOpenEntry={openEntryFromList} onOpenHighlight={openHighlight} />
             )
@@ -220,86 +220,6 @@ export function JourneyScreen() {
         </StaggerItem>
       </Stagger>
     </PauseShell>
-  );
-}
-
-function HighlightDetail({
-  highlight,
-  onBack,
-  onOpenEntry,
-}: {
-  highlight: Highlight;
-  onBack: () => void;
-  onOpenEntry: (entry: TellEntry) => void;
-}) {
-  const linkedEntries = getLinkedJournalEntries(highlight);
-  return (
-    <section className="space-y-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-        style={{ color: "var(--ds-text-secondary)" }}
-      >
-        <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
-        Highlights
-      </button>
-
-      <div className="space-y-3 rounded-[var(--ds-radius-lg)] px-5 py-6" style={{ background: "var(--ds-surface)" }}>
-        <div>
-          <h1 className="text-[1.25rem] font-semibold leading-tight">{highlight.title}</h1>
-          <p className="mt-0.5 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-            {highlight.timingLabel} · {formatDate(highlight.createdAt)}
-          </p>
-        </div>
-
-        {highlight.expression ? (
-          <blockquote className="border-l-2 pl-3 text-sm italic leading-6" style={{ borderColor: "var(--ds-accent)", color: "var(--ds-text)" }}>
-            &ldquo;{highlight.expression}&rdquo;
-          </blockquote>
-        ) : null}
-
-        {highlight.feedback ? (
-          <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-            Outcome: <span style={{ color: "var(--ds-text)" }}>{highlight.feedback === "better" ? "Felt better" : highlight.feedback === "same" ? "Felt the same" : "Didn't help much"}</span>
-          </p>
-        ) : null}
-
-        {highlight.returnToMe ? (
-          <div className="rounded-[var(--ds-radius-sm)] border px-3 py-2.5" style={{ borderColor: "var(--ds-border)" }}>
-            <p className="text-xs font-semibold" style={{ color: "var(--ds-text-muted)" }}>
-              Return to Me
-            </p>
-            {highlight.returnToMe.responseText ? (
-              <p className="mt-1 text-sm italic">&ldquo;{highlight.returnToMe.responseText}&rdquo;</p>
-            ) : (
-              <p className="mt-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-                {highlight.returnToMe.status === "dismissed" ? "Dismissed. No response given." : "Not yet responded to."}
-              </p>
-            )}
-          </div>
-        ) : null}
-      </div>
-
-      {linkedEntries.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ds-text-muted)" }}>
-            Linked Journal entries
-          </p>
-          {linkedEntries.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => onOpenEntry(entry)}
-              className="ds-tap block w-full rounded-[var(--ds-radius-sm)] border px-3.5 py-3 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-              style={{ borderColor: "var(--ds-border)" }}
-            >
-              {entry.text.length > 90 ? `${entry.text.slice(0, 90)}…` : entry.text}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </section>
   );
 }
 

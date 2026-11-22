@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { LandscapeScene } from "@/components/landscape-scene";
 import { IconCheck, IconPencil } from "@/components/pause-icons";
@@ -69,6 +69,12 @@ function dayLabel(iso: string) {
   if (dayKey(iso) === dayKey(today.toISOString())) return "Today";
   if (dayKey(iso) === dayKey(yesterday.toISOString())) return "Yesterday";
   return date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+}
+
+// A Moment with no named situation is titled by its timing ("After"); show
+// the human mode label instead ("Just happened").
+function momentTitle(highlight: Highlight) {
+  return MODE_FROM_TIMING[highlight.title]?.label ?? highlight.title;
 }
 
 function timeLabel(iso: string) {
@@ -400,7 +406,7 @@ function PolaroidCard({ highlight, tilt, onOpen }: { highlight: Highlight; tilt:
         </span>
       </span>
       <span className="block px-1.5 pb-1 pt-3">
-        <span className="block text-[1.02rem] font-semibold leading-6">{highlight.title}</span>
+        <span className="block text-[1.02rem] font-semibold leading-6">{momentTitle(highlight)}</span>
         {highlight.expression ? (
           <span className="mt-1 block text-[0.9rem] italic leading-6" style={{ color: "var(--ds-text-secondary)" }}>
             &ldquo;{highlight.expression.length > 120 ? `${highlight.expression.slice(0, 120)}…` : highlight.expression}&rdquo;
@@ -417,5 +423,112 @@ function PolaroidCard({ highlight, tilt, onOpen }: { highlight: Highlight; tilt:
         </span>
       </span>
     </button>
+  );
+}
+
+/* ------------------------------------------------ */
+/* A Moment, opened: the polaroid picked up          */
+/* ------------------------------------------------ */
+
+export function MomentOpened({
+  highlight,
+  linkedEntries,
+  onBack,
+  onOpenEntry,
+}: {
+  highlight: Highlight;
+  linkedEntries: TellEntry[];
+  onBack: () => void;
+  onOpenEntry: (entry: TellEntry) => void;
+}) {
+  const mode = MODE_FROM_TIMING[highlight.timingLabel];
+  const when = new Date(highlight.createdAt);
+  const returnNote = highlight.returnToMe;
+  const otherEntries = linkedEntries.filter((entry) => entry.text.trim() !== highlight.expression?.trim());
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }, []);
+  return (
+    <section ref={ref} className="ds-settle scroll-mt-4 space-y-5">
+      <button
+        type="button"
+        onClick={() => {
+          haptic("tap");
+          onBack();
+        }}
+        className="ds-tap inline-flex min-h-11 items-center gap-1 rounded-full text-sm font-medium"
+        style={{ color: "var(--ds-text-secondary)" }}
+      >
+        <span aria-hidden="true">‹</span> Your story
+      </button>
+
+      {mode ? (
+        <figure className="polaroid mx-auto max-w-[22rem]" style={{ ["--tilt" as string]: "0deg" }}>
+          <span className="relative block aspect-[4/3] overflow-hidden rounded-[0.4rem]" aria-hidden="true">
+            <LandscapeScene variant={mode.landscape} className="absolute inset-0 h-full w-full scale-[1.2]" />
+            <span className="absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold" style={{ background: "rgba(255,255,255,0.85)", color: "#1D1B4C" }}>
+              {mode.label}
+            </span>
+          </span>
+          <figcaption className="px-1.5 pb-1 pt-3.5">
+            <span className="block text-[1.2rem] font-semibold leading-7">{momentTitle(highlight)}</span>
+            <span className="ds-caption mt-1 block">
+              {when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} · {timeLabel(highlight.createdAt)}
+            </span>
+          </figcaption>
+        </figure>
+      ) : (
+        <div className="ds-card px-5 py-5">
+          <p className="ds-label uppercase" style={{ color: "var(--ds-accent)" }}>Practice</p>
+          <h1 className="ds-h2 mt-1">{highlight.title}</h1>
+          <p className="ds-caption mt-1">{timeLabel(highlight.createdAt)}</p>
+        </div>
+      )}
+
+      {highlight.expression ? (
+        <div className="journal-paper relative rounded-[var(--ds-radius-lg)] px-5 pb-4 pt-6">
+          <span className="journal-tape" aria-hidden="true" />
+          <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>In your words</p>
+          <p className="mt-1.5 text-[1rem] leading-7">{highlight.expression}</p>
+        </div>
+      ) : null}
+
+      {highlight.feedback ? (
+        <p className="flex items-center gap-2 px-1 text-[0.95rem]" style={{ color: "var(--ds-text-secondary)" }}>
+          <IconCheck className="h-4 w-4" style={{ color: "var(--ds-success)" }} />
+          After your Pause you {FEEDBACK_LABEL[highlight.feedback]}.
+        </p>
+      ) : null}
+
+      {returnNote && returnNote.status !== "not-applicable" ? (
+        <div className="ds-card ds-wash px-5 py-4">
+          <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>The day after</p>
+          {returnNote.responseText ? (
+            <p className="mt-1.5 text-[0.98rem] italic leading-7">&ldquo;{returnNote.responseText}&rdquo;</p>
+          ) : (
+            <p className="mt-1.5 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+              {returnNote.status === "dismissed" || returnNote.status === "expired" ? "You chose to let this one rest." : "Inner Pause will check in on this gently tomorrow."}
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {otherEntries.length > 0 ? (
+        <div className="space-y-2.5">
+          <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>From your journal</p>
+          {otherEntries.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              onClick={() => onOpenEntry(entry)}
+              className="journal-paper ds-tap block w-full rounded-[var(--ds-radius-md)] px-4 py-3 text-left text-[0.95rem] leading-6"
+            >
+              {entry.text.length > 110 ? `${entry.text.slice(0, 110)}…` : entry.text}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </section>
   );
 }
