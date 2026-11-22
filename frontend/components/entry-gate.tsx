@@ -21,7 +21,7 @@ import { readMvpState, subscribeMvpState } from "@/lib/mvp-storage";
 // (matches proxy.ts's publicRoutes) plus /entry itself, to avoid a
 // redirect loop.
 // Legal pages must open directly from a link (payment-provider review, sign-up).
-const exemptPaths = ["/entry", "/auth", "/about", "/offline", "/admin", "/terms", "/privacy-policy", "/refund-policy"];
+const exemptPaths = ["/entry", "/auth", "/about", "/offline", "/terms", "/privacy-policy", "/refund-policy"];
 
 function isExempt(pathname: string) {
   return exemptPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
