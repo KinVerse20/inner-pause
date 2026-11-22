@@ -654,26 +654,26 @@
   box-shadow: 0 14px 28px -18px rgba(20, 16, 50, 0.5);
 }
 
+/* Content settles in — short and small so a screen is usable at once
+   (Doherty threshold: everything readable within ~300ms). */
 .ds-settle {
-  animation: ds-settle 520ms var(--ds-ease) both;
+  animation: ds-settle 360ms var(--ds-ease) both;
 }
 
-.ds-stagger > .ds-settle:nth-child(1) { animation-delay: 0.04s; }
-.ds-stagger > .ds-settle:nth-child(2) { animation-delay: 0.11s; }
-.ds-stagger > .ds-settle:nth-child(3) { animation-delay: 0.18s; }
-.ds-stagger > .ds-settle:nth-child(4) { animation-delay: 0.25s; }
-.ds-stagger > .ds-settle:nth-child(5) { animation-delay: 0.32s; }
-.ds-stagger > .ds-settle:nth-child(6) { animation-delay: 0.39s; }
-.ds-stagger > .ds-settle:nth-child(7) { animation-delay: 0.46s; }
-.ds-stagger > .ds-settle:nth-child(8) { animation-delay: 0.53s; }
+.ds-stagger > .ds-settle:nth-child(1) { animation-delay: 0s; }
+.ds-stagger > .ds-settle:nth-child(2) { animation-delay: 0.04s; }
+.ds-stagger > .ds-settle:nth-child(3) { animation-delay: 0.08s; }
+.ds-stagger > .ds-settle:nth-child(4) { animation-delay: 0.12s; }
+.ds-stagger > .ds-settle:nth-child(5) { animation-delay: 0.16s; }
+.ds-stagger > .ds-settle:nth-child(n+6) { animation-delay: 0.2s; }
 
 @keyframes ds-settle {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .ds-page-enter {
-  animation: ds-page-enter 480ms var(--ds-ease) both;
+  animation: ds-page-enter 320ms var(--ds-ease) both;
 }
 
 @keyframes ds-page-enter {

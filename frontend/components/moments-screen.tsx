@@ -2,101 +2,89 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 
 import { LandscapeScene } from "@/components/landscape-scene";
-import { IconChevronRight, IconMic, IconPencil } from "@/components/pause-icons";
+import { IconChevronDown, IconChevronRight, IconMic, IconMoon, IconPencil, IconSun, IconWave } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { ReturnToMeBanner } from "@/components/return-to-me-banner";
 import {
   composeBigMomentPause,
   getSituationOptions,
+  SITUATIONS_SHOWN_FIRST,
   type BigMomentMode,
   type SituationOption,
 } from "@/lib/big-moment-engine";
 import { clearDevNowOffset, getDevNowOffsetMs, setDevNowOffsetMs } from "@/lib/dev-clock";
+import { haptic } from "@/lib/haptics";
 import { createMomentRecord } from "@/lib/moment-storage";
 import { createPauseRecord } from "@/lib/pause-storage";
 import { computeInitialReturnToMeState } from "@/lib/return-to-me";
 
 // docs/PRODUCT_FLOW.md §11-14: mode is chosen first — "Coming up" /
 // "Happening now" / "Just happened" are the user-facing labels for
-// BEFORE/DURING/AFTER, each with its own short purpose line. Internal
-// mapping (before/during/after) is never exposed in copy. `atmosphere`
-// selects the full-bleed gradient identity below — visual only, sourced
-// from BRAND_IDENTITY.md §4.4's tint families, no new product meaning.
+// BEFORE/DURING/AFTER. Each mode carries one tint family (BRAND_IDENTITY.md
+// §4.4) and one static landscape (the only place illustration is used —
+// the Moments cards in the founder-approved mockup).
 const modes: Array<{
   id: BigMomentMode;
   label: string;
   purpose: string;
-  atmosphere: string;
+  tone: string;
+  Icon: ComponentType<{ className?: string }>;
   landscape: "dawn" | "day" | "dusk";
-  lightText: boolean;
 }> = [
-  { id: "before", label: "Coming up", purpose: "Get ready", atmosphere: "moment-atmosphere--before", landscape: "dawn", lightText: false },
-  { id: "during", label: "Happening now", purpose: "Stay with yourself", atmosphere: "moment-atmosphere--during", landscape: "day", lightText: false },
-  { id: "after", label: "Just happened", purpose: "Come back to yourself", atmosphere: "moment-atmosphere--after", landscape: "dusk", lightText: true },
+  { id: "before", label: "Coming up", purpose: "Get ready", tone: "focus", Icon: IconSun, landscape: "dawn" },
+  { id: "during", label: "Happening now", purpose: "Stay with yourself", tone: "reset", Icon: IconWave, landscape: "day" },
+  { id: "after", label: "Just happened", purpose: "Come back to yourself", tone: "sleep", Icon: IconMoon, landscape: "dusk" },
 ];
 
-// Orienting headline/subhead shown once a mode is chosen — framing copy
-// only. Every control label below it (mode names, purposes, situation
-// labels, Write/Speak/Skip/Start Pause) is unchanged from the prior
-// implementation, on purpose.
 const MODE_HEADLINE: Record<BigMomentMode, string> = {
   before: "What’s coming up?",
   during: "What’s happening?",
   after: "What just happened?",
 };
-const MODE_SUBHEAD = "Choose a situation, tell us what’s on your mind, or just start.";
+
+type View = { kind: "modes" } | { kind: "mode"; mode: BigMomentMode } | { kind: "explore" };
 
 export function MomentsScreen() {
   const router = useRouter();
-  const [selectedMode, setSelectedMode] = useState<BigMomentMode | null>(null);
-  const [selectedSituationId, setSelectedSituationId] = useState<string | null>(null);
-  const [starting, setStarting] = useState(false);
+  const [view, setView] = useState<View>({ kind: "modes" });
+  const [showAll, setShowAll] = useState(false);
+  const [startingKey, setStartingKey] = useState<string | null>(null);
   // Read after mount, not in a lazy useState initializer — the initializer
-  // runs during SSR too (where localStorage doesn't exist), so seeding it
-  // from getDevNowOffsetMs() there produces a real client/server mismatch
-  // (server always sees 0, client sees whatever's actually stored).
+  // runs during SSR too (where localStorage doesn't exist).
   const [devOffsetMs, setDevOffsetMs] = useState(0);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDevOffsetMs(getDevNowOffsetMs());
   }, []);
 
-  const mode = modes.find((item) => item.id === selectedMode) ?? null;
-  const situations: SituationOption[] = mode ? getSituationOptions(mode.id) : [];
-
-  const resetToModeSelect = () => {
-    setSelectedMode(null);
-    setSelectedSituationId(null);
+  const go = (next: View) => {
+    haptic("tap");
+    setShowAll(false);
+    setView(next);
+    window.scrollTo({ top: 0 });
   };
 
-  // Reuses the existing Core Pause engine end to end (this slice's brief
-  // §6) — composeBigMomentPause only overrides mode-specific fields on top
-  // of the same PauseDefinition shape, same createPauseRecord store, same
-  // /pause/player route. A Moment is created only when there's real
-  // specific content (a chosen situation) — never merely from picking a
-  // mode (§7, §5): Skip and "Start Pause" with nothing selected behave
-  // identically here, on purpose.
-  const startPause = (situationId: string | null) => {
-    if (!mode || starting) return;
-    setStarting(true);
-    const definition = composeBigMomentPause(mode.id, { situationId });
+  // Reuses the Core Pause engine end to end — composeBigMomentPause only
+  // overrides mode-specific fields. A Moment record is created only when
+  // there's a chosen situation, never merely from picking a mode (§5, §7).
+  const startPause = (modeId: BigMomentMode, situation: SituationOption | null) => {
+    if (startingKey) return;
+    haptic("moment");
+    setStartingKey(`${modeId}:${situation?.id ?? "none"}`);
+    const definition = composeBigMomentPause(modeId, { situationId: situation?.id ?? null });
     const record = createPauseRecord(definition);
-
-    if (situationId) {
-      const situation = situations.find((option) => option.id === situationId);
-      const returnToMe = computeInitialReturnToMeState(mode.id, true);
+    if (situation) {
       createMomentRecord({
-        mode: mode.id,
-        situationId,
-        situationLabel: situation?.label ?? null,
+        mode: modeId,
+        situationId: situation.id,
+        situationLabel: situation.label,
         linkedPauseRecordId: record.id,
-        returnToMe,
+        returnToMe: computeInitialReturnToMeState(modeId, true),
       });
     }
-
     router.push(`/pause/player?session=${record.id}`);
   };
 
@@ -108,199 +96,286 @@ export function MomentsScreen() {
 
   return (
     <PauseShell>
-      {!mode ? (
-          <div className="ds-settle space-y-6 pb-4 pt-2">
-            <header>
-              <Link
-                href="/"
-                aria-label="Back to Home"
-                className="ds-icon-btn ds-tap focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-                style={{ background: "var(--ds-surface)", color: "var(--ds-text)", boxShadow: "var(--ds-elevation-1)" }}
-              >
-                <IconChevronRight className="h-4 w-4" style={{ transform: "scaleX(-1)" }} />
-              </Link>
-            </header>
+      {view.kind === "modes" ? (
+        <div key="modes" className="ds-settle space-y-6 pb-4 pt-2">
+          <BackButton href="/" label="Back to Home" />
 
-            <div>
-              <h1 className="ds-display text-[1.85rem] sm:text-[2.15rem]">
-                For the big moments in your life
-              </h1>
-              <p className="mt-2.5 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                We&rsquo;re here for before, during and after what matters.
-              </p>
-            </div>
-
-            <ReturnToMeBanner />
-
-            <section aria-label="Choose a moment" className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {modes.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSelectedMode(item.id)}
-                  className={`ds-tap moment-atmosphere ${item.atmosphere} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2`}
-                >
-                  <LandscapeScene variant={item.landscape} className="absolute inset-0 h-full w-full" />
-                  <span className="moment-atmosphere-content">
-                    <span className="min-w-0">
-                      <span className={`block text-[1.12rem] font-semibold ${item.lightText ? "text-white" : ""}`} style={item.lightText ? undefined : { color: "var(--ds-text)" }}>
-                        {item.label}
-                      </span>
-                      <span className={`mt-1 block text-[0.82rem] ${item.lightText ? "text-white/85" : ""}`} style={item.lightText ? undefined : { color: "var(--ds-text-secondary)" }}>
-                        {item.purpose}
-                      </span>
-                    </span>
-                    <IconChevronRight className={`h-4 w-4 shrink-0 ${item.lightText ? "text-white/75" : ""}`} style={item.lightText ? undefined : { color: "var(--ds-text-muted)" }} />
-                  </span>
-                </button>
-              ))}
-            </section>
+          <div>
+            <h1 className="ds-display text-[1.85rem] sm:text-[2.15rem]">For the big moments in your life</h1>
+            <p className="mt-2.5 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+              We&rsquo;re here for before, during and after what matters.
+            </p>
           </div>
-        ) : (
-          <div className="ds-settle space-y-6 pb-4 pt-2">
-            <header className="flex items-center justify-between gap-2">
+
+          <ReturnToMeBanner />
+
+          <section aria-label="Choose when" className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {modes.map((item) => (
               <button
+                key={item.id}
                 type="button"
-                onClick={resetToModeSelect}
-                aria-label="Back to Moments"
-                className="ds-icon-btn ds-tap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-                style={{ background: "var(--ds-surface)", color: "var(--ds-text)", boxShadow: "var(--ds-elevation-1)" }}
-              >
-                <IconChevronRight className="h-4 w-4" style={{ transform: "scaleX(-1)" }} />
-              </button>
-              <span
-                className="inline-flex min-w-0 items-center gap-1.5 rounded-full px-3 py-1.5"
-                style={{ background: "var(--ds-accent-soft)" }}
-              >
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--ds-accent)" }} />
-                <span
-                  className="truncate text-[0.75rem] font-semibold uppercase tracking-[0.06em]"
-                  style={{ color: "var(--ds-accent)" }}
-                >
-                  {mode.label} &middot; {mode.purpose}
-                </span>
-              </span>
-            </header>
-
-            <div>
-              <h1 className="ds-display text-[1.7rem] sm:text-[2rem]">
-                {MODE_HEADLINE[mode.id]}
-              </h1>
-              <p className="mt-2 text-[0.92rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                {MODE_SUBHEAD}
-              </p>
-            </div>
-
-            <section aria-label="Choose a situation">
-              <p
-                className="mb-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.06em]"
-                style={{ color: "var(--ds-text-muted)" }}
-              >
-                Choose a situation
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {situations.map((situation) => {
-                  const active = selectedSituationId === situation.id;
-                  return (
-                    <button
-                      key={situation.id}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setSelectedSituationId(active ? null : situation.id)}
-                      className="ds-chip ds-tap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-                    >
-                      {situation.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1" style={{ background: "var(--ds-border)" }} />
-              <span className="text-xs" style={{ color: "var(--ds-text-muted)" }}>
-                or
-              </span>
-              <span className="h-px flex-1" style={{ background: "var(--ds-border)" }} />
-            </div>
-
-            <section aria-label="What's on your mind?" className="ds-card px-4 py-4">
-              <h2 className="text-[0.98rem] font-semibold">What&rsquo;s on your mind?</h2>
-              <p className="mt-1 text-[0.8rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                Say it or write it. We&rsquo;ll find the right words.
-              </p>
-              <div className="mt-3.5 flex gap-2.5">
-                <Link
-                  href={`/tell?momentMode=${mode.id}`}
-                  className="ds-outlined ds-tap flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2"
-                >
-                  <IconPencil className="h-[1.05rem] w-[1.05rem]" />
-                  Write
-                </Link>
-                <Link
-                  href={`/tell?momentMode=${mode.id}&mode=speak`}
-                  className="ds-outlined ds-tap flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2"
-                >
-                  <IconMic className="h-[1.05rem] w-[1.05rem]" />
-                  Speak
-                </Link>
-              </div>
-            </section>
-
-            <div className="space-y-3 pt-1">
-              <button
-                type="button"
-                onClick={() => startPause(null)}
-                disabled={starting}
-                className="block w-full text-center text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ color: "var(--ds-text-secondary)" }}
-              >
-                Skip for now
-              </button>
-              <button
-                type="button"
-                disabled={starting}
-                onClick={() => startPause(selectedSituationId)}
-                className="ds-filled ds-tap w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {starting ? "Preparing…" : "Start Pause"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {process.env.NODE_ENV === "development" ? (
-          <section
-            aria-label="Dev: Return to Me testing"
-            className="space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs"
-            style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
-          >
-            <p className="font-semibold">DEV — Return to Me testing</p>
-            <p>Current clock offset: {devOffsetMs}ms</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => applyDevOffset(26 * 60 * 60 * 1000)}
-                className="ds-tap min-h-11 rounded-full border px-3 font-medium"
-                style={{ borderColor: "var(--ds-border)" }}
-              >
-                Fast-forward +26h (make eligible)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  clearDevNowOffset();
-                  setDevOffsetMs(0);
-                  window.location.reload();
+                onClick={() => go({ kind: "mode", mode: item.id })}
+                className="ds-tap ds-card-lift relative grid min-h-[6.75rem] grid-cols-[1fr_7.5rem] overflow-hidden rounded-[var(--ds-radius-lg)] text-left sm:grid-cols-[1fr_9rem]"
+                style={{
+                  background: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 12%, var(--ds-surface))`,
+                  boxShadow: "var(--ds-elevation-1)",
                 }}
-                className="ds-tap min-h-11 rounded-full border px-3 font-medium"
-                style={{ borderColor: "var(--ds-border)" }}
               >
-                Reset clock
+                <span className="flex items-center gap-3 py-4 pl-4 pr-2">
+                  <span
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
+                    style={{
+                      background: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 24%, var(--ds-surface))`,
+                      color: `var(--ds-outcome-${item.tone})`,
+                    }}
+                    aria-hidden="true"
+                  >
+                    <item.Icon className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="ds-h3 block whitespace-nowrap">{item.label}</span>
+                    <span className="mt-0.5 block text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+                      {item.purpose}
+                    </span>
+                  </span>
+                  <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
+                </span>
+                <span className="relative" aria-hidden="true">
+                  <LandscapeScene variant={item.landscape} className="absolute inset-0 h-full w-full scale-[1.4]" />
+                </span>
               </button>
-            </div>
+            ))}
           </section>
-        ) : null}
+
+          <button
+            type="button"
+            onClick={() => go({ kind: "explore" })}
+            className="ds-tap flex w-full items-center gap-3 border-t pt-5 text-left"
+            style={{ borderColor: "var(--ds-border)" }}
+          >
+            <span className="min-w-0 flex-1">
+              <span className="ds-h3 block">Explore moments</span>
+              <span className="mt-0.5 block text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                Pick a moment similar to yours or start from scratch.
+              </span>
+            </span>
+            <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
+          </button>
+        </div>
+      ) : null}
+
+      {view.kind === "mode"
+        ? (() => {
+            const mode = modes.find((item) => item.id === view.mode)!;
+            const situations = getSituationOptions(mode.id);
+            const visible = showAll ? situations : situations.slice(0, SITUATIONS_SHOWN_FIRST);
+            const hidden = situations.length - visible.length;
+            return (
+              <div key={`mode-${mode.id}`} className="ds-settle space-y-6 pb-4 pt-2">
+                <header className="flex items-center justify-between gap-2">
+                  <BackButton onClick={() => go({ kind: "modes" })} label="Back to Moments" />
+                  <ModePill tone={mode.tone} text={`${mode.label} · ${mode.purpose}`} />
+                </header>
+
+                <div>
+                  <h1 className="ds-display text-[1.75rem] sm:text-[2rem]">{MODE_HEADLINE[mode.id]}</h1>
+                  <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                    Choose what&rsquo;s closest. Your Pause starts right away.
+                  </p>
+                </div>
+
+                <section aria-label="Choose a moment">
+                  <div className="ds-card divide-y divide-[color:var(--ds-border)] overflow-hidden">
+                    {visible.map((situation) => (
+                      <SituationRow
+                        key={situation.id}
+                        situation={situation}
+                        starting={startingKey === `${mode.id}:${situation.id}`}
+                        disabled={startingKey !== null}
+                        onSelect={() => startPause(mode.id, situation)}
+                      />
+                    ))}
+                  </div>
+                  {hidden > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic("tap");
+                        setShowAll(true);
+                      }}
+                      className="ds-tap mx-auto mt-3 flex min-h-11 items-center gap-1 rounded-full px-4 text-sm font-semibold"
+                      style={{ color: "var(--ds-accent)" }}
+                    >
+                      {hidden} more moments
+                      <IconChevronDown className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </section>
+
+                <section aria-labelledby="moment-tell-title" className="rounded-[var(--ds-radius-lg)] px-5 py-5" style={{ background: "var(--ds-accent-soft)" }}>
+                  <h2 id="moment-tell-title" className="ds-h3">Not quite it?</h2>
+                  <p className="mt-1 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                    Say it or write it in your own words.
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-2.5">
+                    <Link href={`/tell?momentMode=${mode.id}`} className="ds-outlined" style={{ borderColor: "transparent" }} onClick={() => haptic("tap")}>
+                      <IconPencil className="h-[1.05rem] w-[1.05rem]" />
+                      Write
+                    </Link>
+                    <Link href={`/tell?momentMode=${mode.id}&mode=speak`} className="ds-outlined" style={{ borderColor: "transparent" }} onClick={() => haptic("tap")}>
+                      <IconMic className="h-[1.05rem] w-[1.05rem]" />
+                      Speak
+                    </Link>
+                  </div>
+                </section>
+
+                <button
+                  type="button"
+                  disabled={startingKey !== null}
+                  onClick={() => startPause(mode.id, null)}
+                  className="ds-outlined w-full"
+                >
+                  {startingKey === `${mode.id}:none` ? "Starting your Pause" : "Just start a Pause"}
+                </button>
+              </div>
+            );
+          })()
+        : null}
+
+      {view.kind === "explore" ? (
+        <div key="explore" className="ds-settle space-y-6 pb-4 pt-2">
+          <BackButton onClick={() => go({ kind: "modes" })} label="Back to Moments" />
+          <div>
+            <h1 className="ds-display text-[1.75rem] sm:text-[2rem]">Explore moments</h1>
+            <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+              Pick the one closest to yours. Each opens a ready-made Pause.
+            </p>
+          </div>
+          {modes.map((mode) => (
+            <section key={mode.id} aria-labelledby={`explore-${mode.id}`} className="space-y-2.5">
+              <h2 id={`explore-${mode.id}`} className="flex items-center gap-2">
+                <span
+                  className="ds-outcome-icon grid h-7 w-7 place-items-center rounded-full"
+                  style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${mode.tone})` }}
+                  aria-hidden="true"
+                >
+                  <mode.Icon className="h-3.5 w-3.5" />
+                </span>
+                <span className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
+                  {mode.label}
+                </span>
+              </h2>
+              <div className="ds-card divide-y divide-[color:var(--ds-border)] overflow-hidden">
+                {getSituationOptions(mode.id)
+                  .filter((situation) => situation.id !== "something-else")
+                  .map((situation) => (
+                    <SituationRow
+                      key={situation.id}
+                      situation={situation}
+                      starting={startingKey === `${mode.id}:${situation.id}`}
+                      disabled={startingKey !== null}
+                      onSelect={() => startPause(mode.id, situation)}
+                    />
+                  ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : null}
+
+      {process.env.NODE_ENV === "development" ? (
+        <section
+          aria-label="Dev: Return to Me testing"
+          className="mt-6 space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs"
+          style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
+        >
+          <p className="font-semibold">DEV · Return to Me testing</p>
+          <p>Current clock offset: {devOffsetMs}ms</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => applyDevOffset(26 * 60 * 60 * 1000)}
+              className="ds-tap min-h-11 rounded-full border px-3 font-medium"
+              style={{ borderColor: "var(--ds-border)" }}
+            >
+              Fast-forward +26h (make eligible)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearDevNowOffset();
+                setDevOffsetMs(0);
+                window.location.reload();
+              }}
+              className="ds-tap min-h-11 rounded-full border px-3 font-medium"
+              style={{ borderColor: "var(--ds-border)" }}
+            >
+              Reset clock
+            </button>
+          </div>
+        </section>
+      ) : null}
     </PauseShell>
+  );
+}
+
+function SituationRow({
+  situation,
+  starting,
+  disabled,
+  onSelect,
+}: {
+  situation: SituationOption;
+  starting: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={disabled && !starting}
+      aria-busy={starting || undefined}
+      className="ds-tap flex min-h-[3.75rem] w-full items-center gap-3 px-4 py-3 text-left"
+      style={{ borderColor: "var(--ds-border)", background: starting ? "var(--ds-accent-soft)" : undefined }}
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block text-[0.95rem] font-medium leading-6">{situation.label}</span>
+        {situation.subtitle ? (
+          <span className="block text-[0.82rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+            {starting ? "Starting your Pause" : situation.subtitle}
+          </span>
+        ) : null}
+      </span>
+      <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
+    </button>
+  );
+}
+
+function ModePill({ tone, text }: { tone: string; text: string }) {
+  return (
+    <span
+      className="inline-flex min-w-0 items-center gap-1.5 rounded-full px-3 py-1.5"
+      style={{ background: `color-mix(in srgb, var(--ds-outcome-${tone}) 14%, var(--ds-surface))` }}
+    >
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: `var(--ds-outcome-${tone})` }} />
+      <span className="ds-label truncate" style={{ color: "var(--ds-text)" }}>
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function BackButton({ href, onClick, label }: { href?: string; onClick?: () => void; label: string }) {
+  const content = <IconChevronRight className="h-4 w-4" style={{ transform: "scaleX(-1)" }} />;
+  const style = { background: "var(--ds-surface)", color: "var(--ds-text)", boxShadow: "var(--ds-elevation-1)" };
+  return href ? (
+    <Link href={href} aria-label={label} className="ds-icon-btn" style={style}>
+      {content}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} aria-label={label} className="ds-icon-btn" style={style}>
+      {content}
+    </button>
   );
 }
