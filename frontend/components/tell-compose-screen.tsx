@@ -8,6 +8,9 @@ import { IconChevronRight, IconMic, IconPencil } from "@/components/pause-icons"
 import { PauseShell } from "@/components/pause-shell";
 import { Reveal } from "@/components/reveal";
 import type { BigMomentMode } from "@/lib/big-moment-engine";
+import { MAX_TELL_EMOTIONS, tellEmotions } from "@inner-pause/shared";
+
+import { haptic } from "@/lib/haptics";
 import { interpretTellInput, tellChips } from "@/lib/tell-interpreter";
 import { createTellEntry } from "@/lib/tell-storage";
 import { useVoiceTranscription } from "@/lib/use-voice-transcription";
@@ -36,6 +39,8 @@ export function TellComposeScreen() {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [writeText, setWriteText] = useState("");
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
+  // Kinverse's "Choose how you feel": up to four feelings, no writing needed.
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const voice = useVoiceTranscription();
 
@@ -62,17 +67,31 @@ export function TellComposeScreen() {
     setMode(next);
   };
 
+  const toggleEmotion = (emotion: string) => {
+    haptic("tap");
+    setSelectedEmotions((current) =>
+      current.includes(emotion)
+        ? current.filter((item) => item !== emotion)
+        : current.length >= MAX_TELL_EMOTIONS
+          ? current
+          : [...current, emotion],
+    );
+  };
+
   const toggleChip = (chip: string) => {
+    haptic("tap");
     setSelectedChips((current) => (current.includes(chip) ? current.filter((item) => item !== chip) : [...current, chip]));
   };
 
   const handleSubmit = async () => {
-    const trimmed = currentText.trim();
+    const trimmed = currentText.trim() || selectedEmotions.join(", ");
     if (!trimmed || submitting) return;
+    haptic("tap");
     setSubmitting(true);
     voice.stop();
-    const interpretation = await interpretTellInput(trimmed, selectedChips, momentMode);
-    const entry = createTellEntry({ text: trimmed, source: mode, chips: selectedChips, interpretation, momentMode });
+    const chips = [...selectedChips, ...selectedEmotions];
+    const interpretation = await interpretTellInput(trimmed, chips, momentMode);
+    const entry = createTellEntry({ text: trimmed, source: mode, chips, interpretation, momentMode });
     router.push(`/tell/recommended?entry=${entry.id}`);
   };
 
@@ -200,13 +219,43 @@ export function TellComposeScreen() {
           </section>
         ) : null}
 
+        {!currentText.trim() || selectedEmotions.length > 0 ? (
+          <section aria-labelledby="tell-emotions-title">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="tell-emotions-title" className="ds-h3">
+                {currentText.trim() ? "How you feel" : "Or choose how you feel"}
+              </h2>
+              <span className="ds-caption ds-num">
+                {selectedEmotions.length} of {MAX_TELL_EMOTIONS}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {tellEmotions.map((emotion) => {
+                const active = selectedEmotions.includes(emotion);
+                return (
+                  <button
+                    key={emotion}
+                    type="button"
+                    aria-pressed={active}
+                    disabled={!active && selectedEmotions.length >= MAX_TELL_EMOTIONS}
+                    onClick={() => toggleEmotion(emotion)}
+                    className="ds-chip"
+                  >
+                    {emotion}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
+
         <button
           type="button"
-          disabled={!currentText.trim() || submitting}
+          disabled={(!currentText.trim() && selectedEmotions.length === 0) || submitting}
           onClick={handleSubmit}
           className="ds-filled ds-tap w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55"
         >
-          {submitting ? "Finding the right Pause…" : "Continue"}
+          {submitting ? "Finding the right Pause" : "Continue"}
         </button>
       </Reveal>
     </PauseShell>

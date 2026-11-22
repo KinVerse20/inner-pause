@@ -50,6 +50,39 @@ const CHIP_WEIGHTS: Record<string, Array<[PauseCategoryId, number]>> = {
 
 export const tellChips = Object.keys(CHIP_WEIGHTS);
 
+// "Choose how you feel" — Kinverse's emotion catalog
+// (packages/shared/src/emotion-catalog.ts on
+// feature/practice-guided-breathing-mindspace), for picking feelings
+// without writing. Each maps onto our six Pause categories; the strongest
+// category wins exactly like a typed description would.
+const EMOTION_WEIGHTS: Record<string, Array<[PauseCategoryId, number]>> = {
+  Anxiety: [["calm", 3]],
+  Fear: [["calm", 3]],
+  Insecurity: [["confidence", 2], ["calm", 1]],
+  Overwhelm: [["reset", 3]],
+  "Self-doubt": [["confidence", 3]],
+  Powerlessness: [["confidence", 2], ["reset", 1]],
+  Shame: [["release", 2], ["confidence", 1]],
+  Guilt: [["release", 3]],
+  Sadness: [["release", 2], ["calm", 1]],
+  Grief: [["release", 3]],
+  Loneliness: [["calm", 2], ["release", 1]],
+  Hurt: [["release", 3]],
+  Resentment: [["release", 3]],
+  Frustration: [["reset", 2], ["release", 1]],
+  Anger: [["calm", 2], ["release", 1]],
+  "Feeling unheard": [["confidence", 2], ["release", 1]],
+  Confusion: [["focus", 3]],
+  Overthinking: [["calm", 2], ["sleep", 1]],
+  "Creative block": [["focus", 2], ["reset", 1]],
+  "Emotional numbness": [["reset", 2], ["release", 1]],
+  Disconnection: [["reset", 2], ["calm", 1]],
+  "Lack of purpose": [["focus", 2], ["confidence", 1]],
+};
+
+export const tellEmotions = Object.keys(EMOTION_WEIGHTS);
+export const MAX_TELL_EMOTIONS = 4;
+
 function scoreDeterministic(text: string, chips: string[], momentMode?: BigMomentMode): Record<PauseCategoryId, number> {
   const normalized = text.toLowerCase();
   const scores = Object.fromEntries(pauseCategoryIds.map((id) => [id, 0])) as Record<PauseCategoryId, number>;
@@ -60,7 +93,7 @@ function scoreDeterministic(text: string, chips: string[], momentMode?: BigMomen
     }
   }
   for (const chip of chips) {
-    for (const [categoryId, weight] of CHIP_WEIGHTS[chip] ?? []) {
+    for (const [categoryId, weight] of CHIP_WEIGHTS[chip] ?? EMOTION_WEIGHTS[chip] ?? []) {
       scores[categoryId] += weight;
     }
   }
