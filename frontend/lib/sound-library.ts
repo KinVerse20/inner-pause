@@ -17,14 +17,19 @@ export type BuiltInSoundId =
   | "mindspace"
   | "binaural-focus"
   | "bilateral-calm"
+  | "tuned-rain"
+  | "tuned-forest"
+  | "tuned-piano"
+  | "deep-ambient"
   | "frequency-only";
 
-export type SoundGroup = "nature" | "music" | "headphones" | "frequency";
+export type SoundGroup = "nature" | "music" | "headphones" | "tuned" | "frequency";
 
 export const SOUND_GROUPS: Array<{ id: SoundGroup; label: string }> = [
   { id: "nature", label: "Nature" },
   { id: "music", label: "Music and resonance" },
   { id: "headphones", label: "With headphones" },
+  { id: "tuned", label: "Tuned recordings" },
   { id: "frequency", label: "Just the frequency" },
 ];
 
@@ -35,8 +40,25 @@ export interface BuiltInSound {
   copy: string;
   /** Stereo effects that only work on headphones. */
   headphoneOnly?: boolean;
-  /** Null for "Frequency only": the undertone with no ambience. */
+  /** Null for "Frequency only" and for tuned recordings (see tunedFile). */
   url: string | null;
+  /**
+   * Kinverse's healing-player mixes, recorded at each chakra frequency
+   * (public/audio/chakras/<hz>/<file>_<hz>Hz.mp3). The frequency is already
+   * in the recording, so no undertone is layered on top.
+   */
+  tunedFile?: "rain" | "forest" | "piano" | "ambient";
+}
+
+const RECORDED_FREQUENCIES = [396, 417, 528, 639, 741, 852, 963];
+
+/** The file to play for a sound in a Pause at `frequencyHz` (nearest recorded frequency). */
+export function soundUrlFor(sound: BuiltInSound | undefined, frequencyHz: number | null): string | null {
+  if (!sound) return null;
+  if (!sound.tunedFile) return sound.url;
+  const target = frequencyHz ?? 528;
+  const hz = RECORDED_FREQUENCIES.reduce((best, value) => (Math.abs(value - target) < Math.abs(best - target) ? value : best));
+  return `/audio/chakras/${hz}/${sound.tunedFile}_${hz}Hz.mp3`;
 }
 
 export const BUILT_IN_SOUNDS: BuiltInSound[] = [
@@ -51,6 +73,10 @@ export const BUILT_IN_SOUNDS: BuiltInSound[] = [
   { id: "mindspace", group: "headphones", label: "Mindspace", copy: "A calm ambience that moves gently between your ears", headphoneOnly: true, url: "/audio/sounds/mindspace.m4a" },
   { id: "binaural-focus", group: "headphones", label: "Binaural focus", copy: "A different tone in each ear", headphoneOnly: true, url: "/audio/sounds/binaural-focus.m4a" },
   { id: "bilateral-calm", group: "headphones", label: "Bilateral calm", copy: "A gentle stereo pattern", headphoneOnly: true, url: "/audio/sounds/bilateral-calm.m4a" },
+  { id: "tuned-rain", group: "tuned", label: "Rain, tuned", copy: "A full rain recording tuned to this Pause", url: null, tunedFile: "rain" },
+  { id: "tuned-forest", group: "tuned", label: "Forest, tuned", copy: "A full forest recording tuned to this Pause", url: null, tunedFile: "forest" },
+  { id: "tuned-piano", group: "tuned", label: "Piano, tuned", copy: "Piano played around this Pause's frequency", url: null, tunedFile: "piano" },
+  { id: "deep-ambient", group: "tuned", label: "Deep ambient", copy: "A deep, enveloping ambience tuned to this Pause", url: null, tunedFile: "ambient" },
   { id: "frequency-only", group: "frequency", label: "Frequency only", copy: "The undertone on its own, no ambience", url: null },
 ];
 

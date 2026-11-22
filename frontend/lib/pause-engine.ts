@@ -4,7 +4,7 @@ import { chakraMap } from "@/data/chakras";
 import { getCard, getCardSound } from "@/lib/content-store";
 import type { PauseCategoryId } from "@/lib/pause-categories";
 import { getPreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, type BuiltInSoundId } from "@/lib/sound-library";
+import { findBuiltInSound, soundUrlFor, type BuiltInSoundId } from "@/lib/sound-library";
 import {
   GENERIC_GUIDANCE_LINES,
   buildGroundPlaybackCues,
@@ -93,7 +93,7 @@ export interface PauseDefinition {
 // The user's default built-in sound, for a Pause whose card has none.
 function builtInSoundFields(): Pick<PauseDefinition, "builtInSoundId" | "ambientSoundUrl"> {
   const sound = findBuiltInSound(getPreferences().defaultSound) ?? findBuiltInSound("rain")!;
-  return { builtInSoundId: sound.id, ambientSoundUrl: sound.url ?? undefined };
+  return { builtInSoundId: sound.id, ambientSoundUrl: soundUrlFor(sound, null) ?? undefined };
 }
 
 // docs/PRODUCT_FLOW.md §7: Right Now = 10 minutes, uses Arrive by default.

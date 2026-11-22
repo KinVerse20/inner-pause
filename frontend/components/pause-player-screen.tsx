@@ -17,7 +17,7 @@ import {
   type PauseRecord,
 } from "@/lib/pause-storage";
 import { getPreferences, updatePreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
+import { findBuiltInSound, soundUrlFor, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
 import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
 import { useTunedSound } from "@/lib/use-tuned-sound";
@@ -117,8 +117,10 @@ export function PausePlayerScreen() {
   // sound switched off — plays a soft tone at the frequency instead.
   const builtIn = Boolean(record?.builtInSoundId);
   const builtInSound = builtIn ? findBuiltInSound(builtInSoundId ?? record?.builtInSoundId) : undefined;
-  const originalUrl = ambientOn ? (builtIn ? (builtInSound?.url ?? null) : (record?.ambientSoundUrl ?? null)) : null;
   const pauseHz = record ? parseFrequencyHz(record.frequencyLabel) : null;
+  const originalUrl = ambientOn ? (builtIn ? soundUrlFor(builtInSound, pauseHz) : (record?.ambientSoundUrl ?? null)) : null;
+  // A tuned recording already carries the frequency: no undertone on top.
+  const premixed = Boolean(builtInSound?.tunedFile);
   const targetHz = devToneHz ?? (frequencyOn ? pauseHz : null);
   // Rendered files come as AAC and Opus (lib/render-format.ts). If one
   // can't play, the player falls back: AAC → Opus → the original, tuned
@@ -139,7 +141,7 @@ export function PausePlayerScreen() {
   // an undertone at the chosen strength (Kinverse's model). Uploaded sounds
   // are tuned to the frequency instead, with the tone only when silent.
   useToneLayer(
-    builtIn ? targetHz : originalUrl ? null : targetHz,
+    builtIn ? (premixed && originalUrl ? null : targetHz) : originalUrl ? null : targetHz,
     phase === "playing" && playing && !muted,
     builtIn && originalUrl ? undertoneGain(undertone) : undefined,
   );
@@ -395,7 +397,7 @@ export function PausePlayerScreen() {
     setBuiltInSoundId(id);
     updatePreferences({ defaultSound: id });
     const audio = audioRef.current;
-    const nextUrl = ambientOn ? (findBuiltInSound(id)?.url ?? null) : null;
+    const nextUrl = ambientOn ? soundUrlFor(findBuiltInSound(id), pauseHz) : null;
     if (!audio || phase !== "playing") return;
     switchingRef.current = true;
     if (!nextUrl) {
