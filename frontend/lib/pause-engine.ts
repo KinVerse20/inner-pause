@@ -3,6 +3,8 @@ import { formatFrequencyLabel, isBuiltInCardId, type PublicCard } from "@inner-p
 import { chakraMap } from "@/data/chakras";
 import { getCard, getCardSound } from "@/lib/content-store";
 import type { PauseCategoryId } from "@/lib/pause-categories";
+import { getPreferences } from "@/lib/preferences-store";
+import { findBuiltInSound, type BuiltInSoundId } from "@/lib/sound-library";
 import {
   GENERIC_GUIDANCE_LINES,
   buildGroundPlaybackCues,
@@ -80,6 +82,18 @@ export interface PauseDefinition {
   ambientVolume?: number;
   /** The Home card this Pause was composed from, built-in or admin-created. */
   cardId?: string;
+  /**
+   * Set when the Pause plays a built-in library sound (lib/sound-library.ts)
+   * instead of an admin-uploaded one — the player can switch it live and
+   * layers the frequency beneath it as an undertone.
+   */
+  builtInSoundId?: BuiltInSoundId;
+}
+
+// The user's default built-in sound, for a Pause whose card has none.
+function builtInSoundFields(): Pick<PauseDefinition, "builtInSoundId" | "ambientSoundUrl"> {
+  const sound = findBuiltInSound(getPreferences().defaultSound) ?? findBuiltInSound("rain")!;
+  return { builtInSoundId: sound.id, ambientSoundUrl: sound.url ?? undefined };
 }
 
 // docs/PRODUCT_FLOW.md §7: Right Now = 10 minutes, uses Arrive by default.
@@ -125,7 +139,8 @@ export function composeCardPause(card: PublicCard, options: { ambientSoundId?: s
         ? buildThemePlaybackCues(card.id, chakra.name, frequencyLabel)
         : buildGuidanceLinePlaybackCues(GENERIC_GUIDANCE_LINES, chakra.name, frequencyLabel);
   return {
-    ambientSoundUrl: ambient?.url,
+    ...(ambient || options.ambientSoundId === null ? {} : builtInSoundFields()),
+    ...(ambient ? { ambientSoundUrl: ambient.url } : {}),
     ambientTunedUrl: ambient?.tunedUrl ?? undefined,
     ambientPlainUrl: ambient?.plainUrl ?? undefined,
     ambientGainDb: ambient?.gainDb,
@@ -163,6 +178,7 @@ export function composeRightNowPause(
 export function composeGroundPause(): PauseDefinition {
   const chakra = chakraMap[GROUND_CHAKRA_ID];
   return {
+    ...builtInSoundFields(),
     pauseType: "center-pause",
     title: "Ground Pause",
     intentLabel: "Grounding and settling",

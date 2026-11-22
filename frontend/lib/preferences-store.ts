@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_BUILT_IN_SOUND, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 // You -> Preferences (docs/PRODUCT_FLOW.md §27): theme, sound, practice,
 // and offline preferences, deliberately kept to the currently defined
 // settings only — not the legacy lib/mvp-storage.ts sound/voice/guidance
@@ -32,6 +33,10 @@ export interface PreferencesState {
    * or plays a soft tone at it when the Pause has no sound (lib/use-tone-layer.ts).
    */
   soundToneLayerEnabled: boolean;
+  /** Built-in sound a Pause starts with when its card has none (lib/sound-library.ts). */
+  defaultSound: BuiltInSoundId;
+  /** How present the frequency undertone is beneath a built-in sound. */
+  undertone: UndertoneLevel;
   practicePreferredSupport: PracticeSupportPreference | null;
   offlineEnabled: boolean;
 }
@@ -41,6 +46,8 @@ export const DEFAULT_PREFERENCES: PreferencesState = {
   soundAmbientEnabled: true,
   soundVoiceGuidanceEnabled: true,
   soundToneLayerEnabled: true,
+  defaultSound: DEFAULT_BUILT_IN_SOUND,
+  undertone: "balanced",
   practicePreferredSupport: null,
   offlineEnabled: false,
 };

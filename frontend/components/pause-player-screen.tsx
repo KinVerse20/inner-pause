@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { BreathingGuide, breathAt } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
-import { IconCheck, IconClose, IconPauseGlyph, IconPlayGlyph, IconRestart, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
+import { IconCheck, IconClose, IconPauseGlyph, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
+import { SoundSheet } from "@/components/sound-sheet";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
 import {
@@ -15,7 +16,8 @@ import {
   type PauseFeedback,
   type PauseRecord,
 } from "@/lib/pause-storage";
-import { getPreferences } from "@/lib/preferences-store";
+import { getPreferences, updatePreferences } from "@/lib/preferences-store";
+import { findBuiltInSound, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
 import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
 import { useTunedSound } from "@/lib/use-tuned-sound";
@@ -82,11 +84,20 @@ export function PausePlayerScreen() {
   // (same reasoning as components/you-preferences-screen.tsx).
   const [frequencyOn, setFrequencyOn] = useState(false);
   const [ambientOn, setAmbientOn] = useState(true);
+  // Built-in library sound (Kinverse) and undertone strength, switchable live
+  // from the Sound sheet. Only used when the Pause plays a library sound.
+  const [builtInSoundId, setBuiltInSoundId] = useState<BuiltInSoundId | null>(null);
+  const [undertone, setUndertone] = useState<UndertoneLevel>("balanced");
+  const [soundSheetOpen, setSoundSheetOpen] = useState(false);
+  // Ignore the audio element's own pause event while we swap sources, so a
+  // sound change never stops the Pause clock.
+  const switchingRef = useRef(false);
   useEffect(() => {
     const preferences = getPreferences();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFrequencyOn(preferences.soundToneLayerEnabled);
     setAmbientOn(preferences.soundAmbientEnabled);
+    setUndertone(preferences.undertone);
   }, []);
 
   // Dev-only frequency tester overrides (DevFrequencyTester below): a
@@ -104,7 +115,9 @@ export function PausePlayerScreen() {
   // (lib/use-tuned-sound.ts). The built-in chakra track (record.audioPath)
   // is no longer played. A Pause with no uploaded sound — or with Ambient
   // sound switched off — plays a soft tone at the frequency instead.
-  const originalUrl = ambientOn ? (record?.ambientSoundUrl ?? null) : null;
+  const builtIn = Boolean(record?.builtInSoundId);
+  const builtInSound = builtIn ? findBuiltInSound(builtInSoundId ?? record?.builtInSoundId) : undefined;
+  const originalUrl = ambientOn ? (builtIn ? (builtInSound?.url ?? null) : (record?.ambientSoundUrl ?? null)) : null;
   const pauseHz = record ? parseFrequencyHz(record.frequencyLabel) : null;
   const targetHz = devToneHz ?? (frequencyOn ? pauseHz : null);
   // Rendered files come as AAC and Opus (lib/render-format.ts). If one
@@ -122,12 +135,19 @@ export function PausePlayerScreen() {
 
   // Both follow playback exactly: audible only while the Pause is actually
   // playing and unmuted, fading out with the closing beat.
-  useToneLayer(originalUrl ? null : targetHz, phase === "playing" && playing && !muted);
+  // Library sounds keep their own pitch; the frequency sits beneath them as
+  // an undertone at the chosen strength (Kinverse's model). Uploaded sounds
+  // are tuned to the frequency instead, with the tone only when silent.
+  useToneLayer(
+    builtIn ? targetHz : originalUrl ? null : targetHz,
+    phase === "playing" && playing && !muted,
+    builtIn && originalUrl ? undertoneGain(undertone) : undefined,
+  );
   const tunedSound = useTunedSound(audioRef, {
     enabled: Boolean(originalUrl) && !renderedUrl,
-    frequencyHz: renderedUrl || devTuningOff ? null : targetHz,
+    frequencyHz: renderedUrl || devTuningOff || builtIn ? null : targetHz,
     // A rendered file already carries the card's volume and level.
-    volume: renderedUrl ? 1 : (record?.ambientVolume ?? 1),
+    volume: renderedUrl ? 1 : builtIn ? 0.8 : (record?.ambientVolume ?? 1),
     muted,
     trimDb: renderedUrl ? 0 : (record?.ambientGainDb ?? 0),
   });
@@ -143,6 +163,7 @@ export function PausePlayerScreen() {
     }
     const found = getPauseRecord(sessionId);
     setRecord(found ?? null);
+    setBuiltInSoundId(found?.builtInSoundId ?? null);
     if (found) {
       setNotBetterStreak(getPreviousCompletedPauseRecord(found.id)?.feedback === "not-better");
     }
@@ -367,6 +388,46 @@ export function PausePlayerScreen() {
     setMuted(!muted);
   };
 
+  // Switch the library sound live, carrying on without stopping the Pause.
+  // The choice also becomes the default for the next Pause.
+  const chooseSound = (id: BuiltInSoundId) => {
+    haptic("tap");
+    setBuiltInSoundId(id);
+    updatePreferences({ defaultSound: id });
+    const audio = audioRef.current;
+    const nextUrl = ambientOn ? (findBuiltInSound(id)?.url ?? null) : null;
+    if (!audio || phase !== "playing") return;
+    switchingRef.current = true;
+    if (!nextUrl) {
+      audio.pause();
+      audio.removeAttribute("src");
+      window.setTimeout(() => {
+        switchingRef.current = false;
+      }, 0);
+      return;
+    }
+    audio.src = nextUrl;
+    audio.loop = true;
+    if (!playing) {
+      switchingRef.current = false;
+      return;
+    }
+    tunedSound.resume();
+    tunedSound.fadeIn(SOUND_RESUME_FADE_SECONDS);
+    audio
+      .play()
+      .catch(() => setAudioError(true))
+      .finally(() => {
+        switchingRef.current = false;
+      });
+  };
+
+  const chooseUndertone = (level: UndertoneLevel) => {
+    haptic("tap");
+    setUndertone(level);
+    updatePreferences({ undertone: level });
+  };
+
   const finalizeAndLeave = (message: string, destination = "/") => {
     setAcknowledgedText(message);
     setCheckinStage("acknowledged");
@@ -542,20 +603,44 @@ export function PausePlayerScreen() {
               {playing ? <IconPauseGlyph className="h-7 w-7" /> : <IconPlayGlyph className="ml-0.5 h-7 w-7" />}
             </button>
 
-            <button
-              type="button"
-              onClick={toggleMute}
-              aria-label={muted ? "Turn sound on" : "Mute"}
-              aria-pressed={muted}
-              className="ds-tap grid h-12 w-12 place-items-center rounded-full"
-              style={{
-                background: muted ? "rgba(248,250,252,0.22)" : "rgba(248,250,252,0.1)",
-                color: "var(--ds-on-navy)",
-              }}
-            >
-              {muted ? <IconVolumeOff className="h-[1.1rem] w-[1.1rem]" /> : <IconVolumeOn className="h-[1.1rem] w-[1.1rem]" />}
-            </button>
+            {builtIn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  haptic("tap");
+                  setSoundSheetOpen(true);
+                }}
+                aria-label="Sound"
+                aria-haspopup="dialog"
+                aria-expanded={soundSheetOpen}
+                className="ds-tap grid h-12 w-12 place-items-center rounded-full"
+                style={{ background: muted ? "rgba(248,250,252,0.22)" : "rgba(248,250,252,0.1)", color: "var(--ds-on-navy)" }}
+              >
+                {muted ? <IconVolumeOff className="h-[1.1rem] w-[1.1rem]" /> : <IconSliders className="h-[1.1rem] w-[1.1rem]" />}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={toggleMute}
+                aria-label={muted ? "Turn sound on" : "Mute"}
+                aria-pressed={muted}
+                className="ds-tap grid h-12 w-12 place-items-center rounded-full"
+                style={{
+                  background: muted ? "rgba(248,250,252,0.22)" : "rgba(248,250,252,0.1)",
+                  color: "var(--ds-on-navy)",
+                }}
+              >
+                {muted ? <IconVolumeOff className="h-[1.1rem] w-[1.1rem]" /> : <IconVolumeOn className="h-[1.1rem] w-[1.1rem]" />}
+              </button>
+            )}
           </div>
+
+          {builtInSound ? (
+            <p className="ds-caption -mt-2" style={{ color: "var(--ds-on-navy-muted)" }}>
+              {builtInSound.label}
+              {builtInSound.headphoneOnly ? " · best with headphones" : ""}
+            </p>
+          ) : null}
 
           <WhyThisPausePanel
             input={{
@@ -658,6 +743,18 @@ export function PausePlayerScreen() {
         </div>
       ) : null}
 
+      {soundSheetOpen && builtIn ? (
+        <SoundSheet
+          currentId={builtInSoundId ?? record.builtInSoundId!}
+          undertone={undertone}
+          muted={muted}
+          onChoose={chooseSound}
+          onUndertone={chooseUndertone}
+          onToggleMute={toggleMute}
+          onClose={() => setSoundSheetOpen(false)}
+        />
+      ) : null}
+
       {/* crossOrigin keeps the tuning graph working if sounds are served
           from a separate API origin (NEXT_PUBLIC_API_URL); same-origin is unaffected. */}
       <audio
@@ -665,7 +762,9 @@ export function PausePlayerScreen() {
         preload="auto"
         crossOrigin="anonymous"
         onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
+        onPause={() => {
+          if (!switchingRef.current) setPlaying(false);
+        }}
         onError={handleAudioError}
       />
     </PlayerFrame>

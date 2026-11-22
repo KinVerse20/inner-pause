@@ -108,7 +108,7 @@ function applyFrequency(graph: ToneGraph, frequencyHz: number) {
  * out rather than cutting, and gliding when the frequency changes. Pass
  * `null` to disable the layer entirely.
  */
-export function useToneLayer(frequencyHz: number | null, audible: boolean) {
+export function useToneLayer(frequencyHz: number | null, audible: boolean, level: number = PEAK_GAIN) {
   const graphRef = useRef<ToneGraph | null>(null);
   const enabled = frequencyHz !== null;
 
@@ -136,9 +136,9 @@ export function useToneLayer(frequencyHz: number | null, audible: boolean) {
     master.gain.setValueAtTime(master.gain.value, now);
     if (audible) {
       void ctx.resume();
-      master.gain.linearRampToValueAtTime(PEAK_GAIN, now + FADE_IN_SECONDS);
+      master.gain.linearRampToValueAtTime(level, now + FADE_IN_SECONDS);
     } else {
       master.gain.linearRampToValueAtTime(0, now + FADE_OUT_SECONDS);
     }
-  }, [audible, enabled]);
+  }, [audible, enabled, level]);
 }
