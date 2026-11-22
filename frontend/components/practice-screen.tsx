@@ -19,7 +19,7 @@ function progressLabel(skillId: PracticeSkillId, enrollment: PracticeEnrollment 
   if (!enrollment || enrollment.completedSessionNumbers.length === 0) return null;
   const arcLength = getCoreArc(skillId).length;
   const milestoneEarned = hasEarnedCoreArcMilestone(skillId, listPracticeSessionRecords(skillId));
-  if (milestoneEarned) return "Foundation built — Ongoing Practice";
+  if (milestoneEarned) return "Foundation built · Ongoing Practice";
   return `Session ${enrollment.currentSessionNumber} of ${arcLength}`;
 }
 
@@ -57,7 +57,7 @@ export function PracticeScreen() {
           <header>
             <h1 className="ds-display text-[1.85rem]">Practice</h1>
             <p className="mt-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-              Ongoing, skill by skill — not a course with an end date.
+              Build a capability, one small step at a time.
             </p>
           </header>
         </StaggerItem>

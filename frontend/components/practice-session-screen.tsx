@@ -312,7 +312,7 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
             <div>
               <h1 className="text-[1.25rem] font-semibold leading-tight">How have things been?</h1>
               <p className="mt-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-                Optional — write or speak freely, or skip straight to your Pause.
+                Optional. Write or speak freely, or go straight to your Pause.
               </p>
             </div>
 
@@ -357,7 +357,7 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
             <textarea
               value={currentText}
               onChange={(event) => (mode === "speak" ? voice.setTranscript(event.target.value) : setWriteText(event.target.value))}
-              placeholder="Optional — how have things been?"
+              placeholder="Optional. How have things been?"
               rows={4}
               className="w-full resize-none rounded-[var(--ds-radius-md)] border bg-transparent p-4 text-base leading-6 outline-none placeholder:text-[var(--ds-text-muted)]"
               style={{ borderColor: "var(--ds-border)", background: "var(--ds-surface)", color: "var(--ds-text)" }}
@@ -401,7 +401,7 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
             <textarea
               value={activityText}
               onChange={(event) => setActivityText(event.target.value)}
-              placeholder="Your response — however much or little feels right."
+              placeholder="Your response, however much or little feels right."
               rows={5}
               autoFocus
               className="w-full resize-none rounded-[var(--ds-radius-md)] border bg-transparent p-4 text-base leading-6 outline-none placeholder:text-[var(--ds-text-muted)]"
@@ -425,7 +425,7 @@ export function PracticeSessionScreen({ skillId }: { skillId: PracticeSkillId })
             <textarea
               value={currentText}
               onChange={(event) => (mode === "speak" ? voice.setTranscript(event.target.value) : setWriteText(event.target.value))}
-              placeholder="Optional — write or speak."
+              placeholder="Optional. Write or speak."
               rows={4}
               className="w-full resize-none rounded-[var(--ds-radius-md)] border bg-transparent p-4 text-base leading-6 outline-none placeholder:text-[var(--ds-text-muted)]"
               style={{ borderColor: "var(--ds-border)", background: "var(--ds-surface)", color: "var(--ds-text)" }}

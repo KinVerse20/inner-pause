@@ -102,7 +102,7 @@ export function YouPrivacyScreen() {
               <span className="min-w-0 flex-1">
                 <span className="block text-[0.9rem] font-medium">Use my entries for deeper pattern analysis</span>
                 <span className="block text-[0.76rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                  Turning this off only stops new Patterns from being generated — nothing already found is deleted.
+                  Turning this off only stops new Patterns. Nothing already found is deleted.
                 </span>
               </span>
               <ToggleSwitch

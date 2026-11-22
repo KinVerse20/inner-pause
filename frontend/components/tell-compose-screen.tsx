@@ -159,7 +159,7 @@ export function TellComposeScreen() {
             <textarea
               value={voice.transcript}
               onChange={(event) => voice.setTranscript(event.target.value)}
-              placeholder="Your words will appear here — edit anytime before continuing."
+              placeholder="Your words will appear here. Edit them before continuing."
               rows={4}
               className="w-full resize-none rounded-[var(--ds-radius-sm)] border bg-transparent p-3 text-sm leading-6 outline-none placeholder:text-[var(--ds-text-muted)]"
               style={{ borderColor: "var(--ds-border)", color: "var(--ds-text)" }}

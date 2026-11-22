@@ -198,7 +198,7 @@ export function YouPassScreen() {
             className="space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs"
             style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
           >
-            <p className="font-semibold">DEV — Pass testing (works in development only)</p>
+            <p className="font-semibold">DEV · Pass testing (works in development only)</p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"

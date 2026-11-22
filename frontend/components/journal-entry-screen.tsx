@@ -14,7 +14,7 @@ export function JournalEntryScreen({
   autoStartVoice?: boolean;
 }) {
   const router = useRouter();
-  const initialText = initialContext ? `${initialContext} — ` : "";
+  const initialText = initialContext ? `${initialContext}. ` : "";
 
   return (
     <MvpShell>

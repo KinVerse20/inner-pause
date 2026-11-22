@@ -54,7 +54,7 @@ function reducedDifficultyStatements(): GrowthStatement[] {
     if (FEEDBACK_RANK[last.feedback] > FEEDBACK_RANK[first.feedback]) {
       statements.push({
         id: `improved:${situation}`,
-        text: `${situation} has felt easier over time — your most recent response was better than your first.`,
+        text: `${situation} has felt easier over time. Your most recent response was better than your first.`,
       });
     }
   }

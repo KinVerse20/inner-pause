@@ -35,7 +35,7 @@ export function YouCalendarScreen() {
 
         <section className="space-y-3 rounded-[var(--ds-radius-md)] px-4 py-4" style={{ background: "var(--ds-surface)" }}>
           <p className="text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
-            Let Pause know when something important is coming up. Calendar is context, not surveillance — it&apos;s
+            Let Pause know when something important is coming up. Calendar is context, not surveillance. It&apos;s
             never required, and manual Moments work exactly the same without it.
           </p>
 

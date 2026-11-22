@@ -73,11 +73,11 @@ export function getPracticeTrends(events: PauseEvent[], reference = new Date()) 
 }
 
 const timeBuckets = [
-  { label: "Night", range: "12AM–5AM", from: 0, to: 5 },
-  { label: "Morning", range: "5AM–12PM", from: 5, to: 12 },
-  { label: "Afternoon", range: "12PM–5PM", from: 12, to: 17 },
-  { label: "Evening", range: "5PM–9PM", from: 17, to: 21 },
-  { label: "Late Evening", range: "9PM–12AM", from: 21, to: 24 },
+  { label: "Night", range: "12 to 5 AM", from: 0, to: 5 },
+  { label: "Morning", range: "5 AM to 12 PM", from: 5, to: 12 },
+  { label: "Afternoon", range: "12 to 5 PM", from: 12, to: 17 },
+  { label: "Evening", range: "5 to 9 PM", from: 17, to: 21 },
+  { label: "Late Evening", range: "9 PM to 12 AM", from: 21, to: 24 },
 ];
 
 export function getTimePatterns(events: PauseEvent[]) {

@@ -55,7 +55,7 @@ export function getSuggestedCategory(hour: number, exclude?: PauseCategoryId): {
       : hour >= 10 && hour < 14
         ? { id: "reset" as PauseCategoryId, reason: "Good time for a midday reset" }
         : hour >= 14 && hour < 18
-          ? { id: "confidence" as PauseCategoryId, reason: "Afternoon energy dip — a confidence boost helps" }
+          ? { id: "confidence" as PauseCategoryId, reason: "Afternoon energy dip. A confidence boost helps." }
           : hour >= 18 && hour < 22
             ? { id: "calm" as PauseCategoryId, reason: "Wind down as the day closes" }
             : { id: "sleep" as PauseCategoryId, reason: "Quiet the mind before rest" };

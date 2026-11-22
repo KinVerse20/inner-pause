@@ -67,7 +67,7 @@ function highlightFromPractice(record: PracticeSessionRecord): Highlight | null 
     id: `practice:${record.id}`,
     sourceType: "practice",
     sourceId: record.id,
-    title: `${skill.label} — ${record.activityRealWorldRep}`,
+    title: `${skill.label} · ${record.activityRealWorldRep}`,
     timingLabel: "Practice",
     createdAt: record.completedAt ?? record.startedAt,
     linkedPauseRecordId: record.linkedPauseRecordId,

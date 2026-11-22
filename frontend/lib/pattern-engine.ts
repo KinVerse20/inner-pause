@@ -86,7 +86,7 @@ function detectSituationRecurrence(scope: PatternScope): PatternCandidate[] {
     if (group.length < MIN_SUPPORT) continue;
     candidates.push({
       key: `situation-before:${situation}`,
-      text: `${situation} comes up often before you prepare for it — ${group.length} times so far.`,
+      text: `${situation} comes up often before you prepare for it. ${group.length} times so far.`,
       supportingJournalEntryIds: [],
       supportingHighlightIds: group.map((item) => item.id),
     });
@@ -110,7 +110,7 @@ function detectPauseHelpsPattern(scope: PatternScope): PatternCandidate[] {
     if (betterCount / group.length < 0.6) continue;
     candidates.push({
       key: `pause-helps:${situation}`,
-      text: `Taking a Pause around ${situation.toLowerCase()} tends to help — you felt better ${betterCount} of ${group.length} times.`,
+      text: `Taking a Pause around ${situation.toLowerCase()} tends to help. You felt better ${betterCount} of ${group.length} times.`,
       supportingJournalEntryIds: [],
       supportingHighlightIds: group.map((item) => item.id),
     });

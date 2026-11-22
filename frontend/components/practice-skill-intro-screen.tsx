@@ -31,7 +31,7 @@ export function PracticeSkillIntroScreen({ skill }: { skill: PracticeSkill }) {
           <div className="space-y-2 rounded-[var(--ds-radius-md)] px-4 py-6 text-center" style={{ background: "var(--ds-surface)" }}>
             <h1 className="text-[1.3rem] font-semibold">{skill.label}</h1>
             <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-              This practice isn&rsquo;t built yet — {skill.tagline.toLowerCase()}. Coming soon.
+              This practice isn&rsquo;t ready yet. Coming soon.
             </p>
           </div>
         </div>
@@ -54,7 +54,7 @@ export function PracticeSkillIntroScreen({ skill }: { skill: PracticeSkill }) {
           {enrollment && enrollment.completedSessionNumbers.length > 0 ? (
             <p className="text-xs" style={{ color: "var(--ds-text-muted)" }}>
               {milestoneEarned
-                ? `Core practice complete — continuing, session ${enrollment.currentSessionNumber}`
+                ? `Core practice complete · Session ${enrollment.currentSessionNumber}`
                 : `Session ${enrollment.currentSessionNumber} of ${arcLength}`}
             </p>
           ) : null}

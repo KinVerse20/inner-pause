@@ -106,7 +106,7 @@ export function ReturnToMeBanner() {
           <textarea
             value={currentText}
             onChange={(event) => (composeMode === "speak" ? voice.setTranscript(event.target.value) : setWriteText(event.target.value))}
-            placeholder="Your words will appear here — edit anytime before saving."
+            placeholder="Your words will appear here. Edit them before saving."
             rows={3}
             autoFocus={composeMode === "write"}
             className="w-full resize-none rounded-[var(--ds-radius-sm)] border bg-transparent p-3 text-sm leading-6 outline-none placeholder:text-[var(--ds-text-muted)]"

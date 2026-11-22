@@ -76,7 +76,7 @@ export function resolvePracticeSession(skillId: PracticeSkillId, sessionNumber: 
   return {
     sessionNumber,
     phase: "ongoing",
-    title: `${skillLabel(skillId)} — Continued Practice`,
+    title: `${skillLabel(skillId)} · Continued Practice`,
     // Skill-specific, not a generic shared line (Practice Completion pass
     // §8) — the same arrival copy the Core Arc's own sessions default to.
     arrivalGuidance: getSkillArrivalGuidance(skillId),
@@ -95,7 +95,7 @@ export function composePracticeSessionPause(
   return {
     ...base,
     pauseType: "practice",
-    title: `${skillLabel(skillId)} — ${resolved.title}`,
+    title: `${skillLabel(skillId)} · ${resolved.title}`,
     durationSeconds: resolved.durationSeconds,
     // The session's own Arrival + "I'm ready" (components/practice-session-screen.tsx)
     // already served Arrive's purpose (docs/PRODUCT_FLOW.md §18's single

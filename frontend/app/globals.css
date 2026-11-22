@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Tailwind v4 draws borders/dividers in currentColor by default, which
+   turns every list divider into a dark ink line. Default them to the
+   design-system border instead; explicit border colors still win. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--ds-border, currentColor);
+  }
+}
+
 :root {
   --background: #f8f4ff;
   --foreground: #120b4f;
@@ -555,6 +568,16 @@
 @keyframes harmony-breathe {
   0%, 100% { transform: scale(0.965); }
   50% { transform: scale(1.03); }
+}
+
+/* Theme-specific variants (e.g. the light vs dark Harmony Form mark):
+   follows an explicit You → Preferences theme first, then the OS. */
+.ds-only-dark { display: none; }
+:root[data-theme="dark"] .ds-only-dark { display: revert; }
+:root[data-theme="dark"] .ds-only-light { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ds-only-dark { display: revert; }
+  :root:not([data-theme="light"]) .ds-only-light { display: none; }
 }
 
 /* Guided breathing drives the whole form: it opens over the 4s in-breath

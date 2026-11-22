@@ -699,7 +699,7 @@ function DevFrequencyTester({
       style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
     >
       <p className="font-semibold">
-        DEV — Frequency tester · <span className="tabular-nums">{Math.round(shownHz)} Hz</span>
+        DEV · Frequency tester · <span className="tabular-nums">{Math.round(shownHz)} Hz</span>
         {currentHz === null ? " (off in Preferences)" : !tuningSound ? " · tone (no sound)" : tuningOff ? " · tuning off" : " · tuning the sound"}
         {tuningSound ? (rendered ? " · rendered file" : " · live") : ""}
       </p>

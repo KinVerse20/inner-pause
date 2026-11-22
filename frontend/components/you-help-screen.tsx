@@ -19,9 +19,9 @@ const SECTIONS: Array<{ id: string; title: string; body: string[] }> = [
     title: "Why Inner Pause",
     body: [
       "Inner Pause exists because most days don't give you a real moment to feel what you're actually feeling.",
-      "Emotional practice matters because noticing and naming what's happening is what lets it move — not staying busy past it.",
+      "Emotional practice matters because noticing and naming what's happening is what lets it move, not staying busy past it.",
       "Sound is the way in, because it works before words do: it can settle a body that isn't ready to talk yet.",
-      "And what you do after a Pause matters more than the Pause itself — this is meant to support your life, not replace it.",
+      "And what you do after a Pause matters more than the Pause itself. This is meant to support your life, not replace it.",
     ],
   },
   {
@@ -29,7 +29,7 @@ const SECTIONS: Array<{ id: string; title: string; body: string[] }> = [
     title: "How it works",
     body: [
       "Pick what you're feeling, or tell Pause in your own words. A short sound experience meets you where you are.",
-      "Afterward, you can say what helped. Over time, Journey remembers the pattern — never the other way around.",
+      "Afterward, you can say what helped. Over time, Journey remembers the pattern, never the other way around.",
     ],
   },
   {
@@ -37,7 +37,7 @@ const SECTIONS: Array<{ id: string; title: string; body: string[] }> = [
     title: "Sound & Traditions",
     body: [
       "Inner Pause draws on traditional chakra associations and frequency work alongside a modern understanding of how sound affects the body.",
-      "These traditions are old and the modern evidence for sound-based practices is still developing — we try to hold both honestly, without overstating either.",
+      "These traditions are old and the modern evidence for sound-based practices is still developing. We try to hold both honestly, without overstating either.",
       "Nothing here is a medical claim. It's one way of paying attention to yourself, offered transparently.",
     ],
   },

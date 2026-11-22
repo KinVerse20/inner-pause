@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { LandscapeScene } from "@/components/landscape-scene";
 import { IconChevronRight } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { Stagger, StaggerItem } from "@/components/reveal";
@@ -191,11 +190,6 @@ export function JourneyScreen() {
           </header>
         </StaggerItem>
 
-        <StaggerItem>
-          <div className="relative overflow-hidden rounded-[var(--ds-radius-lg)]">
-            <LandscapeScene variant="day" className="h-28 w-full opacity-80" />
-          </div>
-        </StaggerItem>
 
         <StaggerItem>
           <JourneyStats />
@@ -277,7 +271,7 @@ export function JourneyScreen() {
             className="space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs"
             style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
           >
-            <p className="font-semibold">DEV — Journey testing</p>
+            <p className="font-semibold">DEV · Journey testing</p>
             <button
               type="button"
               onClick={togglePass}
@@ -376,7 +370,7 @@ function HighlightDetail({
               <p className="mt-1 text-sm italic">&ldquo;{highlight.returnToMe.responseText}&rdquo;</p>
             ) : (
               <p className="mt-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-                {highlight.returnToMe.status === "dismissed" ? "Dismissed — no response given." : "Not yet responded to."}
+                {highlight.returnToMe.status === "dismissed" ? "Dismissed. No response given." : "Not yet responded to."}
               </p>
             )}
           </div>
@@ -524,7 +518,7 @@ function PatternsList({
 
       {visible.length === 0 ? (
         <p className="pt-2 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-          Not enough repeated material yet to show a pattern — keep using Inner Pause and one may appear here.
+          Not enough yet to show a pattern. Keep using Inner Pause and one may appear here.
         </p>
       ) : (
         visible.map((pattern) => {
@@ -549,7 +543,7 @@ function PatternsList({
                 <ul className="space-y-1 text-xs" style={{ color: "var(--ds-text-secondary)" }}>
                   {supporting.map((item) => (
                     <li key={item.id}>
-                      {item.title} — {formatDate(item.createdAt)}
+                      {item.title} · {formatDate(item.createdAt)}
                     </li>
                   ))}
                   {pattern.supportingJournalEntryIds.length > 0 ? <li>{pattern.supportingJournalEntryIds.length} Journal entries</li> : null}

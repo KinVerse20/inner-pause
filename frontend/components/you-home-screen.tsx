@@ -16,22 +16,46 @@ import { Stagger, StaggerItem } from "@/components/reveal";
 import { SettingsRow } from "@/components/settings-row";
 import { getAccount, subscribeAccount, type LocalAccount } from "@/lib/account-store";
 import { getPassState, subscribeEntitlements, type PassState } from "@/lib/entitlements";
+import { listPauseRecords, subscribePauseRecords } from "@/lib/pause-storage";
+
+function readStats() {
+  const completed = listPauseRecords().filter((record) => record.completedAt);
+  return {
+    pauses: completed.length,
+    minutes: Math.round(completed.reduce((sum, record) => sum + record.durationSeconds, 0) / 60),
+    checkins: completed.filter((record) => record.feedback).length,
+  };
+}
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="px-1">
+      <dt className="sr-only">{label}</dt>
+      <dd className="ds-num text-[1.35rem] leading-tight">{value}</dd>
+      <dd className="ds-caption">{label}</dd>
+    </div>
+  );
+}
 
 export function YouHomeScreen() {
   const [account, setAccount] = useState<LocalAccount | null>(null);
   const [passState, setPassState] = useState<PassState>("free");
+  const [stats, setStats] = useState({ pauses: 0, minutes: 0, checkins: 0 });
 
   useEffect(() => {
     const refresh = () => {
       setAccount(getAccount());
       setPassState(getPassState());
+      setStats(readStats());
     };
     refresh();
     const unsubAccount = subscribeAccount(refresh);
     const unsubPass = subscribeEntitlements(refresh);
+    const unsubPauses = subscribePauseRecords(refresh);
     return () => {
       unsubAccount();
       unsubPass();
+      unsubPauses();
     };
   }, []);
 
@@ -43,23 +67,39 @@ export function YouHomeScreen() {
     <PauseShell>
       <Stagger className="space-y-6 pb-4 pt-2">
         <StaggerItem>
-        <header className="flex flex-col items-center pt-4 text-center">
-          <span
-            className="grid h-20 w-20 place-items-center rounded-full text-2xl font-semibold"
-            style={{ background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }}
-          >
-            {initial}
-          </span>
-          <h1 className="ds-display mt-4 text-[1.85rem]">You</h1>
-          <p className="mt-1 text-[1.05rem] font-medium">Good to see you{account ? `, ${displayName.split(" ")[0]}` : ""}</p>
-          <p className="mt-1 text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
-            Here&rsquo;s to a calmer, brighter you.
-          </p>
-        </header>
+          <header>
+            <h1 className="ds-display text-[1.85rem]">You</h1>
+          </header>
         </StaggerItem>
 
         <StaggerItem>
-        <section aria-label="You" className="ds-card divide-y overflow-hidden" style={{ borderColor: "var(--ds-border)" }}>
+          <section aria-label="Your profile" className="ds-card px-4 py-4">
+            <div className="flex items-center gap-3.5">
+              <span
+                className="grid h-14 w-14 shrink-0 place-items-center rounded-full text-xl font-semibold"
+                style={{ background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }}
+                aria-hidden="true"
+              >
+                {initial}
+              </span>
+              <div className="min-w-0">
+                <p className="ds-h3 truncate">{account ? displayName : "Your space"}</p>
+                <p className="text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+                  {account ? account.email : "Sign in to keep your Journey safe across devices."}
+                </p>
+              </div>
+            </div>
+            {/* Kinverse feature: Pauses · minutes · reflections at a glance. */}
+            <dl className="mt-4 grid grid-cols-3 divide-x rounded-[var(--ds-radius-md)] py-3 text-center" style={{ background: "var(--ds-bg)" }}>
+              <Stat value={stats.pauses} label={stats.pauses === 1 ? "Pause" : "Pauses"} />
+              <Stat value={stats.minutes} label="minutes" />
+              <Stat value={stats.checkins} label={stats.checkins === 1 ? "check-in" : "check-ins"} />
+            </dl>
+          </section>
+        </StaggerItem>
+
+        <StaggerItem>
+        <section aria-label="Settings" className="ds-card divide-y overflow-hidden">
           <SettingsRow
             href="/profile/account"
             label="Account"

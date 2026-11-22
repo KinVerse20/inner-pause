@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { LandscapeScene } from "@/components/landscape-scene";
 import { IconApple, IconChevronRight, IconGoogle, IconMail } from "@/components/pause-icons";
 import { Reveal } from "@/components/reveal";
 import { applyServerAccount } from "@/lib/account-store";
@@ -90,9 +89,6 @@ export function AuthScreen() {
       className="relative min-h-dvh overflow-hidden"
       style={{ background: "var(--ds-bg)", color: "var(--ds-text)", fontFamily: "var(--ds-font-sans)" }}
     >
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]">
-        <LandscapeScene variant="dawn" className="h-full w-full opacity-70" />
-      </div>
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">

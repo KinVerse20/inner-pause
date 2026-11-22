@@ -40,7 +40,7 @@ export function YouNotificationsScreen() {
             <p className="text-[0.9rem] font-semibold">Want Pause to occasionally bring you something good?</p>
             <p className="text-[0.82rem]" style={{ color: "var(--ds-text-secondary)" }}>
               Small reminders to breathe, notice, smile or slow down. They&apos;re not here to bring you back to the
-              app — they&apos;re here to help you pause wherever you are.
+              app. They&apos;re here to help you pause wherever you are.
             </p>
             <div className="flex gap-2.5 pt-1">
               <button
@@ -64,7 +64,7 @@ export function YouNotificationsScreen() {
         ) : (
           <section className="space-y-2.5 rounded-[var(--ds-radius-md)] px-4 py-4" style={{ background: "var(--ds-surface)" }}>
             <p className="text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
-              {state.permission === "enabled" ? "Notifications are on." : "You said not now — that's respected."}
+              {state.permission === "enabled" ? "Notifications are on." : "You said not now. That's respected."}
             </p>
             <button
               type="button"
