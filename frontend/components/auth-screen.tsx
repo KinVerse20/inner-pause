@@ -21,7 +21,8 @@ export function AuthScreen() {
   const requested = searchParams.get("redirectTo") ?? "";
   const redirectTo = requested.startsWith("/") && !requested.startsWith("//") && !requested.startsWith("/\\") ? requested : "/";
   const routeMessage = searchParams.get("message");
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("signup");
+  // Entry's "I have an account" opens straight on sign-in.
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(searchParams.get("mode") === "login" ? "login" : "signup");
   const [showEmail, setShowEmail] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,7 +33,8 @@ export function AuthScreen() {
 
   const rememberUser = (user: { id: string; email: string; fullName: string }) => {
     setMvpAuthenticatedUser(user.id);
-    upsertProfile({ fullName: user.fullName, email: user.email });
+    // Signed in means past Entry too, so Home doesn't send them back to it.
+    upsertProfile({ fullName: user.fullName, email: user.email, onboardingCompleted: true });
     applyServerAccount(user);
   };
 
