@@ -15,6 +15,7 @@
     "start": "concurrently -n api,web -c cyan,magenta \"npm run start -w @inner-pause/backend\" \"npm run start -w @inner-pause/frontend\"",
     "lint": "npm run lint -w @inner-pause/frontend",
     "typecheck": "npm run typecheck -w @inner-pause/backend --if-present",
+    "test": "npm run test -w @inner-pause/backend -w @inner-pause/frontend",
     "test:ui": "npm run test:ui -w @inner-pause/frontend"
   },
   "devDependencies": {

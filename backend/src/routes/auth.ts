@@ -1,7 +1,10 @@
 import { SUPPORT_EMAIL } from "@inner-pause/shared";
 import { Hono } from "hono";
 
+import { randomBytes } from "node:crypto";
+
 import { isAdminEmail } from "../auth/admin";
+import { LOCAL_TEST_EMAIL, LOCAL_TEST_NAME, localTestAuthEnabled } from "../auth/local-test";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { clearSession, createResetToken, getVerifiedSession, writeSession } from "../auth/session";
 import {
@@ -107,6 +110,37 @@ authRoutes.post("/login", async (c) => {
   writeSession(c, publicUser);
   return c.json({ user: withAccount(publicUser, record) });
 });
+
+// Dev-only: signs in as the local test listener, creating it on first use
+// with an unguessable password nobody knows (auth/local-test.ts). Answers
+// 404 everywhere the flag isn't on, so it doesn't exist in production.
+authRoutes.post("/test-sign-in", async (c) => {
+  if (!localTestAuthEnabled(process.env, c.req.url)) return c.json({ error: "Not found." }, 404);
+
+  const account = await findOrCreateTestListener();
+  if (!account) return c.json({ error: "Couldn't open the test account." }, 500);
+
+  const publicUser = toPublicUser(account.id, account.user);
+  writeSession(c, publicUser);
+  return c.json({ user: withAccount(publicUser, account.user) });
+});
+
+async function findOrCreateTestListener(): Promise<{ id: string; user: UserDocument } | null> {
+  const existing = await findUserByEmail(LOCAL_TEST_EMAIL);
+  if (existing) return { id: existing._id.toString(), user: existing };
+  try {
+    return await createUser({
+      email: LOCAL_TEST_EMAIL,
+      passwordHash: await hashPassword(randomBytes(32).toString("base64url")),
+      fullName: LOCAL_TEST_NAME,
+    });
+  } catch (error) {
+    // Two first taps at once: the other one created it.
+    if (!isDuplicateKeyError(error)) throw error;
+    const created = await findUserByEmail(LOCAL_TEST_EMAIL);
+    return created ? { id: created._id.toString(), user: created } : null;
+  }
+}
 
 authRoutes.post("/logout", (c) => {
   clearSession(c);

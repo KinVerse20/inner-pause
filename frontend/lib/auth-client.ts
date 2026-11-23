@@ -94,3 +94,11 @@ export async function updateProfile(input: { fullName?: string; phone?: string }
   const payload = (await response.json()) as { user: AuthUser };
   return payload.user;
 }
+
+/** Dev-only: signs in as the local test listener (app/local-test-sign-in). */
+export async function testSignIn() {
+  const response = await apiFetch("/api/auth/test-sign-in", { method: "POST" });
+  if (!response.ok) throw new Error(await readError(response));
+  const payload = (await response.json()) as { user: AuthUser };
+  return payload.user;
+}
