@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { BreathingGuide, breathAt } from "@/components/breathing-guide";
+import { BreathingGuide, breathVisual } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { IconCheck, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
-import { SoundSheet } from "@/components/sound-sheet";
+import { SoundSheet, type ToneSetting } from "@/components/sound-sheet";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
 import { createTellEntry, linkTellEntryToPause, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
@@ -22,6 +22,7 @@ import { findBuiltInSound, soundUrlFor, undertoneGain, type BuiltInSoundId, type
 import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
 import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
 import { useTunedSound } from "@/lib/use-tuned-sound";
+import { buildJourney } from "@/lib/breath-journey";
 import { expandName, markPageTransition } from "@/lib/view-transition";
 
 // docs/PRODUCT_FLOW.md §4/§7: the center Pause action's "Get comfortable"
@@ -55,16 +56,6 @@ function formatTime(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
-// Deterministic playback-guidance cadence (docs/PRODUCT_FLOW.md §7): the
-// session is divided into as many equal segments as there are cues, and the
-// cue on screen advances once per segment — sparse, fixed points, never a
-// running commentary.
-function currentCueIndex(elapsed: number, durationSeconds: number, cueCount: number) {
-  if (cueCount <= 1) return 0;
-  const segment = durationSeconds / cueCount;
-  return Math.min(cueCount - 1, Math.floor(elapsed / segment));
 }
 
 export function PausePlayerScreen() {
@@ -434,10 +425,18 @@ export function PausePlayerScreen() {
       });
   };
 
-  const chooseUndertone = (level: UndertoneLevel) => {
+  // The Sound sheet's Tone: Off, or how present the frequency is. One
+  // setting with You → Preferences → Frequency, so the two never disagree.
+  const chooseTone = (tone: ToneSetting) => {
     haptic("tap");
-    setUndertone(level);
-    updatePreferences({ undertone: level });
+    if (tone === "off") {
+      setFrequencyOn(false);
+      updatePreferences({ soundToneLayerEnabled: false });
+      return;
+    }
+    setFrequencyOn(true);
+    setUndertone(tone);
+    updatePreferences({ soundToneLayerEnabled: true, undertone: tone });
   };
 
   // Leaving shrinks the player back into what opened it, with the page
@@ -517,16 +516,14 @@ export function PausePlayerScreen() {
   }
 
   const progress = phase === "checkin" || phase === "closing" ? 1 : Math.min(1, elapsed / record.durationSeconds);
-  const cueIndex = currentCueIndex(elapsed, record.durationSeconds, record.playbackCues.length);
-  const currentCue = record.playbackCues[cueIndex];
   const closingCue = record.playbackCues[record.playbackCues.length - 1];
-  const breath = breathAt(elapsed);
-  const breathClass =
-    phase !== "playing" || !playing || breath.kind === "message"
-      ? "harmony-breath--rest"
-      : breath.kind === "in"
-        ? "harmony-breath--in"
-        : "";
+  // The guided journey (lib/breath-journey.ts): the Pause's own words are
+  // what it says while resting, so there's one voice, not two.
+  const journey = buildJourney(
+    record.durationSeconds,
+    record.playbackCues.slice(0, -1).map((cue) => cue.lines[0]).filter(Boolean),
+  );
+  const breath = breathVisual(journey, elapsed, phase === "playing" && playing);
   const subtitle = [record.chakraName, record.frequencyLabel].filter(Boolean).join(" · ");
 
   return (
@@ -582,23 +579,11 @@ export function PausePlayerScreen() {
 
       {phase === "playing" ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
-          <div className={`harmony-breath ${breathClass}`}>
+          <div className={`harmony-breath ${breath.className}`} style={{ transitionDuration: `${breath.seconds}s` }}>
             <HarmonyFormVisual playing={playing} progress={progress} dark className="w-[min(68vw,19rem)]" />
           </div>
 
-          <BreathingGuide elapsed={elapsed} playing={playing} />
-
-          <div className="min-h-[2.75rem] max-w-[17rem] space-y-1">
-            {currentCue?.lines.map((line, index) => (
-              <p
-                key={`${cueIndex}-${index}`}
-                className={`ds-settle ${index === 0 ? "text-[0.95rem] leading-6" : "text-sm leading-6"}`}
-                style={{ color: index === 0 ? "var(--ds-on-navy)" : "var(--ds-on-navy-muted)" }}
-              >
-                {line}
-              </p>
-            ))}
-          </div>
+          <BreathingGuide journey={journey} elapsed={elapsed} playing={playing} />
 
           <p className="ds-caption ds-num" style={{ color: "var(--ds-on-navy-muted)" }}>
             {formatTime(elapsed)} · {formatTime(Math.max(0, record.durationSeconds - elapsed))} left
@@ -803,10 +788,11 @@ export function PausePlayerScreen() {
       {soundSheetOpen && builtIn ? (
         <SoundSheet
           currentId={builtInSoundId ?? record.builtInSoundId!}
-          undertone={undertone}
+          tone={frequencyOn ? undertone : "off"}
+          frequencyLabel={record.frequencyLabel ?? null}
           muted={muted}
           onChoose={chooseSound}
-          onUndertone={chooseUndertone}
+          onTone={chooseTone}
           onToggleMute={toggleMute}
           onClose={() => setSoundSheetOpen(false)}
         />

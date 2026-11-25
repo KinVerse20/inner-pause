@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, ViewTransition, type ComponentType, type ReactNode } from "react";
 
-import { IconHomeTab, IconJourneyTab, IconPracticeTab, IconYouTab } from "@/components/pause-icons";
+import { NavHomeIcon, NavJourneyIcon, NavPracticeIcon, NavYouIcon } from "@/components/nav-icons";
 import { haptic } from "@/lib/haptics";
 import { composeGroundPause } from "@/lib/pause-engine";
 import { createPauseRecord } from "@/lib/pause-storage";
 import { EXPAND, expandName, markPageTransition } from "@/lib/view-transition";
 
-const destinations: Array<{ href: string; label: string; Icon: ComponentType<{ className?: string }> }> = [
-  { href: "/", label: "Home", Icon: IconHomeTab },
-  { href: "/practice", label: "Practice", Icon: IconPracticeTab },
-  { href: "/journey", label: "Journey", Icon: IconJourneyTab },
-  { href: "/profile", label: "You", Icon: IconYouTab },
+type TabIcon = ComponentType<{ active: boolean; className?: string }>;
+
+const destinations: Array<{ href: string; label: string; Icon: TabIcon }> = [
+  { href: "/", label: "Home", Icon: NavHomeIcon },
+  { href: "/practice", label: "Practice", Icon: NavPracticeIcon },
+  { href: "/journey", label: "Journey", Icon: NavJourneyIcon },
+  { href: "/profile", label: "You", Icon: NavYouIcon },
 ];
 
 // Every tab opens onto a soft wash of brand color at the top (a glow, not
@@ -101,27 +103,27 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-function NavDestination({
-  item,
-  active,
-}: {
-  item: { href: string; label: string; Icon: ComponentType<{ className?: string }> };
-  active: boolean;
-}) {
+// A tab: outline icon at rest, filled when it's where you are. Hover
+// tints its pill (pointer devices), a press sinks it with a light tap, and
+// the active pill glides between tabs (view-transition name "ip-nav-pill").
+function NavDestination({ item, active }: { item: { href: string; label: string; Icon: TabIcon }; active: boolean }) {
   return (
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      className="ds-tap relative grid min-h-12 place-items-center gap-0.5 rounded-[var(--ds-radius-sm)] py-1 text-center text-[0.75rem]"
+      onClick={() => {
+        if (!active) haptic("tap");
+      }}
+      className="ds-nav-item relative grid min-h-12 place-items-center gap-0.5 rounded-[var(--ds-radius-sm)] py-1 text-center text-[0.75rem]"
       style={{ color: active ? "var(--ds-accent)" : "var(--ds-text-muted)" }}
     >
       <span
         className="ds-nav-indicator"
-        style={active ? { background: "var(--ds-accent-soft)" } : undefined}
+        style={active ? { background: "var(--ds-accent-soft)", viewTransitionName: "ip-nav-pill" } : undefined}
       >
-        <item.Icon className="h-5 w-5" />
+        <item.Icon active={active} className="h-[1.4rem] w-[1.4rem]" />
       </span>
-      <span className="font-medium">{item.label}</span>
+      <span className={active ? "font-semibold" : "font-medium"}>{item.label}</span>
     </Link>
   );
 }

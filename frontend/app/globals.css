@@ -504,7 +504,40 @@
   width: 4rem;
   place-items: center;
   border-radius: 1rem;
-  transition: background-color 380ms var(--ds-ease);
+  transition: background-color 380ms var(--ds-ease), transform 160ms var(--ds-ease);
+}
+
+/* Tabs answer the pointer: a faint pill on hover (mouse and trackpad only,
+   so it never sticks on touch), a small sink on press. */
+@media (hover: hover) and (pointer: fine) {
+  .ds-nav-item:not([aria-current="page"]):hover .ds-nav-indicator {
+    background: color-mix(in srgb, var(--ds-accent-soft) 70%, transparent);
+  }
+  .ds-nav-item:not([aria-current="page"]):hover {
+    color: var(--ds-text-secondary) !important;
+  }
+}
+.ds-nav-item {
+  -webkit-tap-highlight-color: transparent;
+}
+.ds-nav-item:active .ds-nav-indicator {
+  transform: scale(0.9);
+}
+.ds-nav-item:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-nav-item:active .ds-nav-indicator {
+    transform: none;
+  }
+}
+
+/* The active pill glides to the tab you chose. */
+::view-transition-group(ip-nav-pill) {
+  z-index: 51;
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .ds-field {

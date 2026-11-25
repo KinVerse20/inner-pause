@@ -114,31 +114,32 @@ export function MomentsScreen() {
 
           <ReturnToMeBanner />
 
-          <section aria-label="Choose when" className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <section aria-label="Choose when" className="grid grid-cols-1 gap-3">
             {modes.map((item) => (
               <ViewTransition key={item.id} name={vtName("moment-mode", item.id)} share="expand" default="none">
               <button
                 type="button"
                 onClick={() => go({ kind: "mode", mode: item.id })}
-                className="ds-tap ds-card-lift relative grid min-h-[6.75rem] grid-cols-[1fr_7.5rem] overflow-hidden rounded-[var(--ds-radius-lg)] text-left sm:grid-cols-[1fr_9rem]"
+                className="ds-tap ds-card-lift relative grid min-h-[7.25rem] grid-cols-[1fr_38%] overflow-hidden rounded-[var(--ds-radius-lg)] text-left"
                 style={{
                   background: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 12%, var(--ds-surface))`,
                   boxShadow: "var(--ds-elevation-1)",
                 }}
               >
-                <span className="flex items-center gap-3 py-4 pl-4 pr-2">
+                <span className="flex items-center gap-3 py-4 pl-4 pr-3">
                   <span
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full"
                     style={{
-                      background: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 24%, var(--ds-surface))`,
-                      color: `var(--ds-outcome-${item.tone})`,
+                      background: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 34%, var(--ds-surface))`,
+                      color: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 80%, var(--ds-text))`,
+                      boxShadow: `inset 0 0 0 1px color-mix(in srgb, var(--ds-outcome-${item.tone}) 30%, transparent)`,
                     }}
                     aria-hidden="true"
                   >
-                    <item.Icon className="h-5 w-5" />
+                    <item.Icon className="h-[1.35rem] w-[1.35rem]" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="ds-h3 block whitespace-nowrap">{item.label}</span>
+                    <span className="ds-h3 block">{item.label}</span>
                     <span className="mt-0.5 block text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
                       {item.purpose}
                     </span>
@@ -146,7 +147,12 @@ export function MomentsScreen() {
                   <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
                 </span>
                 <span className="relative" aria-hidden="true">
-                  <LandscapeScene variant={item.landscape} className="absolute inset-0 h-full w-full scale-[1.4]" />
+                  <LandscapeScene variant={item.landscape} className="absolute inset-0 h-full w-full scale-[1.15]" />
+                  {/* The card's tint melts into the picture, no hard edge. */}
+                  <span
+                    className="absolute inset-y-0 left-0 w-10"
+                    style={{ background: `linear-gradient(to right, color-mix(in srgb, var(--ds-outcome-${item.tone}) 12%, var(--ds-surface)), transparent)` }}
+                  />
                 </span>
               </button>
               </ViewTransition>
