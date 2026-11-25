@@ -51,6 +51,28 @@ const MOTIFS: Record<string, React.ReactNode> = {
       <path d="M40 58c-6 4-8 10-6 16M30 86c-5 2-7 6-6 10" strokeDasharray="1 5" />
     </>
   ),
+  // The three Moments (components/moments-screen.tsx).
+  "moment-before": (
+    <>
+      <path d="M20 84h112" />
+      <path d="M52 84a24 24 0 0 1 48 0" />
+      <path d="M76 44v-12M50 56l-8-8M102 56l8-8" />
+      <path d="M70 92 50 136M82 92l20 44" />
+    </>
+  ),
+  "moment-during": (
+    <>
+      <path d="M48 70a18 18 0 0 1 3-35.6A25 25 0 0 1 98 40a15 15 0 0 1 2 30Z" />
+      <path d="M54 86l-6 14M74 86l-6 14M94 86l-6 14M64 108l-6 14M84 108l-6 14" />
+    </>
+  ),
+  "moment-after": (
+    <>
+      <path d="M48 76a28 28 0 0 1 56 0" />
+      <path d="M20 76h112" />
+      <path d="M56 92h40M64 106h24M72 120h8" strokeDasharray="3 6" />
+    </>
+  ),
 };
 
 const FALLBACK = (

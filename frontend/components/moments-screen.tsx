@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useEffect, useState, ViewTransition, type ComponentType } from "react";
+import { startTransition, useEffect, useState, ViewTransition } from "react";
 
-import { LandscapeScene } from "@/components/landscape-scene";
+import { MomentEmblem } from "@/components/moment-emblem";
 import { OutcomeEmblem } from "@/components/outcome-emblem";
-import { IconChevronDown, IconChevronRight, IconMic, IconMoon, IconPencil, IconSun, IconWave } from "@/components/pause-icons";
+import { IconChevronDown, IconChevronRight, IconMic, IconPencil, IconSignpost } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { ReturnToMeBanner } from "@/components/return-to-me-banner";
+import { TileMotif } from "@/components/tile-motif";
 import {
   composeBigMomentPause,
   getSituationOptions,
@@ -25,20 +26,19 @@ import { vtName } from "@/lib/view-transition";
 
 // docs/PRODUCT_FLOW.md §11-14: mode is chosen first — "Coming up" /
 // "Happening now" / "Just happened" are the user-facing labels for
-// BEFORE/DURING/AFTER. Each mode carries one tint family (BRAND_IDENTITY.md
-// §4.4) and one static landscape (the only place illustration is used —
-// the Moments cards in the founder-approved mockup).
+// BEFORE/DURING/AFTER. Each mode is a tile built like Home's outcome tiles
+// (tint wash, corner motif, illustrated emblem) so the two tabs feel like
+// one app, with a few everyday examples so you recognise your moment.
 const modes: Array<{
   id: BigMomentMode;
   label: string;
   purpose: string;
+  examples: string;
   tone: string;
-  Icon: ComponentType<{ className?: string }>;
-  landscape: "dawn" | "day" | "dusk";
 }> = [
-  { id: "before", label: "Coming up", purpose: "Get ready", tone: "focus", Icon: IconSun, landscape: "dawn" },
-  { id: "during", label: "Happening now", purpose: "Stay with yourself", tone: "reset", Icon: IconWave, landscape: "day" },
-  { id: "after", label: "Just happened", purpose: "Come back to yourself", tone: "sleep", Icon: IconMoon, landscape: "dusk" },
+  { id: "before", label: "Coming up", purpose: "Get ready", examples: "An interview, an exam, a first day", tone: "focus" },
+  { id: "during", label: "Happening now", purpose: "Stay with yourself", examples: "An argument, a racing mind", tone: "reset" },
+  { id: "after", label: "Just happened", purpose: "Come back to yourself", examples: "A fight, a mistake, hard news", tone: "sleep" },
 ];
 
 const MODE_HEADLINE: Record<BigMomentMode, string> = {
@@ -119,55 +119,44 @@ export function MomentsScreen() {
               <button
                 type="button"
                 onClick={() => go({ kind: "mode", mode: item.id })}
-                className="ds-tap ds-card-lift relative grid min-h-[7.25rem] grid-cols-[1fr_38%] overflow-hidden rounded-[var(--ds-radius-lg)] text-left"
-                style={{
-                  background: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 12%, var(--ds-surface))`,
-                  boxShadow: "var(--ds-elevation-1)",
-                }}
+                className="ds-card ds-card-lift ds-tap outcome-tile flex min-h-[6.75rem] w-full items-center gap-3.5 py-4 pl-3.5 pr-4 text-left"
+                style={{ ["--tile-color" as string]: `var(--ds-outcome-${item.tone})` }}
               >
-                <span className="flex items-center gap-3 py-4 pl-4 pr-3">
-                  <span
-                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full"
-                    style={{
-                      background: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 34%, var(--ds-surface))`,
-                      color: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 80%, var(--ds-text))`,
-                      boxShadow: `inset 0 0 0 1px color-mix(in srgb, var(--ds-outcome-${item.tone}) 30%, transparent)`,
-                    }}
-                    aria-hidden="true"
-                  >
-                    <item.Icon className="h-[1.35rem] w-[1.35rem]" />
+                <TileMotif id={`moment-${item.id}`} size="h-28 w-28" />
+                <MomentEmblem mode={item.id} tone={item.tone} className="h-16 w-16 shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="ds-h3 block">{item.label}</span>
+                  <span className="mt-0.5 block text-[0.88rem] font-medium leading-5" style={{ color: `color-mix(in srgb, var(--ds-outcome-${item.tone}) 55%, var(--ds-text))` }}>
+                    {item.purpose}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="ds-h3 block">{item.label}</span>
-                    <span className="mt-0.5 block text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
-                      {item.purpose}
-                    </span>
+                  <span className="mt-1 block text-[0.8rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+                    {item.examples}
                   </span>
-                  <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
                 </span>
-                <span className="relative" aria-hidden="true">
-                  <LandscapeScene variant={item.landscape} className="absolute inset-0 h-full w-full scale-[1.15]" />
-                  {/* The card's tint melts into the picture, no hard edge. */}
-                  <span
-                    className="absolute inset-y-0 left-0 w-10"
-                    style={{ background: `linear-gradient(to right, color-mix(in srgb, var(--ds-outcome-${item.tone}) 12%, var(--ds-surface)), transparent)` }}
-                  />
-                </span>
+                <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
               </button>
               </ViewTransition>
             ))}
           </section>
 
+          {/* Built like Home's "What's on your mind?" card. */}
           <button
             type="button"
             onClick={() => go({ kind: "explore" })}
-            className="ds-tap flex w-full items-center gap-3 border-t pt-5 text-left"
-            style={{ borderColor: "var(--ds-border)" }}
+            className="ds-tap flex w-full items-center gap-3.5 rounded-[var(--ds-radius-lg)] px-4 py-4 text-left"
+            style={{ background: "var(--ds-accent-soft)" }}
           >
+            <span
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
+              style={{ background: "var(--ds-surface)", color: "var(--ds-accent-secondary)" }}
+              aria-hidden="true"
+            >
+              <IconSignpost className="h-5 w-5" />
+            </span>
             <span className="min-w-0 flex-1">
               <span className="ds-h3 block">Explore moments</span>
-              <span className="mt-0.5 block text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                Pick a moment like yours, or describe your own.
+              <span className="mt-0.5 block text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+                Find one like yours, or your own words.
               </span>
             </span>
             <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
@@ -188,24 +177,18 @@ export function MomentsScreen() {
                   <ModePill tone={mode.tone} text={`${mode.label} · ${mode.purpose}`} />
                 </header>
 
-                {/* The mode card, opened: same tint, its landscape now a band on top. */}
+                {/* The mode tile, opened: same wash, motif and emblem. */}
                 <ViewTransition name={vtName("moment-mode", mode.id)} share="expand" default="none">
                   <div
-                    className="overflow-hidden rounded-[var(--ds-radius-lg)]"
-                    style={{
-                      background: `color-mix(in srgb, var(--ds-outcome-${mode.tone}) 12%, var(--ds-surface))`,
-                      boxShadow: "var(--ds-elevation-1)",
-                    }}
+                    className="ds-card outcome-tile px-5 pb-5 pt-4"
+                    style={{ ["--tile-color" as string]: `var(--ds-outcome-${mode.tone})` }}
                   >
-                    <span className="relative block h-24 overflow-hidden" aria-hidden="true">
-                      <LandscapeScene variant={mode.landscape} className="absolute inset-0 h-full w-full scale-[1.15]" />
-                    </span>
-                    <div className="px-5 pb-5 pt-4">
-                      <h1 className="ds-display text-[1.75rem] sm:text-[2rem]">{MODE_HEADLINE[mode.id]}</h1>
-                      <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                        Choose what&rsquo;s closest. Your Pause starts right away.
-                      </p>
-                    </div>
+                    <TileMotif id={`moment-${mode.id}`} size="h-32 w-32" />
+                    <MomentEmblem mode={mode.id} tone={mode.tone} className="h-16 w-16" />
+                    <h1 className="ds-display mt-2 text-[1.75rem] sm:text-[2rem]">{MODE_HEADLINE[mode.id]}</h1>
+                    <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                      Choose what&rsquo;s closest. Your Pause starts right away.
+                    </p>
                   </div>
                 </ViewTransition>
 
@@ -277,22 +260,20 @@ export function MomentsScreen() {
             </p>
           </div>
           {modes.map((mode) => (
-            <section key={mode.id} aria-labelledby={`explore-${mode.id}`} className="overflow-hidden rounded-[var(--ds-radius-lg)]" style={{ background: "var(--ds-surface)", boxShadow: "var(--ds-elevation-1)" }}>
-              {/* Each group under its mode's landscape, as on the cards. */}
-              <div className="relative h-16 overflow-hidden" aria-hidden="true">
-                <LandscapeScene variant={mode.landscape} className="absolute inset-0 h-full w-full scale-[1.15]" />
-              </div>
-              <h2 id={`explore-${mode.id}`} className="flex items-center gap-2 px-4 pb-1 pt-3">
-                <span
-                  className="grid h-7 w-7 place-items-center rounded-full"
-                  style={{ background: `color-mix(in srgb, var(--ds-outcome-${mode.tone}) 22%, var(--ds-surface))`, color: `color-mix(in srgb, var(--ds-outcome-${mode.tone}) 85%, var(--ds-text))` }}
-                  aria-hidden="true"
-                >
-                  <mode.Icon className="h-3.5 w-3.5" />
-                </span>
-                <span className="ds-h3">{mode.label}</span>
-                <span className="text-[0.82rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                  · {mode.purpose}
+            <section key={mode.id} aria-labelledby={`explore-${mode.id}`} className="ds-card overflow-hidden">
+              {/* Each group headed like its mode's tile. */}
+              <h2
+                id={`explore-${mode.id}`}
+                className="outcome-tile flex items-center gap-3 px-4 py-3"
+                style={{ ["--tile-color" as string]: `var(--ds-outcome-${mode.tone})` }}
+              >
+                <TileMotif id={`moment-${mode.id}`} size="h-28 w-28" />
+                <MomentEmblem mode={mode.id} tone={mode.tone} className="h-11 w-11 shrink-0" />
+                <span className="min-w-0">
+                  <span className="ds-h3 block">{mode.label}</span>
+                  <span className="block text-[0.82rem] font-normal" style={{ color: "var(--ds-text-secondary)" }}>
+                    {mode.purpose}
+                  </span>
                 </span>
               </h2>
               <div className="divide-y divide-[color:var(--ds-border)]">

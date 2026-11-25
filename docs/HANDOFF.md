@@ -35,7 +35,7 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 
 ## Next up (in this order)
 
-A. **Moments home tiles redesign** (founder, 2026-11-25): the current stacked cards copy the founder mockup too literally. Take the idea, not the look: make the tiles cohesive with Home's outcome tiles (emblems, `ds-wash` tint, our type and radius). File: `components/moments-screen.tsx`.
+A. ~~**Moments home tiles redesign**~~ Done 2026-11-25: mode tiles built like Home's (outcome-tile wash, `TileMotif` moment motifs, new `components/moment-emblem.tsx`, everyday examples), Explore as a card, landscape bands removed from the mode page and Explore. Also fixed: picking a sound with Ambient sound off now turns it on (it used to stay silent), a sound routed mid-fade no longer sticks near silence (`lib/use-tuned-sound.ts`), and the player's gentle thoughts have their own card below the controls (`ThoughtCard`), apart from the guide. Open: the library recordings are quiet (RMS -24 to -32 dB); raising them ~8 dB was offered, not approved.
 B. **Practice "How this path is built"** (approved): in the app theme, on the path screen: the 14-day arc, how the sound grows with you, what you'll hear, why this centre and Hz. Also switch the **Rest path to Crown 963 Hz** (approved). Files: `components/practice-path-screen.tsx`, `lib/programme-data.ts`, `components/path-preview.tsx`.
 C. **Practice usefulness** (proposed, founder hasn't picked yet): 1 close the loop on yesterday's action (Yes / Partly / Not yet), 2 trend of the daily 1 to 5 ratings, 3 day-14 toolkit keepsake, 4 kinder catch-up ("Pick up at day 5?"), 5 "use it now" 1-minute tool. Recommended 1, 2, 4.
 D. Phase 7 final QA (below).
