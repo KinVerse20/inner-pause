@@ -19,6 +19,17 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 - Audio stays in the repo for now; move to object storage + CDN (S3/R2) **before public launch** (one base URL in `lib/sound-library.ts`).
 - Player stays quiet: no "Read more" link inside it; Apple/Google sign-in hidden until wired.
 
+## Parked by the founder (2026-11-25)
+
+- **Safety card on writing paths** (Home Tell, Moments letting out, Journey journal): detect crisis words and show a calm card with a helpline (e.g. Tele-MANAS 14416) before any Pause. Proposed, then parked by the founder for now. Note: letting it out in Moments now invites venting, and the only crisis check in the code is in the unused `/api/analyze` path.
+
+## Decisions from the founder review round (2026-11-25)
+
+- Pass is **₹999 once, for life** (incl. future Pass features). Deeper analysis stays (it runs on the device, no AI cost).
+- Tab bar: **Home · Moments · [Pause] · Practice · Journey**; You via the avatar on Home and Journey.
+- Moments: **let it out first** (speak/write, sound already playing, no analysis), saved as the Moment's polaroid words.
+- Journey is a scrolling diary (month trail, Pause stamps); Home tiles use illustrated emblems.
+
 ## Open question for the user
 
 - Should the Inner Pause Pass gate Practice? Today all 5 paths are free; Pass copy only promises deeper Journey insight. (Option: first path or first 3 days free.)
