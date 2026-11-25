@@ -52,6 +52,8 @@ Sound note for the founder's question: library sounds (Rain, Forest…) play the
 
 ## How to test (the user wants real click-through testing, not just screenshots)
 
+- **Testing sound:** "the audio element is playing" proves nothing. Measure what reaches the speakers: an init script patches `AudioNode.prototype.connect` so anything connected to `ctx.destination` also feeds an `AnalyserNode`, then read RMS per context (sound graph vs tone graph). Headless Chrome ignores autoplay rules by default; pass `--autoplay-policy=document-user-activation-required` to test like a real browser. Also check Settings → Sound → Ambient sound: off means tone only.
+
 - Dev server: `cd frontend && npx next dev --port 3100`. If `EADDRINUSE`, a stale Next node process holds 3100 — find it with PowerShell `Get-NetTCPConnection -LocalPort 3100` and stop it.
 - Click harness: scratchpad `shots/shoot.mjs` (playwright-core + system Chrome `C:/Program Files/Google/Chrome/Application/chrome.exe`, `--autoplay-policy=no-user-gesture-required`, 390×844). Steps: `goto:/x`, `role:button|Name`, `role:tab|Name`, `clickSel:css`, `eval:js`, `wait:ms`, `shot:name`, `full:name`. Recreate it if the scratchpad was cleared.
 - Entry gate: first visit `/entry` → click "Begin".
