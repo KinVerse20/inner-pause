@@ -1,9 +1,11 @@
 "use client";
 
+import { IconFeather } from "@/components/pause-icons";
 import { STAGES, journeyAt, type JourneySegment } from "@/lib/breath-journey";
 
 // The Pause's guide (lib/breath-journey.ts): one voice, one line at a
-// time, never a ticking number. Above it, where you are on the journey.
+// time, never a ticking number. The gentle thoughts are not the guide:
+// they have their own card below the controls (ThoughtCard). Above it, where you are on the journey.
 // During breathing it says in or out and counts breaths, not seconds; the
 // Harmony Form grows and settles with each breath (breathVisual).
 //
@@ -61,16 +63,39 @@ export function BreathingGuide({ journey, elapsed, playing }: { journey: Journey
           <p key={key} className="ds-settle text-[1.05rem] leading-7" style={{ color: "var(--ds-on-navy)" }}>
             {step.text}
           </p>
-        ) : step.kind === "reminder" ? (
-          // Something to hold, not something to do: softer, with a small mark.
-          <div key={key} className="ds-settle grid justify-items-center gap-2">
-            <span className="h-px w-6" style={{ background: "#C4B5FD", opacity: 0.7 }} aria-hidden="true" />
-            <p className="text-[1.05rem] leading-7" style={{ color: "#DDD6FE" }}>
-              {step.text}
-            </p>
-          </div>
         ) : null}
       </div>
     </section>
+  );
+}
+
+// A gentle thought to hold, in its own place, so it never reads as the
+// guide telling you what to do. It keeps its space while empty, and fades
+// in and out instead of popping, so nothing on the screen jumps.
+export function ThoughtCard({ journey, elapsed, playing }: { journey: JourneySegment[]; elapsed: number; playing: boolean }) {
+  const { step } = journeyAt(journey, elapsed);
+  const showing = playing && step.kind === "reminder";
+  // The latest thought so far stays in place while it fades out.
+  let text = "";
+  for (const segment of journey) {
+    if (segment.start > elapsed) break;
+    if (segment.step.kind === "reminder") text = segment.step.text;
+  }
+
+  return (
+    <figure
+      aria-hidden={!showing}
+      className="flex min-h-[4.75rem] w-full max-w-[20rem] items-center gap-3 rounded-[var(--ds-radius-lg)] px-4 py-3 text-left transition-opacity duration-1000 ease-out motion-reduce:transition-none"
+      style={{
+        opacity: showing ? 1 : 0,
+        background: "rgba(196,181,253,0.08)",
+        boxShadow: "inset 0 0 0 1px rgba(196,181,253,0.16)",
+      }}
+    >
+      <IconFeather className="h-4 w-4 shrink-0" style={{ color: "#C4B5FD" }} />
+      <blockquote className="text-[0.95rem] italic leading-6" style={{ color: "#DDD6FE" }}>
+        &ldquo;{text}&rdquo;
+      </blockquote>
+    </figure>
   );
 }

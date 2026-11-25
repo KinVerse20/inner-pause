@@ -149,6 +149,8 @@ export function useTunedSound(audioRef: RefObject<HTMLAudioElement | null>, opti
   // While not routed: the fade level applied to the element's volume.
   const envelopeRef = useRef(1);
   const fadeTimerRef = useRef<number | undefined>(undefined);
+  // The element fade in progress, if any, so routing mid-fade can finish it.
+  const elementFadeRef = useRef<{ target: 0 | 1; endsAt: number } | null>(null);
   const settingsRef = useRef({ volume: options.volume, muted: options.muted });
   const { enabled, frequencyHz, volume, muted, trimDb } = options;
 
@@ -169,11 +171,15 @@ export function useTunedSound(audioRef: RefObject<HTMLAudioElement | null>, opti
         return;
       }
       const startedAt = performance.now();
+      elementFadeRef.current = { target, endsAt: startedAt + seconds * 1000 };
       const step = () => {
         const t = seconds > 0 ? Math.min(1, (performance.now() - startedAt) / (seconds * 1000)) : 1;
         envelopeRef.current = fadeCurveValue(target, from, t);
         applyToElement();
-        if (t >= 1) window.clearInterval(fadeTimerRef.current);
+        if (t >= 1) {
+          window.clearInterval(fadeTimerRef.current);
+          elementFadeRef.current = null;
+        }
       };
       step();
       if (seconds > 0) fadeTimerRef.current = window.setInterval(step, ELEMENT_FADE_STEP_MS);
@@ -207,8 +213,16 @@ export function useTunedSound(audioRef: RefObject<HTMLAudioElement | null>, opti
       graphs.set(audio, entry);
     }
     // Carry on at the level the element was at (it may be mid-Pause).
+    // Routed mid-fade (a sound picked while only the tone was playing):
+    // finish that fade on the graph, or the sound sticks near silence.
     window.clearInterval(fadeTimerRef.current);
     entry.graph.envelope.gain.value = envelopeRef.current;
+    const pending = elementFadeRef.current;
+    elementFadeRef.current = null;
+    if (pending) {
+      const remaining = Math.max(0, (pending.endsAt - performance.now()) / 1000);
+      fadeGraph(entry.graph, pending.target, remaining, envelopeRef.current);
+    }
     graphRef.current = entry.graph;
     elementRef.current = audio;
   }, [enabled, audioRef]);

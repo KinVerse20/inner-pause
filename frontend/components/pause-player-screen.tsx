@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { BreathingGuide, breathVisual } from "@/components/breathing-guide";
+import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { LetItOut } from "@/components/let-it-out";
 import { IconCheck, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
@@ -438,9 +438,12 @@ ${text}` : text });
   const chooseSound = (id: BuiltInSoundId) => {
     haptic("tap");
     setBuiltInSoundId(id);
-    updatePreferences({ defaultSound: id });
+    // Picking a sound means you want to hear it: with Ambient sound
+    // switched off in Settings, the pick used to change nothing at all.
+    setAmbientOn(true);
+    updatePreferences({ defaultSound: id, soundAmbientEnabled: true });
     const audio = audioRef.current;
-    const nextUrl = ambientOn ? soundUrlFor(findBuiltInSound(id), pauseHz) : null;
+    const nextUrl = soundUrlFor(findBuiltInSound(id), pauseHz);
     // Also while letting it out, when the sound is already playing before
     // the Pause begins: you choose by ear, so the change is heard at once.
     if (!audio || (phase !== "playing" && audio.paused)) return;
@@ -730,6 +733,8 @@ ${text}` : text });
               {builtInSound.headphoneOnly ? " · best with headphones" : ""}
             </p>
           ) : null}
+
+          <ThoughtCard journey={journey} elapsed={elapsed} playing={playing} />
 
           <WhyThisPausePanel
             input={{
