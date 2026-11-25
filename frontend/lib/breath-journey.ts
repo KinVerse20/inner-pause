@@ -20,6 +20,8 @@ export const STAGES: Array<{ id: JourneyStage; label: string }> = [
 
 export type JourneyStep =
   | { kind: "cue"; text: string }
+  /** A gentle reminder line, given its own quiet moment. */
+  | { kind: "reminder"; text: string }
   | { kind: "quiet" }
   | { kind: "in" | "out"; seconds: number; breath: number; of: number };
 
@@ -61,12 +63,31 @@ const ROUNDS: Array<{ intro: string; inhale: number; exhale: number; breaths: nu
   { intro: "Slower still. A long, easy breath out.", inhale: 4, exhale: 7, breaths: 5 },
 ];
 
-const REST_FALLBACK = [
+// The gentle reminders that have always come with the music.
+const REMINDERS = [
+  "Nothing needs to be solved right now.",
+  "Let your shoulders soften.",
+  "You can meet this moment gently.",
+  "There is room around every thought.",
+  "Stay with the sound. Return to yourself.",
+];
+
+const REST_LINES = [
   "Let the breath find its own pace now.",
   "If your mind wanders, that's all right. Come back to the sound.",
-  "There is nothing to fix right now.",
   "Rest here, held by the sound.",
 ];
+
+/** The Pause's own words and the gentle reminders, taking turns. */
+function reminderPool(pauseLines: string[]) {
+  const own = pauseLines.filter((line) => line.trim());
+  const pool: string[] = [];
+  for (let index = 0; index < Math.max(own.length, REMINDERS.length); index++) {
+    if (own[index]) pool.push(own[index]);
+    if (REMINDERS[index]) pool.push(REMINDERS[index]);
+  }
+  return pool;
+}
 
 const RETURN = [
   "Begin to let your breath grow a little deeper.",
@@ -76,6 +97,7 @@ const RETURN = [
 ];
 
 const CUE_SECONDS = 8;
+const REMINDER_SECONDS = 9;
 const REST_LINE_SECONDS = 12;
 const REST_QUIET_SECONDS = 14;
 
@@ -89,6 +111,14 @@ export function buildJourney(totalSeconds: number, restLines: string[] = []): Jo
     segments.push({ stage, start: t, end: t + seconds, step: { kind: "cue", text } });
     t += seconds;
   };
+  // Reminders come about once a minute: after each stage and between rounds.
+  const pool = reminderPool(restLines);
+  let next = 0;
+  const takeReminder = () => pool[next++ % pool.length];
+  const remind = (stage: JourneyStage) => {
+    segments.push({ stage, start: t, end: t + REMINDER_SECONDS, step: { kind: "reminder", text: takeReminder() } });
+    t += REMINDER_SECONDS;
+  };
 
   const arrive = short ? ARRIVE.slice(0, 2).concat(ARRIVE[3]) : ARRIVE;
   const soften = short ? SOFTEN_SHORT : SOFTEN;
@@ -97,7 +127,9 @@ export function buildJourney(totalSeconds: number, restLines: string[] = []): Jo
   const returnSeconds = returnLines.length * CUE_SECONDS;
 
   for (const line of arrive) cue("arrive", line);
+  remind("arrive");
   for (const line of soften) cue("soften", line, 9);
+  remind("soften");
   for (const line of notice) cue("notice", line);
 
   // Breathing rounds take what's left after a fair share for resting.
@@ -118,17 +150,18 @@ export function buildJourney(totalSeconds: number, restLines: string[] = []): Jo
       segments.push({ stage: "breathe", start: t, end: t + round.exhale, step: { kind: "out", seconds: round.exhale, breath, of: breaths } });
       t += round.exhale;
     }
+    remind("breathe");
   }
 
   // Rest: the Pause's own words, each followed by quiet, until it's time to come back.
   const restEnd = total - returnSeconds;
-  const lines = [...restLines.filter((line) => line.trim()), ...REST_FALLBACK];
-  let lineIndex = 0;
+  // Rest carries on through the same reminders, with a few lines of its own.
+  let restIndex = 0;
   while (t < restEnd) {
-    const text = lines[lineIndex % lines.length];
-    lineIndex += 1;
+    const text = restIndex % 3 === 1 ? REST_LINES[Math.floor(restIndex / 3) % REST_LINES.length] : takeReminder();
+    restIndex += 1;
     const lineEnd = Math.min(restEnd, t + REST_LINE_SECONDS);
-    segments.push({ stage: "rest", start: t, end: lineEnd, step: { kind: "cue", text } });
+    segments.push({ stage: "rest", start: t, end: lineEnd, step: { kind: "reminder", text } });
     t = lineEnd;
     if (t >= restEnd) break;
     const quietEnd = Math.min(restEnd, t + REST_QUIET_SECONDS);

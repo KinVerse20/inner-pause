@@ -52,9 +52,9 @@ export function WhyThisPausePanel({ input, dark = false, readMore = !dark }: { i
             <strong>Why this helps:</strong> {content.whyThisHelps}
           </p>
           {chakraId ? (
-            <Link href={`/chakras/${chakraId}`} className="ds-tap inline-flex min-h-11 items-center gap-1 font-semibold" style={{ color: "var(--ds-accent)" }}>
-              Read about the {input.chakraName.replace(/s*chakra$/i, "")}
-              <IconChevronRight className="h-3.5 w-3.5" />
+            <Link href={`/chakras/${chakraId}?from=pause`} className="ds-tap inline-flex min-h-11 items-center gap-1 text-left font-semibold" style={{ color: dark ? "#C4B5FD" : "var(--ds-accent)" }}>
+              Read more about the {input.chakraName.replace(/\s*chakra$/i, "")}, its tone and the other centres
+              <IconChevronRight className="h-3.5 w-3.5 shrink-0" />
             </Link>
           ) : null}
         </div>

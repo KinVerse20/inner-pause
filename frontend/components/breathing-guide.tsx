@@ -61,6 +61,14 @@ export function BreathingGuide({ journey, elapsed, playing }: { journey: Journey
           <p key={key} className="ds-settle text-[1.05rem] leading-7" style={{ color: "var(--ds-on-navy)" }}>
             {step.text}
           </p>
+        ) : step.kind === "reminder" ? (
+          // Something to hold, not something to do: softer, with a small mark.
+          <div key={key} className="ds-settle grid justify-items-center gap-2">
+            <span className="h-px w-6" style={{ background: "#C4B5FD", opacity: 0.7 }} aria-hidden="true" />
+            <p className="text-[1.05rem] leading-7" style={{ color: "#DDD6FE" }}>
+              {step.text}
+            </p>
+          </div>
         ) : null}
       </div>
     </section>

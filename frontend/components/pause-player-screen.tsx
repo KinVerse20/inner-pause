@@ -18,7 +18,7 @@ import {
   type PauseRecord,
 } from "@/lib/pause-storage";
 import { getPreferences, updatePreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, soundUrlFor, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
+import { findBuiltInSound, soundUrlFor, UNDERTONE_LEVELS, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
 import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
 import { useTunedSound } from "@/lib/use-tuned-sound";
@@ -573,6 +573,25 @@ export function PausePlayerScreen() {
                 I&rsquo;m ready
               </NavyButton>
             ) : null}
+            {/* What you'll hear, set before you begin if you like (never a step you must take). */}
+            {builtIn && builtInSound ? (
+              <button
+                type="button"
+                onClick={() => {
+                  haptic("tap");
+                  setSoundSheetOpen(true);
+                }}
+                aria-haspopup="dialog"
+                className="ds-tap mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-[0.85rem]"
+                style={{ color: "var(--ds-on-navy-muted)" }}
+              >
+                <IconSliders className="h-3.5 w-3.5" />
+                {builtInSound.label} · {frequencyOn ? `${UNDERTONE_LEVELS.find((level) => level.id === undertone)?.label ?? "Balanced"} tone` : "no tone"}
+                <span className="font-semibold" style={{ color: "#C4B5FD" }}>
+                  Change
+                </span>
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -663,6 +682,7 @@ export function PausePlayerScreen() {
               intentLabel: record.intentLabel,
             }}
             dark
+            readMore
           />
 
           {process.env.NODE_ENV === "development" ? (

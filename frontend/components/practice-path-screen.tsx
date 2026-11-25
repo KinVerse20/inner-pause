@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react";
 
 import { IconCheck, IconChevronRight } from "@/components/pause-icons";
 import { PathScene } from "@/components/path-scene";
+import { DayAnatomy, DayPeek } from "@/components/path-preview";
 import { PathTrail } from "@/components/path-trail";
+import { chakraIdFromName, findChakra } from "@/lib/chakra-guide";
 import { PauseShell } from "@/components/pause-shell";
 import { haptic } from "@/lib/haptics";
 import { composeRightNowPause } from "@/lib/pause-engine";
@@ -64,6 +66,8 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   const [stage, setStage] = useState<Stage>("overview");
   const [loaded, setLoaded] = useState(false);
   const [reminderTime, setReminderTime] = useState("20:00");
+  // The day open in the preview trail, before starting.
+  const [previewDay, setPreviewDay] = useState(1);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [checkIn, setCheckIn] = useState("");
@@ -101,6 +105,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
 
   if (!path) return null;
   const { tone, Icon, category } = PATH_PRESENTATION[path.id];
+  const chakraId = chakraIdFromName(path.chakra);
   const enrollment = latestEnrollment(state, path.id);
   const dayNumber = enrollment ? currentProgrammeDay(enrollment) : 1;
   const day = path.days[dayNumber - 1];
@@ -234,6 +239,10 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
 
         {!loaded ? null : stage === "overview" ? (
           <>
+            {/* The whole path before you start: where it goes, what a day holds. */}
+            <span className="relative block h-36 overflow-hidden rounded-[var(--ds-radius-lg)]" aria-hidden="true">
+              <PathScene pathId={path.id} className="absolute inset-0 h-full w-full" />
+            </span>
             <div>
               <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
                 A 14-day path
@@ -242,22 +251,52 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
               <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
                 {path.description}
               </p>
+              {chakraId ? (
+                <Link
+                  href={`/chakras/${chakraId}`}
+                  className="ds-tap mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[0.8rem] font-medium"
+                  style={{ background: tint }}
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ background: findChakra(chakraId)?.color }} aria-hidden="true" />
+                  Inspired by the {findChakra(chakraId)?.name} · {path.frequencyHz} Hz
+                  <IconChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              ) : null}
             </div>
-            <section className="rounded-[var(--ds-radius-lg)] px-5 py-4" style={{ background: tint }}>
-              <p className="ds-h3">5 to 10 minutes a day</p>
-              <ol className="mt-3 grid gap-2 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                {["Check in about yesterday", "Listen and practise", "Use one small action in real life", "Reflect and build your rhythm"].map(
-                  (step, index) => (
-                    <li key={step} className="flex gap-3">
-                      <span className="ds-num w-4 shrink-0" style={{ color: `var(--ds-outcome-${tone})` }}>
-                        {index + 1}
-                      </span>
-                      {step}
-                    </li>
-                  ),
-                )}
-              </ol>
+
+            <section aria-labelledby="preview-title" className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <h2 id="preview-title" className="ds-h3">
+                  Your 14 days
+                </h2>
+                <span className="ds-caption">Tap a day to look ahead</span>
+              </div>
+              <div className="overflow-hidden rounded-[var(--ds-radius-lg)] px-2 py-3" style={{ background: `color-mix(in srgb, var(--ds-outcome-${tone}) 7%, var(--ds-surface))` }}>
+                <PathTrail
+                  path={path}
+                  enrollment={null}
+                  today={null}
+                  tone={tone}
+                  onBeginToday={() => {}}
+                  preview={{
+                    selected: previewDay,
+                    onSelect: (selectedDay) => {
+                      setPreviewDay(selectedDay);
+                      // The day's card sits under the trail: bring it into view if it isn't.
+                      window.requestAnimationFrame(() =>
+                        document.getElementById("day-peek")?.scrollIntoView({
+                          block: "nearest",
+                          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                        }),
+                      );
+                    },
+                  }}
+                />
+              </div>
+              <div id="day-peek" className="scroll-mb-28">{path.days[previewDay - 1] ? <DayPeek day={path.days[previewDay - 1]} tone={tone} total={path.days.length} /> : null}</div>
             </section>
+
+            <DayAnatomy path={path} tone={tone} />
             <section className="ds-card px-5 py-4">
               <label htmlFor="reminder-time" className="ds-h3 block">
                 A daily time for your Practice

@@ -9,8 +9,10 @@ import type { ProgrammeEnrollment } from "@/lib/programme-storage";
 // are filled in, today glows and can be tapped to begin, the days ahead
 // wait quietly. Day 7 is the halfway mark, day 14 the flag at the end.
 // The trail is solid where you've been and dotted where you're going.
+// Before starting, it's a preview: every stop can be tapped to see that day.
 
 const ROW = 84;
+const PREVIEW_ROW = 68;
 // Stop positions across the width (percent): a gentle S-curve down the page.
 const X = [50, 70, 80, 72, 52, 30, 20, 28, 48, 70, 80, 70, 50, 50];
 
@@ -20,18 +22,22 @@ export function PathTrail({
   today,
   tone,
   onBeginToday,
+  preview,
 }: {
   path: Programme;
-  enrollment: ProgrammeEnrollment;
+  enrollment: ProgrammeEnrollment | null;
   /** Today's day number, or null when the path is complete. */
   today: number | null;
   tone: string;
   onBeginToday: () => void;
+  /** Before starting: each stop shows its day when tapped. */
+  preview?: { selected: number; onSelect: (day: number) => void };
 }) {
   const color = `var(--ds-outcome-${tone})`;
   const days = path.days.slice(0, X.length);
-  const height = days.length * ROW;
-  const point = (index: number) => ({ x: X[index], y: index * ROW + ROW / 2 });
+  const row = preview ? PREVIEW_ROW : ROW;
+  const height = days.length * row;
+  const point = (index: number) => ({ x: X[index], y: index * row + row / 2 });
   const segment = (from: number, to: number) => {
     let d = "";
     for (let index = from; index <= to; index++) {
@@ -45,8 +51,8 @@ export function PathTrail({
     }
     return d;
   };
-  const walked = enrollment.completions.length;
-  const reachedIndex = Math.min(days.length - 1, today ? today - 1 : days.length - 1);
+  const walked = enrollment?.completions.length ?? 0;
+  const reachedIndex = preview ? 0 : Math.min(days.length - 1, today ? today - 1 : days.length - 1);
 
   return (
     <ol className="relative" style={{ height }} aria-label={`${path.title}, ${walked} of ${days.length} days walked`}>
@@ -59,11 +65,12 @@ export function PathTrail({
 
       {days.map((day, index) => {
         const { x, y } = point(index);
-        const done = enrollment.completions.some((entry) => entry.day === day.day);
+        const done = enrollment?.completions.some((entry) => entry.day === day.day) ?? false;
         const isToday = today === day.day;
+        const selected = preview?.selected === day.day;
         const milestone = day.day === 7 ? "Halfway" : day.day === days.length ? "The whole path" : null;
         const labelLeft = x > 50;
-        const size = isToday ? 56 : milestone ? 46 : 40;
+        const size = isToday ? 56 : milestone ? 46 : selected ? 44 : 40;
         const status = done ? "walked" : isToday ? "today" : "ahead";
 
         const node = (
@@ -76,7 +83,9 @@ export function PathTrail({
               color: done || isToday ? "var(--ds-surface)" : "var(--ds-text-muted)",
               boxShadow: isToday
                 ? `0 0 0 6px color-mix(in srgb, ${color} 22%, transparent), 0 8px 20px color-mix(in srgb, ${color} 35%, transparent)`
-                : done
+                : selected
+                  ? `inset 0 0 0 2px ${color}, 0 0 0 5px color-mix(in srgb, ${color} 18%, transparent)`
+                  : done
                   ? "var(--ds-elevation-1)"
                   : `inset 0 0 0 1.5px color-mix(in srgb, var(--ds-text) 14%, transparent)`,
             }}
@@ -93,7 +102,20 @@ export function PathTrail({
 
         return (
           <li key={day.day} className="absolute" style={{ left: `${x}%`, top: y, transform: "translate(-50%, -50%)" }}>
-            {isToday ? (
+            {preview ? (
+              <button
+                type="button"
+                onClick={() => {
+                  haptic("tap");
+                  preview.onSelect(day.day);
+                }}
+                aria-pressed={selected}
+                aria-label={`Day ${day.day}: ${day.title}`}
+                className="ds-tap block rounded-full"
+              >
+                {node}
+              </button>
+            ) : isToday ? (
               <button
                 type="button"
                 onClick={() => {
@@ -124,7 +146,7 @@ export function PathTrail({
               ) : null}
               <span
                 className={`block text-[0.8rem] leading-[1.15rem] ${isToday ? "font-semibold" : "font-medium"}`}
-                style={{ color: done || isToday ? "var(--ds-text)" : "var(--ds-text-muted)" }}
+                style={{ color: done || isToday || selected ? "var(--ds-text)" : "var(--ds-text-muted)" }}
               >
                 {day.title}
               </span>

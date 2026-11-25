@@ -24,10 +24,17 @@ test("breaths are counted, and the out breath lengthens round by round", () => {
   assert.ok(firstIn.of >= 2);
 });
 
-test("the Pause's own words are spoken while resting", () => {
-  const journey = buildJourney(600, ["Nothing needs to be solved right now."]);
-  const rest = journey.filter((segment) => segment.stage === "rest" && segment.step.kind === "cue").map((segment) => segment.step.text);
-  assert.equal(rest[0], "Nothing needs to be solved right now.");
+test("gentle reminders, the Pause's own and the familiar ones, come all through it", () => {
+  const journey = buildJourney(600, ["The Pause's own line."]);
+  const reminders = journey.filter((segment) => segment.step.kind === "reminder");
+  const texts = reminders.map((segment) => segment.step.text);
+  assert.equal(texts[0], "The Pause's own line.", "the Pause's own words come first");
+  assert.ok(texts.includes("Nothing needs to be solved right now."), "the familiar reminders are kept");
+  for (const stage of ["arrive", "soften", "breathe", "rest"]) {
+    assert.ok(reminders.some((segment) => segment.stage === stage), `a reminder during ${stage}`);
+  }
+  const firstMinutes = reminders.filter((segment) => segment.start < 300).length;
+  assert.ok(firstMinutes >= 4, `about one a minute early on (got ${firstMinutes} in 5 minutes)`);
 });
 
 test("a moment in the Pause maps to its step", () => {
@@ -38,6 +45,6 @@ test("a moment in the Pause maps to its step", () => {
 });
 
 test("our voice: no dashes in what it says", () => {
-  const text = buildJourney(600).flatMap((segment) => (segment.step.kind === "cue" ? [segment.step.text] : [])).join(" ");
+  const text = buildJourney(600).flatMap((segment) => ("text" in segment.step ? [segment.step.text] : [])).join(" ");
   assert.ok(!/[—–]/.test(text));
 });
