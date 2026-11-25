@@ -7,11 +7,10 @@ import { useEffect, useState, ViewTransition } from "react";
 import { DEFAULT_CARDS, type PublicCard } from "@inner-pause/shared";
 
 import { CardIcon } from "@/components/card-icon";
-import { IconBubbles, IconCalendar, IconChevronRight, IconMic, IconPencil } from "@/components/pause-icons";
+import { IconBubbles, IconMic, IconPencil } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { isEmblemId, OutcomeEmblem } from "@/components/outcome-emblem";
 import { TileMotif } from "@/components/tile-motif";
-import { YouAvatar } from "@/components/you-avatar";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
 import { getVisibleCards, subscribeAppContent } from "@/lib/content-store";
@@ -72,7 +71,6 @@ export function PauseHomeScreen() {
                 Choose a Pause to shift how you feel.
               </p>
             </div>
-            <YouAvatar />
           </header>
         </StaggerItem>
 
@@ -155,30 +153,6 @@ export function PauseHomeScreen() {
           </section>
         </StaggerItem>
 
-        <StaggerItem>
-          <Link
-            href="/moments"
-            className="ds-tap grid grid-cols-[auto_1fr] items-start gap-x-3.5 gap-y-2 rounded-[var(--ds-radius-lg)] px-1 py-2"
-          >
-            <span
-              className="ds-outcome-icon row-span-2 grid h-11 w-11 place-items-center rounded-full"
-              style={{ ["--ds-outcome-color" as string]: "var(--ds-outcome-focus)" }}
-              aria-hidden="true"
-            >
-              <IconCalendar className="h-5 w-5" />
-            </span>
-            <span className="min-w-0">
-              <span className="ds-h3 block">For the big moments in your life</span>
-              <span className="mt-0.5 block text-[0.82rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
-                Before an interview · during a tough conversation · after an argument
-              </span>
-            </span>
-            <span className="flex items-center gap-0.5 text-sm font-semibold" style={{ color: "var(--ds-warning)" }}>
-              Explore
-              <IconChevronRight className="h-4 w-4" />
-            </span>
-          </Link>
-        </StaggerItem>
       </Stagger>
     </PauseShell>
   );

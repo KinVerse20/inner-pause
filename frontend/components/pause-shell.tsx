@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, ViewTransition, type ComponentType, type ReactNode } from "react";
 
-import { NavHomeIcon, NavJourneyIcon, NavMomentsIcon, NavPracticeIcon } from "@/components/nav-icons";
+import { NavHomeIcon, NavMomentsIcon, NavPracticeIcon, NavYouIcon } from "@/components/nav-icons";
 import { haptic } from "@/lib/haptics";
 import { composeGroundPause } from "@/lib/pause-engine";
 import { createPauseRecord } from "@/lib/pause-storage";
@@ -12,13 +12,14 @@ import { EXPAND, expandName, markPageTransition } from "@/lib/view-transition";
 
 type TabIcon = ComponentType<{ active: boolean; className?: string }>;
 
-// Moments has its own tab (letting out lives there now); You moved to the
-// avatar at the top of Home and Journey, where profile usually lives.
+// Moments has its own tab (letting out lives there). The last tab is You,
+// where people expect it (Instagram, Headspace, Calm): your Journey diary,
+// with settings behind its gear (/profile).
 const destinations: Array<{ href: string; label: string; Icon: TabIcon }> = [
   { href: "/", label: "Home", Icon: NavHomeIcon },
   { href: "/moments", label: "Moments", Icon: NavMomentsIcon },
   { href: "/practice", label: "Practice", Icon: NavPracticeIcon },
-  { href: "/journey", label: "Journey", Icon: NavJourneyIcon },
+  { href: "/journey", label: "You", Icon: NavYouIcon },
 ];
 
 // Every tab opens onto a soft wash of brand color at the top (a glow, not
@@ -102,7 +103,10 @@ function PauseBottomNav() {
 }
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  if (href === "/") return pathname === "/";
+  // Settings live under You.
+  if (href === "/journey") return pathname.startsWith("/journey") || pathname.startsWith("/profile");
+  return pathname.startsWith(href);
 }
 
 // A tab: outline icon at rest, filled when it's where you are. Hover

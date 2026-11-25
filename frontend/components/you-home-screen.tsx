@@ -35,9 +35,8 @@ function readStats() {
   };
 }
 
-// You: who you are here, what you've given yourself, and the settings.
-// Reached from the avatar on Home and Journey (not a tab), so it has its
-// own way back.
+// Settings, behind the gear on the You tab: your account and what you've
+// given yourself, the Pass, and every setting.
 export function YouHomeScreen() {
   const [account, setAccount] = useState<LocalAccount | null>(null);
   const [passState, setPassState] = useState<PassState>("free");
@@ -69,10 +68,11 @@ export function YouHomeScreen() {
     <PauseShell>
       <Stagger className="space-y-6 pb-4 pt-2">
         <StaggerItem>
-          <Link href="/" onClick={() => haptic("tap")} className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 pr-2 text-xs font-medium" style={{ color: "var(--ds-text-secondary)" }}>
+          <Link href="/journey" onClick={() => haptic("tap")} className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 pr-2 text-xs font-medium" style={{ color: "var(--ds-text-secondary)" }}>
             <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
-            Home
+            You
           </Link>
+          <h1 className="ds-display mt-2 text-[1.5rem]">Settings</h1>
         </StaggerItem>
 
         <StaggerItem>
@@ -92,7 +92,7 @@ export function YouHomeScreen() {
               >
                 {initial}
               </span>
-              <h1 className="ds-display mt-3 truncate text-[1.6rem]">{account ? displayName : "Your space"}</h1>
+              <p className="ds-display mt-3 truncate text-[1.6rem]">{account ? displayName : "Your space"}</p>
               <p className="mt-0.5 text-[0.88rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
                 {account ? account.email : "Sign in to keep your Journey safe across devices."}
               </p>

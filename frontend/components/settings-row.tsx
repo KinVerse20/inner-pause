@@ -106,7 +106,7 @@ export function SettingsSectionTitle({ children }: { children: ReactNode }) {
 export function YouScreenHeader({
   title,
   backHref = "/profile",
-  backLabel = "You",
+  backLabel = "Settings",
   Icon,
   tone,
 }: {

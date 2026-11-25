@@ -26,7 +26,7 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 ## Decisions from the founder review round (2026-11-25)
 
 - Pass is **₹999 once, for life** (incl. future Pass features). Deeper analysis stays (it runs on the device, no AI cost).
-- Tab bar: **Home · Moments · [Pause] · Practice · Journey**; You via the avatar on Home and Journey.
+- Tab bar: **Home · Moments · [Pause] · Practice · You**. The You tab is your Journey diary (`/journey`, header with avatar and name); settings (`/profile`, titled Settings) sit behind its gear. Home has no avatar and no big-moments link (Moments is a tab).
 - Moments: **let it out first** (speak/write, sound already playing, no analysis), saved as the Moment's polaroid words.
 - Journey is a scrolling diary (month trail, Pause stamps); Home tiles use illustrated emblems.
 
