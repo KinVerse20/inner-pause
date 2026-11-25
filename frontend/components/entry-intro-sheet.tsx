@@ -4,31 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { haptic } from "@/lib/haptics";
+import { HOW_IT_WORKS } from "@/lib/how-it-works";
 
-// "How it works": Kinverse's three-step first-run intro, in our voice.
-// Optional by design (docs/PRODUCT_FLOW.md §39.A: Entry is not a mandatory
-// carousel), so it opens only when asked for, from Entry. The last step
-// begins, same as Entry's own Begin.
-const STEPS = [
-  {
-    title: "Start with how you feel",
-    body: "Pick a feeling, or tell us in your own words. One honest sentence is enough.",
-  },
-  {
-    title: "Sound meets you there",
-    body: "You get a short Pause for right now. Press play, and breathe along if you like.",
-  },
-  {
-    title: "Your Journey keeps the thread",
-    body: "Each Pause becomes a page in your Journey, so over time you can see what helps you.",
-  },
-] as const;
+// "How it works" (lib/how-it-works.ts), as a sheet. Optional by design
+// (docs/PRODUCT_FLOW.md §39.A: Entry is not a mandatory carousel), so it
+// opens only when asked for, from Entry. The last step begins, same as
+// Entry's own Begin.
 
 export function EntryIntroSheet({ onBegin, onClose }: { onBegin: () => void; onClose: () => void }) {
   const [index, setIndex] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
-  const step = STEPS[index];
-  const last = index === STEPS.length - 1;
+  const step = HOW_IT_WORKS[index];
+  const last = index === HOW_IT_WORKS.length - 1;
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -73,7 +60,7 @@ export function EntryIntroSheet({ onBegin, onClose }: { onBegin: () => void; onC
         <span className="mx-auto mb-4 block h-1 w-10 rounded-full" style={{ background: "var(--ds-border)" }} aria-hidden="true" />
         <div className="flex items-center justify-between">
           <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-            How it works · {index + 1} of {STEPS.length}
+            How it works · {index + 1} of {HOW_IT_WORKS.length}
           </p>
           <button type="button" onClick={onClose} className="ds-tap min-h-11 rounded-full px-3 text-sm font-semibold" style={{ color: "var(--ds-accent)" }}>
             Close
@@ -95,7 +82,7 @@ export function EntryIntroSheet({ onBegin, onClose }: { onBegin: () => void; onC
         </div>
 
         <div className="mt-5 flex justify-center gap-2">
-          {STEPS.map((item, dotIndex) => (
+          {HOW_IT_WORKS.map((item, dotIndex) => (
             <button
               key={item.title}
               type="button"

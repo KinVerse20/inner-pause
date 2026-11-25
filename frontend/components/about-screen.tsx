@@ -1,130 +1,68 @@
 import Link from "next/link";
-import Image from "next/image";
 
-import { BrandLogo, GlassCard, MvpShell, SectionTitle } from "@/components/mvp-shell";
+import { AboutStory } from "@/components/about-story";
+import { IconChevronRight } from "@/components/pause-icons";
+import { HOW_IT_WORKS } from "@/lib/how-it-works";
 
-const steps = [
-  {
-    title: "Share or speak",
-    copy: "Share what happened, describe how you feel or simply ask for a quick reset.",
-    icon: "✎",
-  },
-  {
-    title: "Receive insight",
-    copy: "The Inner Pause identifies the emotions, important incidents and areas within you that may need gentle attention.",
-    icon: "◎",
-  },
-  {
-    title: "Start healing",
-    copy: "Receive a personalised session using calming sound, breathwork, guided reflection and carefully selected frequency-based soundscapes.",
-    icon: "✦",
-  },
+const DOCUMENTS = [
+  { href: "/terms", label: "Terms of Service" },
+  { href: "/privacy-policy", label: "Privacy Policy" },
+  { href: "/refund-policy", label: "Refund and cancellation policy" },
 ];
 
-const cards = [
-  {
-    title: "Short-term healing",
-    icon: "◌",
-    copy: "When you need support immediately, The Inner Pause creates short, personalised reset sessions designed to help you slow down, settle your emotions and feel lighter in the moment.\n\nThese experiences may combine calming soundscapes, gentle breathing, guided reflection and frequency-based audio.",
-  },
-  {
-    title: "Long-term healing",
-    icon: "☾",
-    copy: "Your daily reflections gradually reveal recurring emotions, triggers and behavioural patterns. The Inner Pause helps you recognise these patterns with greater clarity so you can build emotional awareness and respond more consciously over time.\n\nYour journey is a private space for reflection, release and personal growth.",
-  },
-  {
-    title: "Why sound and frequency?",
-    icon: "≈",
-    copy: "The human body naturally responds to sound, rhythm and vibration. Music and thoughtfully designed sound environments can influence breathing, attention, relaxation and emotional state.\n\nThe Inner Pause uses carefully selected frequency-based soundscapes as part of a broader reflective wellness experience. These sounds are designed to support calm, focus and emotional balance.",
-  },
-];
-
+// The public About page (open without entering the app, like the legal
+// pages): the Inner Pause story and how it works, in our design. Same
+// words as You → Help / About and Entry's "How it works".
 export function AboutScreen() {
   return (
-    <MvpShell>
-      <div className="mx-auto max-w-4xl space-y-5">
-        <header className="flex items-center justify-between gap-4">
-          <BrandLogo />
-          <Link href="/journal" className="hidden rounded-full border border-[var(--gold-border-soft)] px-4 py-2 text-sm text-[var(--gold-light)] sm:inline-flex">
-            Begin
-          </Link>
-        </header>
+    <main
+      className="min-h-dvh px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))]"
+      style={{ background: "var(--ds-bg)", color: "var(--ds-text)", fontFamily: "var(--ds-font-sans)" }}
+    >
+      <article className="mx-auto max-w-2xl space-y-7">
+        <Link href="/" className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 pr-2 text-xs font-medium" style={{ color: "var(--ds-accent)" }}>
+          <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
+          Inner Pause
+        </Link>
 
-        <GlassCard className="relative overflow-hidden p-5 sm:p-8">
-          <div className="pointer-events-none absolute right-[-4rem] top-[-4rem] h-56 w-56 rounded-full mvp-orb opacity-55" />
-          <div className="relative grid gap-6 sm:grid-cols-[1fr_12rem] sm:items-center">
-            <div>
-              <SectionTitle
-                eyebrow="About The Inner Pause"
-                title="A daily ritual for release, reflection and renewal"
-                copy="Turn your day into a personalised healing experience. The Inner Pause helps you feel lighter in the moment and understand yourself more deeply over time."
-              />
-            </div>
-            <div className="mx-auto overflow-hidden rounded-[2rem] border border-[var(--gold-border-soft)] bg-black/25 p-3 shadow-[0_0_50px_rgba(178,89,231,0.2)]">
-              <Image src="/branding/innerpause-logo-small.png" alt="The Inner Pause logo" width={900} height={396} className="h-auto w-48 rounded-[1.4rem]" priority />
-            </div>
-          </div>
-        </GlassCard>
+        <AboutStory />
 
-        <GlassCard className="p-5">
-          <h2 className="font-serif text-2xl text-[var(--gold-light)]">How it works</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {steps.map((step, index) => (
-              <div key={step.title} className="rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-9 w-9 place-items-center rounded-full border border-[var(--gold-border-soft)] text-[var(--gold-light)]">{step.icon}</span>
-                  <span className="text-xs uppercase tracking-[0.22em] text-[var(--gold-muted)]">0{index + 1}</span>
-                </div>
-                <h3 className="mt-4 font-serif text-xl text-stone-100">{step.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-stone-300">{step.copy}</p>
-              </div>
+        <section aria-labelledby="about-how-title" className="space-y-3">
+          <h2 id="about-how-title" className="ds-h2">
+            How it works
+          </h2>
+          <ol className="ds-card divide-y divide-[color:var(--ds-border)]">
+            {HOW_IT_WORKS.map((step, index) => (
+              <li key={step.title} className="flex gap-3.5 px-5 py-4">
+                <span className="ds-num grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm" style={{ background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }}>
+                  {index + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="ds-h3 block">{step.title}</span>
+                  <span className="mt-0.5 block text-[0.92rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                    {step.body}
+                  </span>
+                </span>
+              </li>
             ))}
-          </div>
-        </GlassCard>
+          </ol>
+          <p className="ds-caption" style={{ color: "var(--ds-text-muted)" }}>
+            Inner Pause supports everyday wellbeing. It is not a substitute for medical or mental health care.
+          </p>
+        </section>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          {cards.map((card) => (
-            <GlassCard key={card.title} className="p-5">
-              <span className="grid h-11 w-11 place-items-center rounded-full border border-[var(--gold-border-soft)] text-xl text-[var(--gold-light)]">{card.icon}</span>
-              <h2 className="mt-4 font-serif text-2xl text-[var(--gold-light)]">{card.title}</h2>
-              <div className="mt-3 space-y-3 text-sm leading-6 text-stone-300">
-                {card.copy.split("\n\n").map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-            </GlassCard>
+        <Link href="/" className="ds-filled w-full">
+          Begin
+        </Link>
+
+        <footer className="flex flex-wrap gap-x-4 gap-y-2 border-t pt-6 text-[0.86rem]" style={{ borderColor: "var(--ds-border)" }}>
+          {DOCUMENTS.map((doc) => (
+            <Link key={doc.href} href={doc.href} className="ds-tap inline-flex min-h-11 items-center" style={{ color: "var(--ds-text-secondary)" }}>
+              {doc.label}
+            </Link>
           ))}
-        </div>
-
-        <GlassCard className="p-5 sm:p-6">
-          <h2 className="font-serif text-3xl text-[var(--gold-light)]">Built with experience and care</h2>
-          <p className="mt-4 text-sm leading-7 text-stone-300 sm:text-base">
-            The Inner Pause has been shaped by professionals with approximately 15 years of experience working with healing practices, emotional wellness and guided personal transformation.
-          </p>
-          <p className="mt-4 text-sm leading-7 text-stone-300 sm:text-base">
-            That experience has been used to create a thoughtful daily practice that combines reflection, sound and personalised guidance in a simple and accessible format.
-          </p>
-          <p className="mt-4 border-t border-white/10 pt-4 text-sm leading-6 text-stone-400">
-            Every experience inside The Inner Pause is designed with care, responsibility and respect for the user’s emotional privacy.
-          </p>
-        </GlassCard>
-
-        <GlassCard className="p-5 text-center sm:p-7">
-          <h2 className="font-serif text-3xl text-[var(--gold-light)]">Begin Your Journey</h2>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-stone-300">
-            A gentle daily practice for emotional awareness and inner calm.
-          </p>
-          <Link
-            href="/journal"
-            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-full border border-[var(--gold-border)] bg-[linear-gradient(135deg,rgba(244,189,94,0.95),rgba(178,89,231,0.55))] px-5 py-3 font-semibold text-[#120b16] shadow-[0_0_28px_rgba(244,189,94,0.18)] transition hover:brightness-110"
-          >
-            Begin Your Journey
-          </Link>
-          <p className="mx-auto mt-5 max-w-xl text-xs leading-5 text-stone-500">
-            The Inner Pause supports reflection and emotional wellbeing. It is not a substitute for professional medical or mental-health care.
-          </p>
-        </GlassCard>
-      </div>
-    </MvpShell>
+        </footer>
+      </article>
+    </main>
   );
 }

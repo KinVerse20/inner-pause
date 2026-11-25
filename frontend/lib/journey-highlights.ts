@@ -1,8 +1,7 @@
-import { getCoreArc } from "@/lib/practice-content";
-import { skillLabel } from "@/lib/practice-skills";
 import { listMomentRecords, type MomentRecord, type ReturnToMeState } from "@/lib/moment-storage";
 import { getPauseRecord, type PauseFeedback } from "@/lib/pause-storage";
-import { listPracticeSessionRecords, type PracticeSessionRecord } from "@/lib/practice-storage";
+import { findProgramme } from "@/lib/programme-data";
+import { readProgrammeState, type ProgrammeCheckIn, type ProgrammeEnrollment } from "@/lib/programme-storage";
 import { listTellEntries, type TellEntry } from "@/lib/tell-storage";
 
 // Journey — Highlights (this slice's brief §2): a pure read/model layer,
@@ -10,12 +9,11 @@ import { listTellEntries, type TellEntry } from "@/lib/tell-storage";
 // meaningful happened" — lib/moment-storage.ts only ever creates one when a
 // specific situation or a real expression was given (never from mode
 // selection alone), so every Moment is Highlight-worthy by construction; no
-// extra filtering needed there. Practice sessions are Practice-only
-// mechanics by default (docs/PRODUCT_FLOW.md §37) — a session is promoted
-// to a Highlight only when it carried both a real-world rep *and* the user
-// actually reported back on it (activityRealWorldRep + returnText), the
-// deterministic stand-in for "a real-world event became meaningful" without
-// calling AI to judge significance.
+// extra filtering needed there. Practice days are Practice-only mechanics
+// by default (docs/PRODUCT_FLOW.md §37): a day of one of the five paths is
+// promoted to a Highlight only when you wrote a check-in for it, the
+// deterministic stand-in for "this became meaningful" without calling AI
+// to judge significance.
 export type HighlightSourceType = "moment" | "practice";
 
 export interface Highlight {
@@ -60,28 +58,35 @@ function highlightFromMoment(record: MomentRecord): Highlight {
   };
 }
 
-function highlightFromPractice(record: PracticeSessionRecord): Highlight | null {
-  if (!record.activityRealWorldRep || !record.returnText) return null;
-  const skill = { label: skillLabel(record.skillId) };
+// A path day's id, kept free of ":" (Highlight ids are "<type>:<sourceId>").
+const practiceSourceId = (enrollment: ProgrammeEnrollment, day: number) => `${enrollment.id}~${day}`;
+
+function highlightFromCheckIn(enrollment: ProgrammeEnrollment, checkIn: ProgrammeCheckIn): Highlight | null {
+  if (!checkIn.text.trim()) return null;
+  const path = findProgramme(enrollment.issueId);
+  if (!path) return null;
+  const dayTitle = path.days[checkIn.day - 1]?.title;
+  const sourceId = practiceSourceId(enrollment, checkIn.day);
   return {
-    id: `practice:${record.id}`,
+    id: `practice:${sourceId}`,
     sourceType: "practice",
-    sourceId: record.id,
-    title: `${skill.label} · ${record.activityRealWorldRep}`,
+    sourceId,
+    title: dayTitle ? `${path.title} · Day ${checkIn.day}, ${dayTitle}` : `${path.title} · Day ${checkIn.day}`,
     timingLabel: "Practice",
-    createdAt: record.completedAt ?? record.startedAt,
-    linkedPauseRecordId: record.linkedPauseRecordId,
-    expression: record.returnText,
-    feedback: record.pauseFeedback,
+    createdAt: checkIn.createdAt,
+    expression: checkIn.text,
   };
+}
+
+function practiceHighlights(): Highlight[] {
+  return readProgrammeState().enrollments.flatMap((enrollment) =>
+    enrollment.checkIns.map((checkIn) => highlightFromCheckIn(enrollment, checkIn)).filter((item): item is Highlight => item !== null),
+  );
 }
 
 export function listHighlights(): Highlight[] {
   const fromMoments = listMomentRecords().map(highlightFromMoment);
-  const fromPractice = listPracticeSessionRecords()
-    .map(highlightFromPractice)
-    .filter((item): item is Highlight => item !== null);
-  return [...fromMoments, ...fromPractice].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return [...fromMoments, ...practiceHighlights()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export function getHighlight(sourceType: HighlightSourceType, sourceId: string): Highlight | null {
@@ -89,8 +94,7 @@ export function getHighlight(sourceType: HighlightSourceType, sourceId: string):
     const record = listMomentRecords().find((item) => item.id === sourceId);
     return record ? highlightFromMoment(record) : null;
   }
-  const record = listPracticeSessionRecords().find((item) => item.id === sourceId);
-  return record ? highlightFromPractice(record) : null;
+  return practiceHighlights().find((item) => item.sourceId === sourceId) ?? null;
 }
 
 // Linked Journal material for a Highlight (this slice's brief §4: "A
@@ -103,11 +107,4 @@ export function getLinkedJournalEntries(highlight: Highlight): TellEntry[] {
     return all.filter((entry) => entry.linkedMomentId === highlight.sourceId);
   }
   return all.filter((entry) => entry.linkedPracticeSessionId === highlight.sourceId);
-}
-
-// Used by lib/practice-content.ts consumers to label a Highlight's session
-// context without re-importing the whole content module elsewhere.
-export function describePracticeSession(skillId: PracticeSessionRecord["skillId"], sessionNumber: number): string {
-  const arc = getCoreArc(skillId);
-  return arc[sessionNumber - 1]?.title ?? `Session ${sessionNumber}`;
 }

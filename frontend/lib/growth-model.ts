@@ -1,7 +1,7 @@
 import { listHighlights } from "@/lib/journey-highlights";
 import { listPauseRecords } from "@/lib/pause-storage";
-import { skillLabel } from "@/lib/practice-skills";
-import { listEnrollments } from "@/lib/practice-storage";
+import { findProgramme } from "@/lib/programme-data";
+import { readProgrammeState } from "@/lib/programme-storage";
 
 // Journey — Growth (this slice's brief §6): computed on read from existing
 // Pause/Highlight/Practice history, never a separately maintained ledger,
@@ -16,13 +16,14 @@ export interface GrowthStatement {
 const FEEDBACK_RANK: Record<string, number> = { "not-better": 0, same: 1, better: 2 };
 const MIN_RESPONSE_SAMPLE = 3;
 
+// A finished path (all of its days done) is a plain fact worth saying.
 function practiceMilestoneStatements(): GrowthStatement[] {
-  return listEnrollments()
-    .filter((enrollment) => enrollment.milestoneEarnedAt)
-    .map((enrollment) => ({
-      id: `milestone:${enrollment.skillId}`,
-      text: `You completed the core ${skillLabel(enrollment.skillId).toLowerCase()} practice.`,
-    }));
+  return readProgrammeState()
+    .enrollments.filter((enrollment) => enrollment.status === "completed")
+    .flatMap((enrollment) => {
+      const path = findProgramme(enrollment.issueId);
+      return path ? [{ id: `milestone:${enrollment.id}`, text: `You finished the ${path.days.length}-day ${path.title} path.` }] : [];
+    });
 }
 
 function pauseResponseRateStatement(): GrowthStatement | null {

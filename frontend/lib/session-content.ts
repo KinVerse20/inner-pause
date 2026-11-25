@@ -1,6 +1,6 @@
 import type { BigMomentMode } from "@/lib/big-moment-engine";
 import type { PauseCategoryId } from "@/lib/pause-categories";
-import type { BuiltInSkillId } from "@/lib/practice-skills";
+import type { BuiltInSkillId } from "@inner-pause/shared";
 
 // The shared session-aware content layer (docs/PRODUCT_FLOW.md §7): one
 // content model reused by Right Now, the Ground Pause, Big Moments, and

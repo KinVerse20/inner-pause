@@ -11,20 +11,31 @@
 import { listMomentRecords, type MomentRecord } from "@/lib/moment-storage";
 import { listPatterns, type PatternRecord } from "@/lib/pattern-storage";
 import { listPauseRecords, type PauseRecord } from "@/lib/pause-storage";
-import {
-  listPracticeCheckIns,
-  listPracticeSessionRecords,
-  listEnrollments,
-  type PracticeCheckInRecord,
-  type PracticeEnrollment,
-  type PracticeSessionRecord,
-} from "@/lib/practice-storage";
 import { readProgrammeState, type ProgrammeState } from "@/lib/programme-storage";
 import { deleteTellEntry, listTellEntries, type TellEntry } from "@/lib/tell-storage";
 import { clearAccount } from "@/lib/account-store";
 import { logout } from "@/lib/auth-client";
 
 const isBrowser = () => typeof window !== "undefined";
+
+// The retired seven-skill Practice kept its records under these keys. No
+// screen writes them any more, but a device that used it still holds them:
+// they stay in the summary, the export and the delete, read as stored.
+const LEGACY_PRACTICE_KEYS = {
+  enrollments: "inner-pause:practice-enrollments",
+  sessions: "inner-pause:practice-sessions",
+  checkIns: "inner-pause:practice-checkins",
+} as const;
+
+function readLegacyPractice(key: string): unknown[] {
+  if (!isBrowser()) return [];
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 const JOURNEY_DATA_KEYS = [
   "inner-pause:tell-entries",
@@ -36,9 +47,9 @@ const JOURNEY_DATA_KEYS = [
 const ALL_LOCAL_DATA_KEYS = [
   ...JOURNEY_DATA_KEYS,
   "inner-pause:pause-records",
-  "inner-pause:practice-enrollments",
-  "inner-pause:practice-sessions",
-  "inner-pause:practice-checkins",
+  LEGACY_PRACTICE_KEYS.enrollments,
+  LEGACY_PRACTICE_KEYS.sessions,
+  LEGACY_PRACTICE_KEYS.checkIns,
   // The five Practice paths (lib/programme-storage.ts) and a reminder
   // subscription waiting to reach the server.
   "innerpause-practices-v1",
@@ -87,7 +98,7 @@ export function getDataSummary(): DataSummary {
     // Days completed on Practice paths, plus any older skill sessions.
     practiceSessionCount:
       readProgrammeState().enrollments.reduce((sum, enrollment) => sum + enrollment.completions.length, 0) +
-      listPracticeSessionRecords().length,
+      readLegacyPractice(LEGACY_PRACTICE_KEYS.sessions).length,
     pauseCount: listPauseRecords().length,
   };
 }
@@ -100,10 +111,11 @@ interface ExportBundle {
   moments: MomentRecord[];
   patterns: PatternRecord[];
   pauses: PauseRecord[];
+  /** The retired seven-skill Practice, as stored (empty on newer devices). */
   practice: {
-    enrollments: PracticeEnrollment[];
-    sessions: PracticeSessionRecord[];
-    checkIns: PracticeCheckInRecord[];
+    enrollments: unknown[];
+    sessions: unknown[];
+    checkIns: unknown[];
   };
   /** The five Practice paths: enrollments, daily check-ins, completions. */
   practicePaths: ProgrammeState;
@@ -117,9 +129,9 @@ export function buildExportBundle(): ExportBundle {
     patterns: listPatterns(),
     pauses: listPauseRecords(),
     practice: {
-      enrollments: listEnrollments(),
-      sessions: listPracticeSessionRecords(),
-      checkIns: listPracticeCheckIns(),
+      enrollments: readLegacyPractice(LEGACY_PRACTICE_KEYS.enrollments),
+      sessions: readLegacyPractice(LEGACY_PRACTICE_KEYS.sessions),
+      checkIns: readLegacyPractice(LEGACY_PRACTICE_KEYS.checkIns),
     },
     practicePaths: readProgrammeState(),
   };
