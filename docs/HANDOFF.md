@@ -5,7 +5,7 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 ## Where things are
 
 - Branch: `feature/our-ui-unification` (local only, **not pushed**). Base: `554815e` (Yogesh's latest on `feature/aws-full-stack-test`).
-- 24 commits so far (`536ca7e` … `2ad0275`). Working tree clean.
+- 26 commits so far (`536ca7e` … `03d7650`). Working tree clean.
 - Kinverse's branch `origin/feature/practice-guided-breathing-mindspace` (`010bc18`) is fetched but **never merged** — it overwrites the rebuild with an old app. Port features from it only.
 
 ## Decisions already made (don't re-ask)
@@ -27,9 +27,9 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 
 1. ~~Phase 3~~ done (2026-11-23): Kinverse intro is an optional "How it works" sheet on Entry (not a gate, PRODUCT_FLOW §39.A) plus "I have an account"; dev-only test sign-in at `/local-test-sign-in`.
 2. ~~Phase 4~~ done (2026-11-25): tap-to-expand view transitions (see "Motion notes" below).
-3. **Phase 5 — cleanup:** delete 13 legacy `--ip-*` screens (chakra/healing/session/mvp/analysis/guidance/premium/progress/history/journal/player routes) and the old 7-skill Practice code (`practice-skill-*`, `practice-session-screen`, `practice-content/engine/entitlement/milestones/skills`, `/practice/[pathId]/session`). Check nothing references them; build.
+3. ~~Phase 5~~ done (2026-11-25): 14 legacy routes + screens and the old 7-skill Practice modules deleted (45 files). Journey highlights / Growth now read the 5 paths; Data & Privacy still exports/deletes old skill records by key; `/about` rebuilt in our design. **Left for a decision** (unreferenced, kept on purpose): `install-pwa-prompt`, `help-tooltip`, `chakra-inspiration-tag` + `lib/practice-paths.ts` (FOUNDATION chakra tag), `chakra-visual/symbol/path-ui`, `lotus-visual`, `waveform-face`, `lib/providers/*`, `ai-schemas`, `insights`, `use-app-preferences`, `use-mvp-state`, `use-progress-store`. Also: the old global `PlayerProvider` is still in `app/layout.tsx` but inert (only the deleted screens started it; `pwa-registration` reads its isPlaying); `/auth/reset-password` is still the old gold design.
 4. **Phase 6 — backend (Yogesh's):** port Kinverse `/practices/push-subscriptions` + scheduled sender (web-push, VAPID); optional private journal sync; add backend tests; `@hono/node-server` 2.x upgrade (moderate advisory); remove dormant admin content endpoints.
-5. **Phase 7 — final QA:** click through every flow in light + dark, `next build`, eslint, contrast, reduced motion, `npm run test:ui`.
+5. **Phase 7 — final QA:** rewrite `npm run test:ui` (scripts/mobile-usability-test.mjs still walks the deleted prototype flow: /onboarding → /journal → /analysis …); click through every flow in light + dark, `next build`, eslint, contrast, reduced motion, `npm run test:ui`.
 
 ## How to test (the user wants real click-through testing, not just screenshots)
 
