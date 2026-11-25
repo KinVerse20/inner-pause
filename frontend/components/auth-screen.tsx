@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { IconApple, IconChevronRight, IconGoogle, IconMail } from "@/components/pause-icons";
+import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { Reveal } from "@/components/reveal";
 import { applyServerAccount } from "@/lib/account-store";
 import { login, requestPasswordReset, signup } from "@/lib/auth-client";
@@ -97,7 +98,12 @@ export function AuthScreen() {
   return (
     <div
       className="relative min-h-dvh overflow-hidden"
-      style={{ background: "var(--ds-bg)", color: "var(--ds-text)", fontFamily: "var(--ds-font-sans)" }}
+      style={{
+        // The same soft wash as Entry, so signing in feels like the same place.
+        background: "radial-gradient(90% 45% at 50% 18%, var(--ds-accent-soft) 0%, var(--ds-bg) 70%)",
+        color: "var(--ds-text)",
+        fontFamily: "var(--ds-font-sans)",
+      }}
     >
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[30rem] flex-col px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]">
@@ -112,8 +118,10 @@ export function AuthScreen() {
           </Link>
         </header>
 
-        <Reveal className="mt-8">
-          <h1 className="ds-display text-[2rem] sm:text-[2.25rem]">{headline}</h1>
+        <Reveal className="mt-4 grid justify-items-center text-center">
+          <HarmonyFormVisual playing className="ds-only-light w-24" />
+          <HarmonyFormVisual playing dark className="ds-only-dark w-24" />
+          <h1 className="ds-display mt-5 text-[2rem] sm:text-[2.25rem]">{headline}</h1>
           <p className="mt-2 text-[0.95rem]" style={{ color: "var(--ds-text-secondary)" }}>
             {subhead}
           </p>

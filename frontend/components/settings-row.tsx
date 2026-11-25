@@ -103,7 +103,20 @@ export function SettingsSectionTitle({ children }: { children: ReactNode }) {
 
 // Shared back link + page title header, matching moments-screen.tsx's
 // pattern so every You screen looks like the same product.
-export function YouScreenHeader({ title, backHref = "/profile", backLabel = "You" }: { title: string; backHref?: string; backLabel?: string }) {
+export function YouScreenHeader({
+  title,
+  backHref = "/profile",
+  backLabel = "You",
+  Icon,
+  tone,
+}: {
+  title: string;
+  backHref?: string;
+  backLabel?: string;
+  /** The page's icon, in the same colour as its row on You, so the two read as one. */
+  Icon?: IconType;
+  tone?: string;
+}) {
   const pathname = usePathname();
   return (
     <header>
@@ -116,11 +129,22 @@ export function YouScreenHeader({ title, backHref = "/profile", backLabel = "You
         <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
         {backLabel}
       </Link>
-      <h1 className="mt-2 ds-display text-[1.5rem]">
-        <ViewTransition name={vtName("title", pathname)} share="title-morph" default="none">
-          <span className="inline-block">{title}</span>
-        </ViewTransition>
-      </h1>
+      <div className="mt-2 flex items-center gap-3">
+        {Icon && tone ? (
+          <span
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
+            style={{ background: `color-mix(in srgb, ${tone} 16%, var(--ds-surface))`, color: `color-mix(in srgb, ${tone} 85%, var(--ds-text))`, boxShadow: "var(--ds-elevation-1)" }}
+            aria-hidden="true"
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+        ) : null}
+        <h1 className="ds-display text-[1.5rem]">
+          <ViewTransition name={vtName("title", pathname)} share="title-morph" default="none">
+            <span className="inline-block">{title}</span>
+          </ViewTransition>
+        </h1>
+      </div>
     </header>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { IconSliders } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
 import { ToggleSwitch } from "@/components/toggle-switch";
@@ -68,7 +69,7 @@ export function YouPreferencesScreen() {
   return (
     <PauseShell>
       <div className="space-y-6 pb-4 pt-2">
-        <YouScreenHeader title="Preferences" />
+        <YouScreenHeader title="Preferences" Icon={IconSliders} tone="var(--ds-outcome-focus)" />
 
         <section className="space-y-2">
           <SettingsSectionTitle>Theme</SettingsSectionTitle>

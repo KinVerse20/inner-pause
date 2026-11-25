@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { IconBell } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { YouScreenHeader } from "@/components/settings-row";
 import { ToggleSwitch } from "@/components/toggle-switch";
@@ -34,7 +35,7 @@ export function YouNotificationsScreen() {
   return (
     <PauseShell>
       <div className="space-y-6 pb-4 pt-2">
-        <YouScreenHeader title="Notifications" />
+        <YouScreenHeader title="Notifications" Icon={IconBell} tone="var(--ds-outcome-confidence)" />
 
         {state.permission === "not-asked" ? (
           <section className="space-y-3 rounded-[var(--ds-radius-md)] px-4 py-4" style={{ background: "var(--ds-surface)" }}>

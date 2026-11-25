@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 
 import type { PublicCard } from "@inner-pause/shared";
 
+import { isEmblemId, OutcomeEmblem } from "@/components/outcome-emblem";
 import { IconChevronRight } from "@/components/pause-icons";
+import { TileMotif } from "@/components/tile-motif";
 import { PauseShell } from "@/components/pause-shell";
 import { haptic } from "@/lib/haptics";
 import { Stagger, StaggerItem } from "@/components/reveal";
@@ -73,11 +75,26 @@ export function CategorySoundsScreen({ cardId }: { cardId: string }) {
               <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
               Home
             </Link>
-            <h1 className="mt-2 ds-display text-[1.85rem]">{category.label}</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
+          </header>
+        </StaggerItem>
+
+        {/* The tile you tapped, opened: its colour, motif and emblem. */}
+        <StaggerItem>
+          <section
+            className="outcome-tile relative overflow-hidden rounded-[var(--ds-radius-lg)] px-5 pb-6 pt-7 text-center"
+            style={{
+              ["--tile-color" as string]: `var(--ds-outcome-${category.tone})`,
+              background: `radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--ds-outcome-${category.tone}) 22%, transparent) 0%, transparent 70%), var(--ds-surface)`,
+              boxShadow: "var(--ds-elevation-1)",
+            }}
+          >
+            <TileMotif id={category.id} />
+            {isEmblemId(category.id) ? <OutcomeEmblem id={category.id} className="relative mx-auto h-20 w-20" /> : null}
+            <h1 className="relative mt-3 ds-display text-[1.85rem]">{category.label}</h1>
+            <p className="relative mt-1 text-[0.95rem]" style={{ color: "var(--ds-text-secondary)" }}>
               {category.tagline}. Choose a sound to begin.
             </p>
-          </header>
+          </section>
         </StaggerItem>
 
         <StaggerItem>

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { CardIcon } from "@/components/card-icon";
 import { IconChevronRight } from "@/components/pause-icons";
+import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { PauseShell } from "@/components/pause-shell";
 import { TileMotif } from "@/components/tile-motif";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
@@ -77,9 +78,13 @@ export function TellRecommendedScreen() {
   if (entry === undefined) {
     return (
       <PauseShell>
-        <p className="pt-8 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-          Finding the right Pause
-        </p>
+        <div className="grid justify-items-center gap-5 pt-24 text-center">
+          <HarmonyFormVisual playing className="ds-only-light ds-breathe w-24" />
+          <HarmonyFormVisual playing dark className="ds-only-dark ds-breathe w-24" />
+          <p className="text-[0.95rem]" style={{ color: "var(--ds-text-secondary)" }}>
+            Finding the right Pause
+          </p>
+        </div>
       </PauseShell>
     );
   }
@@ -87,16 +92,15 @@ export function TellRecommendedScreen() {
   if (entry === null) {
     return (
       <PauseShell>
-        <div className="space-y-4 pt-8 text-center">
-          <p className="text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-            We couldn&rsquo;t find that entry.
+        <div className="grid justify-items-center gap-3 pt-20 text-center">
+          <HarmonyFormVisual playing={false} className="ds-only-light w-24 opacity-80" />
+          <HarmonyFormVisual playing={false} dark className="ds-only-dark w-24 opacity-80" />
+          <h1 className="ds-h2 mt-4">That entry isn&rsquo;t here</h1>
+          <p className="max-w-[17rem] text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+            It may have been cleared. Say what&rsquo;s on your mind again, and we&rsquo;ll find the right Pause.
           </p>
-          <Link
-            href="/tell"
-            className="ds-tap inline-flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-            style={{ background: "var(--ds-accent)", color: "var(--ds-accent-on)" }}
-          >
-            Try again
+          <Link href="/tell" className="ds-filled mt-3 px-8">
+            Write it again
           </Link>
         </div>
       </PauseShell>

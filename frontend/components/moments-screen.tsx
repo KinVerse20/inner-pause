@@ -276,20 +276,25 @@ export function MomentsScreen() {
             </p>
           </div>
           {modes.map((mode) => (
-            <section key={mode.id} aria-labelledby={`explore-${mode.id}`} className="space-y-2.5">
-              <h2 id={`explore-${mode.id}`} className="flex items-center gap-2">
+            <section key={mode.id} aria-labelledby={`explore-${mode.id}`} className="overflow-hidden rounded-[var(--ds-radius-lg)]" style={{ background: "var(--ds-surface)", boxShadow: "var(--ds-elevation-1)" }}>
+              {/* Each group under its mode's landscape, as on the cards. */}
+              <div className="relative h-16 overflow-hidden" aria-hidden="true">
+                <LandscapeScene variant={mode.landscape} className="absolute inset-0 h-full w-full scale-[1.15]" />
+              </div>
+              <h2 id={`explore-${mode.id}`} className="flex items-center gap-2 px-4 pb-1 pt-3">
                 <span
-                  className="ds-outcome-icon grid h-7 w-7 place-items-center rounded-full"
-                  style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${mode.tone})` }}
+                  className="grid h-7 w-7 place-items-center rounded-full"
+                  style={{ background: `color-mix(in srgb, var(--ds-outcome-${mode.tone}) 22%, var(--ds-surface))`, color: `color-mix(in srgb, var(--ds-outcome-${mode.tone}) 85%, var(--ds-text))` }}
                   aria-hidden="true"
                 >
                   <mode.Icon className="h-3.5 w-3.5" />
                 </span>
-                <span className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
-                  {mode.label}
+                <span className="ds-h3">{mode.label}</span>
+                <span className="text-[0.82rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                  · {mode.purpose}
                 </span>
               </h2>
-              <div className="ds-card divide-y divide-[color:var(--ds-border)] overflow-hidden">
+              <div className="divide-y divide-[color:var(--ds-border)]">
                 {getSituationOptions(mode.id)
                   .filter((situation) => situation.id !== "something-else")
                   .map((situation) => (

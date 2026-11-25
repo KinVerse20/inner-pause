@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { JournalBackupSetting } from "@/components/journal-backup-setting";
+import { IconShield } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
 import { ToggleSwitch } from "@/components/toggle-switch";
@@ -87,7 +88,7 @@ export function YouPrivacyScreen() {
   return (
     <PauseShell>
       <div className="space-y-6 pb-4 pt-2">
-        <YouScreenHeader title="Data & Privacy" />
+        <YouScreenHeader title="Data & Privacy" Icon={IconShield} tone="var(--ds-outcome-reset)" />
 
         <p className="text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
           Your Inner Pause belongs to you. Here&apos;s what we remember, what it&apos;s used for, and how to remove it.

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { IconCalendar } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { YouScreenHeader } from "@/components/settings-row";
 import {
@@ -31,7 +32,7 @@ export function YouCalendarScreen() {
   return (
     <PauseShell>
       <div className="space-y-6 pb-4 pt-2">
-        <YouScreenHeader title="Calendar" />
+        <YouScreenHeader title="Calendar" Icon={IconCalendar} tone="var(--ds-outcome-calm)" />
 
         <section className="space-y-3 rounded-[var(--ds-radius-md)] px-4 py-4" style={{ background: "var(--ds-surface)" }}>
           <p className="text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>

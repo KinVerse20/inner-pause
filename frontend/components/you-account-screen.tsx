@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { YouScreenHeader } from "@/components/settings-row";
+import { IconPerson } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { clearAccount, getAccount, subscribeAccount, type LocalAccount } from "@/lib/account-store";
 import { getCurrentUser, logout } from "@/lib/auth-client";
@@ -33,7 +34,7 @@ export function YouAccountScreen() {
   return (
     <PauseShell>
       <div className="space-y-6 pb-4 pt-2">
-        <YouScreenHeader title="Account" />
+        <YouScreenHeader title="Account" Icon={IconPerson} tone="var(--ds-accent)" />
 
         {account ? (
           <section className="space-y-4 rounded-[var(--ds-radius-md)] px-4 py-4" style={{ background: "var(--ds-surface)" }}>

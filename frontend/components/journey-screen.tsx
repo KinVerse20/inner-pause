@@ -440,6 +440,19 @@ function GrowthList({ statements, pass }: { statements: GrowthStatement[]; pass:
 function EmptyNote({ title, body }: { title: string; body: string }) {
   return (
     <div className="ds-card grid justify-items-center gap-2 px-6 py-8 text-center">
+      {/* A quiet mark of what will grow here: a few points, not yet joined. */}
+      <svg viewBox="0 0 96 48" className="mb-1 h-12 w-24" aria-hidden="true">
+        <path d="M8 36 C24 30 30 14 46 18 S70 34 88 12" fill="none" stroke="var(--ds-accent-secondary)" strokeWidth="1.6" strokeDasharray="1 5" strokeLinecap="round" opacity="0.6" />
+        {[
+          [8, 36, 3],
+          [30, 22, 4],
+          [52, 21, 3.2],
+          [70, 30, 4.5],
+          [88, 12, 3.6],
+        ].map(([cx, cy, r]) => (
+          <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="var(--ds-accent-secondary)" opacity="0.75" />
+        ))}
+      </svg>
       <p className="ds-h3">{title}</p>
       <p className="max-w-[18rem] text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
         {body}
