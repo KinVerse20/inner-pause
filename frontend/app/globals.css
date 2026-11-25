@@ -681,6 +681,30 @@
   background: var(--ds-bg);
   border: 2px solid var(--ds-accent-secondary);
 }
+/* A Pause in the diary: a small stamp in its feeling's colour, dashed
+   edge like a postage stamp, a slight hand-placed tilt. */
+.pause-stamp {
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--stamp-tone) 11%, var(--ds-surface));
+  border: 1.5px dashed color-mix(in srgb, var(--stamp-tone) 38%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ds-text) 6%, transparent);
+  transform: rotate(-1.2deg);
+}
+.pause-stamp:nth-child(even) {
+  transform: rotate(1.4deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pause-stamp:hover {
+    transform: rotate(0deg) translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pause-stamp,
+  .pause-stamp:nth-child(even) {
+    transform: none;
+  }
+}
+
 .story-node--small::before {
   top: 0.75rem;
   width: 0.5rem;

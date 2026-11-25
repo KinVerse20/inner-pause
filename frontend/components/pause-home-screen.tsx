@@ -9,6 +9,7 @@ import { DEFAULT_CARDS, type PublicCard } from "@inner-pause/shared";
 import { CardIcon } from "@/components/card-icon";
 import { IconBubbles, IconCalendar, IconChevronRight, IconMic, IconPencil } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
+import { isEmblemId, OutcomeEmblem } from "@/components/outcome-emblem";
 import { TileMotif } from "@/components/tile-motif";
 import { YouAvatar } from "@/components/you-avatar";
 import { Stagger, StaggerItem } from "@/components/reveal";
@@ -93,12 +94,18 @@ export function PauseHomeScreen() {
                   }}
                 >
                   <TileMotif id={card.id} />
-                  <span
-                    className={`ds-outcome-icon grid h-12 w-12 place-items-center rounded-full ${isStarting ? "ds-breathe" : ""}`}
-                    style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${card.tone})` }}
-                  >
-                    <CardIcon icon={card.icon} className="h-[1.3rem] w-[1.3rem]" />
-                  </span>
+                  {isEmblemId(card.id) ? (
+                    <span className={`grid h-14 w-14 place-items-center ${isStarting ? "ds-breathe" : ""}`}>
+                      <OutcomeEmblem id={card.id} className="h-14 w-14" />
+                    </span>
+                  ) : (
+                    <span
+                      className={`ds-outcome-icon grid h-12 w-12 place-items-center rounded-full ${isStarting ? "ds-breathe" : ""}`}
+                      style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${card.tone})` }}
+                    >
+                      <CardIcon icon={card.icon} className="h-[1.3rem] w-[1.3rem]" />
+                    </span>
+                  )}
                   <span className="mt-1 text-[0.9rem] font-semibold leading-tight">{card.label}</span>
                   {card.subtitle ? (
                     <span className="text-[0.78rem] leading-tight" style={{ color: "var(--ds-text-secondary)" }}>

@@ -2,11 +2,17 @@
 
 import { useLayoutEffect, useRef, useState, ViewTransition } from "react";
 
+import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+
 import { LandscapeScene } from "@/components/landscape-scene";
+import { OutcomeEmblem } from "@/components/outcome-emblem";
 import { IconCheck, IconPencil } from "@/components/pause-icons";
 import { haptic } from "@/lib/haptics";
 import type { Highlight } from "@/lib/journey-highlights";
-import type { PauseRecord } from "@/lib/pause-storage";
+import { getVisibleCards } from "@/lib/content-store";
+import { composeCardPause, composeGroundPause } from "@/lib/pause-engine";
+import { createPauseRecord, type PauseRecord } from "@/lib/pause-storage";
 import { createTellEntry, NOT_ROUTED_INTERPRETATION, type TellEntry } from "@/lib/tell-storage";
 import { viewTransitionsSupported, vtName } from "@/lib/view-transition";
 
@@ -57,6 +63,23 @@ export function buildStory(entries: TellEntry[], highlights: Highlight[], pauses
   return items.sort((a, b) => (a.at < b.at ? 1 : -1));
 }
 
+type StoryBlock = Exclude<StoryItem, { kind: "pause" }> | { kind: "pauses"; pauses: PauseRecord[] };
+
+/** A day's Pauses side by side become one row of stamps. */
+function toBlocks(items: StoryItem[]): StoryBlock[] {
+  const blocks: StoryBlock[] = [];
+  for (const item of items) {
+    if (item.kind !== "pause") {
+      blocks.push(item);
+      continue;
+    }
+    const last = blocks[blocks.length - 1];
+    if (last?.kind === "pauses") last.pauses.push(item.pause);
+    else blocks.push({ kind: "pauses", pauses: [item.pause] });
+  }
+  return blocks;
+}
+
 function dayKey(iso: string) {
   const date = new Date(iso);
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -94,8 +117,8 @@ function pauseName(pause: PauseRecord) {
 /* ------------------------------------------------------------------ */
 
 export function JourneySummary({ pauses, entries, moments }: { pauses: PauseRecord[]; entries: TellEntry[]; moments: number }) {
-  // Captured once per mount, so the summary is stable across re-renders.
-  const [monthAgo] = useState(() => Date.now() - 30 * 86_400_000);
+  // This calendar month (captured once per mount, so it's stable across re-renders).
+  const [monthAgo] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime());
   const recent = pauses.filter((pause) => pause.completedAt && new Date(pause.completedAt).getTime() >= monthAgo);
   const recentEntries = entries.filter((entry) => new Date(entry.createdAt).getTime() >= monthAgo);
   const helped = new Map<string, number>();
@@ -115,52 +138,86 @@ export function JourneySummary({ pauses, entries, moments }: { pauses: PauseReco
           .join(" and ")
           .replace(/^w/, "W") + ".";
 
-  const week = Array.from({ length: 7 }, (_, index) => {
-    const day = new Date();
-    day.setDate(day.getDate() - (6 - index));
-    const key = dayKey(day.toISOString());
+  // This month as a trail: a stop for each day, glowing where you paused.
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const monthDays = Array.from({ length: daysInMonth }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth(), index + 1);
+    const key = dayKey(date.toISOString());
     return {
       key,
-      initial: day.toLocaleDateString(undefined, { weekday: "narrow" }),
-      paused: pauses.some((pause) => pause.completedAt && dayKey(pause.completedAt) === key),
-      today: index === 6,
+      day: index + 1,
+      pauses: pauses.filter((pause) => pause.completedAt && dayKey(pause.completedAt) === key).length,
+      wrote: entries.some((entry) => dayKey(entry.createdAt) === key),
+      today: index + 1 === now.getDate(),
+      future: index + 1 > now.getDate(),
     };
   });
 
   return (
-    <section aria-label="Your month" className="ds-card ds-wash overflow-hidden px-5 py-5">
-      <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-        This month
-      </p>
+    <section aria-label="Your month" className="ds-card ds-wash overflow-hidden px-5 pb-4 pt-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+          {now.toLocaleDateString(undefined, { month: "long" })}
+        </p>
+        <p className="ds-caption ds-num">
+          {moments} {moments === 1 ? "moment" : "moments"}
+        </p>
+      </div>
       <p className="mt-2 text-[1.1rem] font-semibold leading-7">{sentence}</p>
       {best ? (
         <p className="mt-1 text-[0.92rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
           <span style={{ color: `var(--ds-outcome-${best})` }}>{OUTCOME_LABEL[best]}</span> has helped you most.
         </p>
       ) : null}
-      <div className="mt-4 flex items-end justify-between gap-3">
-        <ol className="flex gap-2" aria-label="This week">
-          {week.map((day) => (
-            <li key={day.key} className="grid justify-items-center gap-1">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{
-                  background: day.paused ? "var(--ds-accent-secondary)" : "transparent",
-                  border: day.paused ? "none" : "1.5px solid var(--ds-border)",
-                }}
-                aria-label={day.paused ? "Paused" : "No Pause"}
-              />
-              <span className="ds-caption" style={day.today ? { color: "var(--ds-text)" } : undefined}>
-                {day.initial}
-              </span>
-            </li>
-          ))}
-        </ol>
-        <p className="ds-caption ds-num text-right">
-          {moments} {moments === 1 ? "moment" : "moments"}
-        </p>
-      </div>
+      <MonthTrail days={monthDays} />
     </section>
+  );
+}
+
+function MonthTrail({ days }: { days: Array<{ key: string; day: number; pauses: number; wrote: boolean; today: boolean; future: boolean }> }) {
+  const wave = (index: number) => Math.sin((index / (days.length - 1)) * Math.PI * 3) * 9;
+  const path = days
+    .map((_, index) => {
+      const x = (index / (days.length - 1)) * 100;
+      const y = 22 + wave(index);
+      return `${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+  const pausedDays = days.filter((day) => day.pauses > 0).length;
+  return (
+    <div className="relative mt-4 h-11" role="img" aria-label={`This month: you paused on ${pausedDays} ${pausedDays === 1 ? "day" : "days"}`}>
+      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true">
+        <path d={path} fill="none" stroke="color-mix(in srgb, var(--ds-accent-secondary) 35%, transparent)" strokeWidth="1.5" strokeDasharray="1 4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      </svg>
+      {days.map((day, index) => {
+        const size = day.pauses === 0 ? 5 : Math.min(13, 7 + day.pauses * 2);
+        return (
+          <span
+            key={day.key}
+            className={`absolute rounded-full ${day.today ? "ds-breathe" : ""}`}
+            aria-hidden="true"
+            style={{
+              left: `${(index / (days.length - 1)) * 100}%`,
+              top: 22 + wave(index),
+              width: size,
+              height: size,
+              transform: "translate(-50%, -50%)",
+              background: day.pauses > 0 ? "var(--ds-accent-secondary)" : day.wrote ? "var(--ds-accent-soft)" : day.future ? "transparent" : "color-mix(in srgb, var(--ds-text) 14%, transparent)",
+              boxShadow: day.today
+                ? "0 0 0 3px var(--ds-surface), 0 0 0 4.5px var(--ds-accent)"
+                : day.pauses > 0
+                  ? "0 0 8px color-mix(in srgb, var(--ds-accent-secondary) 55%, transparent)"
+                  : day.wrote
+                    ? "inset 0 0 0 1.5px var(--ds-accent-secondary)"
+                    : day.future
+                      ? "inset 0 0 0 1px color-mix(in srgb, var(--ds-text) 14%, transparent)"
+                      : undefined,
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 
@@ -302,7 +359,18 @@ export function StoryTimeline({
             {group.label}
           </h2>
           <ol className="story-thread space-y-4">
-            {group.items.map((item) => {
+            {toBlocks(group.items).map((item) => {
+              if (item.kind === "pauses") {
+                return (
+                  <li key={`x-${item.pauses[0].id}`} className="story-node story-node--small">
+                    <div className="flex flex-wrap gap-2 py-1">
+                      {item.pauses.map((pause) => (
+                        <PauseStamp key={pause.id} pause={pause} />
+                      ))}
+                    </div>
+                  </li>
+                );
+              }
               if (item.kind === "entry") {
                 return (
                   <li key={`e-${item.entry.id}`} className="story-node">
@@ -342,15 +410,7 @@ export function StoryTimeline({
                   </li>
                 );
               }
-              return (
-                <li key={`x-${item.pause.id}`} className="story-node story-node--small">
-                  <p className="py-1 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                    <span style={{ color: "var(--ds-text)" }}>{pauseName(item.pause)}</span>
-                    {item.pause.feedback ? ` · ${FEEDBACK_LABEL[item.pause.feedback]}` : ""}
-                    <span className="ds-caption"> · {timeLabel(item.at)}</span>
-                  </p>
-                </li>
-              );
+              return null;
             })}
           </ol>
         </section>
@@ -551,5 +611,91 @@ export function MomentOpened({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/* ------------------------------------------------ */
+/* A Pause, as a stamp in the diary                  */
+/* ------------------------------------------------ */
+
+function PauseStamp({ pause }: { pause: PauseRecord }) {
+  const [open, setOpen] = useState(false);
+  const tone = pause.outcomeId && OUTCOME_LABEL[pause.outcomeId] ? `var(--ds-outcome-${pause.outcomeId})` : "var(--ds-accent)";
+  const minutes = Math.max(1, Math.round(pause.durationSeconds / 60));
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          haptic("tap");
+          setOpen(true);
+        }}
+        aria-label={`${pauseName(pause)}, ${timeLabel(pause.completedAt ?? pause.startedAt)}`}
+        className="pause-stamp ds-tap relative grid w-[4.6rem] justify-items-center gap-0.5 px-1.5 pb-2 pt-2.5"
+        style={{ ["--stamp-tone" as string]: tone }}
+      >
+        <OutcomeEmblem id={pause.outcomeId} className="h-9 w-9" />
+        <span className="text-[0.72rem] font-semibold leading-tight">{pause.outcomeId && OUTCOME_LABEL[pause.outcomeId] ? OUTCOME_LABEL[pause.outcomeId] : "Pause"}</span>
+        <span className="ds-caption ds-num leading-tight">{minutes} min</span>
+        {pause.feedback === "better" ? <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full" style={{ background: "var(--ds-success)" }} aria-hidden="true" /> : null}
+      </button>
+      {open ? <StampSheet pause={pause} onClose={() => setOpen(false)} /> : null}
+    </>
+  );
+}
+
+function StampSheet({ pause, onClose }: { pause: PauseRecord; onClose: () => void }) {
+  const router = useRouter();
+  const [starting, setStarting] = useState(false);
+  const when = new Date(pause.completedAt ?? pause.startedAt);
+
+  useLayoutEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // The same Pause again: its Home card if it came from one, otherwise a Ground Pause.
+  const playAgain = () => {
+    if (starting) return;
+    setStarting(true);
+    haptic("moment");
+    const card = pause.outcomeId ? getVisibleCards().find((item) => item.id === pause.outcomeId) : undefined;
+    const record = createPauseRecord(card ? composeCardPause(card) : composeGroundPause());
+    router.push(`/pause/player?session=${record.id}`);
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
+      <button type="button" aria-label="Close" onClick={onClose} className="sheet-backdrop absolute inset-0 cursor-default" style={{ background: "rgba(15, 23, 42, 0.35)" }} />
+      <div role="dialog" aria-modal="true" aria-label={pauseName(pause)} className="sheet-panel relative w-full max-w-[30rem] rounded-t-[1.75rem] px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3" style={{ background: "var(--ds-surface)", boxShadow: "var(--ds-shadow-raised)" }}>
+        <span className="mx-auto mb-4 block h-1 w-10 rounded-full" style={{ background: "var(--ds-border)" }} aria-hidden="true" />
+        <div className="flex items-center gap-4">
+          <OutcomeEmblem id={pause.outcomeId} className="h-16 w-16 shrink-0" />
+          <div className="min-w-0">
+            <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+              {when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} · {timeLabel(when.toISOString())}
+            </p>
+            <h2 className="ds-h2 mt-0.5">{pauseName(pause)}</h2>
+            {pause.feedback ? (
+              <p className="mt-0.5 text-[0.9rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                Afterwards, you {FEEDBACK_LABEL[pause.feedback]}.
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
+          <button type="button" onClick={playAgain} disabled={starting} className="ds-filled">
+            {starting ? "Starting" : "Play it again"}
+          </button>
+          <button type="button" onClick={onClose} className="ds-tap min-h-12 rounded-full px-4 text-sm font-semibold" style={{ color: "var(--ds-accent)" }}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
