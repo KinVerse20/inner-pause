@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, ViewTransition, type ComponentType, type ReactNode } from "react";
 
-import { NavHomeIcon, NavJourneyIcon, NavPracticeIcon, NavYouIcon } from "@/components/nav-icons";
+import { NavHomeIcon, NavJourneyIcon, NavMomentsIcon, NavPracticeIcon } from "@/components/nav-icons";
 import { haptic } from "@/lib/haptics";
 import { composeGroundPause } from "@/lib/pause-engine";
 import { createPauseRecord } from "@/lib/pause-storage";
@@ -12,11 +12,13 @@ import { EXPAND, expandName, markPageTransition } from "@/lib/view-transition";
 
 type TabIcon = ComponentType<{ active: boolean; className?: string }>;
 
+// Moments has its own tab (letting out lives there now); You moved to the
+// avatar at the top of Home and Journey, where profile usually lives.
 const destinations: Array<{ href: string; label: string; Icon: TabIcon }> = [
   { href: "/", label: "Home", Icon: NavHomeIcon },
+  { href: "/moments", label: "Moments", Icon: NavMomentsIcon },
   { href: "/practice", label: "Practice", Icon: NavPracticeIcon },
   { href: "/journey", label: "Journey", Icon: NavJourneyIcon },
-  { href: "/profile", label: "You", Icon: NavYouIcon },
 ];
 
 // Every tab opens onto a soft wash of brand color at the top (a glow, not

@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { BreathingGuide, breathVisual } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
+import { LetItOut } from "@/components/let-it-out";
 import { IconCheck, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
 import { SoundSheet, type ToneSetting } from "@/components/sound-sheet";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
-import { createTellEntry, linkTellEntryToPause, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
+import { createTellEntry, linkTellEntryToMoment, linkTellEntryToPause, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
+import { listMomentRecords, updateMomentRecord, type MomentRecord } from "@/lib/moment-storage";
 import {
   completePauseRecord,
   getPauseRecord,
@@ -90,6 +92,7 @@ export function PausePlayerScreen() {
   const [builtInSoundId, setBuiltInSoundId] = useState<BuiltInSoundId | null>(null);
   const [undertone, setUndertone] = useState<UndertoneLevel>("balanced");
   const [soundSheetOpen, setSoundSheetOpen] = useState(false);
+  const [moment, setMoment] = useState<MomentRecord | null>(null);
   // Ignore the audio element's own pause event while we swap sources, so a
   // sound change never stops the Pause clock.
   const switchingRef = useRef(false);
@@ -166,6 +169,8 @@ export function PausePlayerScreen() {
     }
     const found = getPauseRecord(sessionId);
     setRecord(found ?? null);
+    // The Moment this Pause belongs to, if any (for letting it out first).
+    setMoment(found ? (listMomentRecords().find((item) => item.linkedPauseRecordId === found.id) ?? null) : null);
     setBuiltInSoundId(found?.builtInSoundId ?? null);
     if (found) {
       setNotBetterStreak(getPreviousCompletedPauseRecord(found.id)?.feedback === "not-better");
@@ -188,6 +193,24 @@ export function PausePlayerScreen() {
     return () => window.clearTimeout(timer);
   }, [phase, record]);
 
+  // A Moment (coming up, just happened) offers letting it out first, with
+  // its sound already playing. Happening now starts at once, so it doesn't.
+  const offerLetOut = phase === "transition" && Boolean(record?.requiresArrive) && Boolean(moment) && moment?.mode !== "during";
+
+  // The sound starts with the offer and carries on into the Pause.
+  useEffect(() => {
+    if (!offerLetOut) return;
+    const audio = audioRef.current;
+    if (!audio || !soundUrl || !audio.paused) return;
+    audio.src = soundUrl;
+    audio.loop = true;
+    tunedSound.resume();
+    tunedSound.fadeIn(SOUND_FADE_IN_SECONDS);
+    audio.play().catch(() => undefined);
+    // Starts once per offer; later sound changes go through chooseSound.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offerLetOut]);
+
   // Start playback on entering the playing phase.
   useEffect(() => {
     if (phase !== "playing" || !record) return;
@@ -196,6 +219,11 @@ export function PausePlayerScreen() {
     const audio = audioRef.current;
     if (!soundUrl || !audio) {
       // Tone only: there is no file to load, so the Pause clock starts now.
+      setPlaying(true);
+      return;
+    }
+    // Already playing from letting it out: carry on, don't start over.
+    if (!audio.paused && audio.src === new URL(soundUrl, window.location.href).href) {
       setPlaying(true);
       return;
     }
@@ -278,6 +306,20 @@ export function PausePlayerScreen() {
     if (!record) return;
     haptic("moment");
     setPhase("playing");
+  };
+
+  // What was let out stays with the Moment: in the journal, and as the
+  // words on its polaroid in Journey. Nothing is analysed.
+  const beginAfterLettingOut = (text: string, source: "write" | "speak") => {
+    if (text && record && moment) {
+      const entry = createTellEntry({ text, source, chips: [], interpretation: NOT_ROUTED_INTERPRETATION, momentMode: moment.mode });
+      linkTellEntryToMoment(entry.id, moment.id);
+      linkTellEntryToPause(entry.id, record.id);
+      updateMomentRecord(moment.id, { expression: moment.expression ? `${moment.expression}
+
+${text}` : text });
+    }
+    handleReady();
   };
 
   const finishToCheckin = () => {
@@ -555,8 +597,20 @@ export function PausePlayerScreen() {
         <div className="grid flex-1 place-items-center text-center">
           <div className="grid justify-items-center">
             <div className="harmony-breath harmony-breath--rest">
-              <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(56vw,16rem)]" />
+              <HarmonyFormVisual playing={offerLetOut} dark className={`ds-breathe ${offerLetOut ? "w-[min(40vw,10rem)]" : "w-[min(56vw,16rem)]"}`} />
             </div>
+            {offerLetOut && moment ? (
+              <div className="mt-6 w-full">
+                <LetItOut
+                  prompt={
+                    moment.mode === "before"
+                      ? "Speak or write whatever's on your mind about it. Nobody else will read this."
+                      : "Get it off your chest, however it comes. Nobody else will read this."
+                  }
+                  onBegin={beginAfterLettingOut}
+                />
+              </div>
+            ) : (
             <div className="mt-8 max-w-[18rem] space-y-1.5">
               {record.arrivalGuidance.map((line, index) => (
                 <p
@@ -568,7 +622,8 @@ export function PausePlayerScreen() {
                 </p>
               ))}
             </div>
-            {record.requiresArrive ? (
+            )}
+            {record.requiresArrive && !offerLetOut ? (
               <NavyButton onClick={handleReady} className="mt-8 px-8">
                 I&rsquo;m ready
               </NavyButton>

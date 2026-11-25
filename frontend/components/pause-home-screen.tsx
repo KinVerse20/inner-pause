@@ -7,9 +7,10 @@ import { useEffect, useState, ViewTransition } from "react";
 import { DEFAULT_CARDS, type PublicCard } from "@inner-pause/shared";
 
 import { CardIcon } from "@/components/card-icon";
-import { IconBubbles, IconCalendar, IconChevronRight, IconMic, IconPencil, IconYouTab } from "@/components/pause-icons";
+import { IconBubbles, IconCalendar, IconChevronRight, IconMic, IconPencil } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { TileMotif } from "@/components/tile-motif";
+import { YouAvatar } from "@/components/you-avatar";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
 import { getVisibleCards, subscribeAppContent } from "@/lib/content-store";
@@ -70,14 +71,7 @@ export function PauseHomeScreen() {
                 Choose a Pause to shift how you feel.
               </p>
             </div>
-            <Link
-              href="/profile"
-              aria-label="You"
-              className="ds-icon-btn shrink-0"
-              style={{ background: "var(--ds-surface)", color: "var(--ds-text)", boxShadow: "var(--ds-elevation-1)" }}
-            >
-              <IconYouTab className="h-5 w-5" />
-            </Link>
+            <YouAvatar />
           </header>
         </StaggerItem>
 

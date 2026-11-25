@@ -55,8 +55,20 @@ export function NavYouIcon({ active, className }: NavIconProps) {
   );
 }
 
+/** Moments: a sun over hills, like the landscapes inside it. */
+export function NavMomentsIcon({ active, className }: NavIconProps) {
+  return (
+    <Svg className={className}>
+      <circle cx="15.5" cy="8" r="2.6" fill={active ? "currentColor" : "none"} />
+      <path d="M3 18.5c2.2-3.4 4.4-5.6 7-5.6 2.1 0 3.4 1.3 4.8 2.8 1.2-1 2.4-1.5 3.7-1.5 1 0 1.9.3 2.5.7v3.6H3Z" fill={active ? "currentColor" : "none"} />
+      <path d="M3 20.5h18" />
+    </Svg>
+  );
+}
+
 export const NAV_ICONS: Record<string, ComponentType<NavIconProps>> = {
   "/": NavHomeIcon,
+  "/moments": NavMomentsIcon,
   "/practice": NavPracticeIcon,
   "/journey": NavJourneyIcon,
   "/profile": NavYouIcon,

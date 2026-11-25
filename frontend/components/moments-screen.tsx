@@ -103,8 +103,6 @@ export function MomentsScreen() {
     <PauseShell>
       {view.kind === "modes" ? (
         <div key="modes" className="ds-settle space-y-6 pb-4 pt-2">
-          <BackButton href="/" label="Back to Home" />
-
           <div>
             <h1 className="ds-display text-[1.85rem] sm:text-[2.15rem]">For the big moments in your life</h1>
             <p className="mt-2.5 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>

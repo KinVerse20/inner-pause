@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { IconCheck, IconFeather } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
+import { YouAvatar } from "@/components/you-avatar";
 import { JournalComposer, JourneySummary, MomentOpened, StoryTimeline, buildStory } from "@/components/journey-story";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
@@ -133,11 +134,14 @@ export function JourneyScreen() {
     <PauseShell>
       <Stagger className="space-y-5 pb-4 pt-2">
         <StaggerItem>
-          <header>
-            <h1 className="ds-display text-[1.85rem]">Journey</h1>
-            <p className="mt-1.5 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-              Your story, in your own words.
-            </p>
+          <header className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="ds-display text-[1.85rem]">Journey</h1>
+              <p className="mt-1.5 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                Your story, in your own words.
+              </p>
+            </div>
+            <YouAvatar />
           </header>
         </StaggerItem>
 
