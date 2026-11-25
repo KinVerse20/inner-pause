@@ -1,11 +1,11 @@
 # Session handoff — Inner Pause UI unification
 
-Last updated: 2026-11-23. Read this first in a new session, then continue from "Next up".
+Last updated: 2026-11-25. Read this first in a new session, then continue from "Next up".
 
 ## Where things are
 
 - Branch: `feature/our-ui-unification` (local only, **not pushed**). Base: `554815e` (Yogesh's latest on `feature/aws-full-stack-test`).
-- 22 commits so far (`536ca7e` … `f6c0ef7`). Working tree clean.
+- 24 commits so far (`536ca7e` … `2ad0275`). Working tree clean.
 - Kinverse's branch `origin/feature/practice-guided-breathing-mindspace` (`010bc18`) is fetched but **never merged** — it overwrites the rebuild with an old app. Port features from it only.
 
 ## Decisions already made (don't re-ask)
@@ -26,7 +26,7 @@ Last updated: 2026-11-23. Read this first in a new session, then continue from "
 ## Next up (agreed plan)
 
 1. ~~Phase 3~~ done (2026-11-23): Kinverse intro is an optional "How it works" sheet on Entry (not a gate, PRODUCT_FLOW §39.A) plus "I have an account"; dev-only test sign-in at `/local-test-sign-in`.
-2. **Phase 4 — tap-to-expand transitions** (React `ViewTransition`; Next docs in `node_modules/next/dist/docs/01-app/02-guides/view-transitions.md`, needs `experimental.viewTransition`): Home tile → player, Moment card → mode, You rows → pages, journal card → entry sheet. Back reverses. Reduced motion = fade.
+2. ~~Phase 4~~ done (2026-11-25): tap-to-expand view transitions (see "Motion notes" below).
 3. **Phase 5 — cleanup:** delete 13 legacy `--ip-*` screens (chakra/healing/session/mvp/analysis/guidance/premium/progress/history/journal/player routes) and the old 7-skill Practice code (`practice-skill-*`, `practice-session-screen`, `practice-content/engine/entitlement/milestones/skills`, `/practice/[pathId]/session`). Check nothing references them; build.
 4. **Phase 6 — backend (Yogesh's):** port Kinverse `/practices/push-subscriptions` + scheduled sender (web-push, VAPID); optional private journal sync; add backend tests; `@hono/node-server` 2.x upgrade (moderate advisory); remove dormant admin content endpoints.
 5. **Phase 7 — final QA:** click through every flow in light + dark, `next build`, eslint, contrast, reduced motion, `npm run test:ui`.
@@ -40,6 +40,14 @@ Last updated: 2026-11-23. Read this first in a new session, then continue from "
 - Unit tests: `npm test` at the root (node --test, in `frontend/tests` and `backend/tests`).
 - Checks before each commit: `npx tsc --noEmit -p .` and `npx eslint <files>` in `frontend/`.
 
+## Motion notes (Phase 4)
+
+- `lib/view-transition.ts` + "View transitions" block at the end of `app/globals.css`. Shared names pair a tapped thing with what it opens (`expand-<cardId>`, `moment-mode-*`, `entry-*`, `polaroid-*`, `title-<path>`).
+- React only animates **pairs** reliably here: an unpaired `enter`/`exit` on a wrapper never fired. So page content is named by CSS only while `markPageTransition("forward"|"back"|"hold")` marks `<html>`; don't wrap page content in a named `<ViewTransition>` (it drops the page out of every other transition).
+- In dev the first tap on a never-visited route won't morph (no prefetch in dev, the route suspends). Production prefetches the player from the tab bar; verified there.
+- **Dev server gotcha:** files written by scripts (python/sed) were sometimes not picked up by Turbopack's watcher, and `.next/dev` served stale CSS even after restart. Edit with the editor tool, or stop the server and delete `frontend/.next/dev`.
+- **Port gotcha:** stopping the background `next` task can leave its node process on 3100; free it with PowerShell `Get-NetTCPConnection -LocalPort 3100`.
+
 ## Key files added in this effort
 
 - Design system: `frontend/app/globals.css` (`--ds-*` tokens, `.ds-tap` press system, type scale, app-glow, journal paper, polaroid, outcome-tile, sheets).
@@ -47,6 +55,7 @@ Last updated: 2026-11-23. Read this first in a new session, then continue from "
 - Sound: `lib/sound-library.ts`, `components/sound-sheet.tsx`, `public/audio/sounds/*`, `public/audio/chakras/*`.
 - Practice: `lib/programme-data.ts`, `lib/programme-storage.ts`, `lib/programme-notifications.ts`, `lib/practice-path-presentation.ts`, `components/practice-path-screen.tsx`; push handlers in `public/sw.js`.
 - Journey: `components/journey-story.tsx`. Home motifs: `components/tile-motif.tsx`.
+- Motion: `lib/view-transition.ts`, `react-canary.d.ts`.
 - Entry intro: `components/entry-intro-sheet.tsx`. Test sign-in: `backend/src/auth/local-test.ts`, `frontend/lib/local-test.ts`, `components/local-test-sign-in.tsx`.
 - Knowledge: `lib/chakra-guide.ts`, `components/chakra-guide-screen.tsx`, `/chakras`, `/chakras/[chakraId]`.
 - Moments: Kinverse moments merged into `lib/big-moment-engine.ts`. Tell feelings: `shared/src/tell.ts` (`EMOTION_WEIGHTS`).
