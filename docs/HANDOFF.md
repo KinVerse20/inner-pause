@@ -5,7 +5,7 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 ## Where things are
 
 - Branch: `feature/our-ui-unification` (local only, **not pushed**). Base: `554815e` (Yogesh's latest on `feature/aws-full-stack-test`).
-- 26 commits so far (`536ca7e` … `03d7650`). Working tree clean.
+- 31 commits so far (`536ca7e` … `7077638`). Working tree clean.
 - Kinverse's branch `origin/feature/practice-guided-breathing-mindspace` (`010bc18`) is fetched but **never merged** — it overwrites the rebuild with an old app. Port features from it only.
 
 ## Decisions already made (don't re-ask)
@@ -28,7 +28,7 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 1. ~~Phase 3~~ done (2026-11-23): Kinverse intro is an optional "How it works" sheet on Entry (not a gate, PRODUCT_FLOW §39.A) plus "I have an account"; dev-only test sign-in at `/local-test-sign-in`.
 2. ~~Phase 4~~ done (2026-11-25): tap-to-expand view transitions (see "Motion notes" below).
 3. ~~Phase 5~~ done (2026-11-25): 14 legacy routes + screens and the old 7-skill Practice modules deleted (45 files). Journey highlights / Growth now read the 5 paths; Data & Privacy still exports/deletes old skill records by key; `/about` rebuilt in our design. **Left for a decision** (unreferenced, kept on purpose): `install-pwa-prompt`, `help-tooltip`, `chakra-inspiration-tag` + `lib/practice-paths.ts` (FOUNDATION chakra tag), `chakra-visual/symbol/path-ui`, `lotus-visual`, `waveform-face`, `lib/providers/*`, `ai-schemas`, `insights`, `use-app-preferences`, `use-mvp-state`, `use-progress-store`. Also: the old global `PlayerProvider` is still in `app/layout.tsx` but inert (only the deleted screens started it; `pwa-registration` reads its isPlaying); `/auth/reset-password` is still the old gold design.
-4. **Phase 6 — backend (Yogesh's):** port Kinverse `/practices/push-subscriptions` + scheduled sender (web-push, VAPID); optional private journal sync; add backend tests; `@hono/node-server` 2.x upgrade (moderate advisory); remove dormant admin content endpoints.
+4. ~~Phase 6~~ done (2026-11-25), on Yogesh's backend: `@hono/node-server` 2.1.11 (audit clean); admin endpoints + role retired (public content/sound reads and the render worker kept); app built by `createApp()` (`src/app.ts`) so tests call it in-process; **Practice reminders by web push** (`routes/practice.ts`, `push-store.ts`, `push-scheduler.ts`, `reminders.ts`; client `lib/programme-notifications.ts`), off until `VAPID_*` set; **optional private journal backup** (`routes/journal.ts`, `journal-store.ts` AES-256-GCM; client `lib/journal-sync.ts`, Data & Privacy toggle), off until `JOURNAL_ENCRYPTION_KEY` set. Not done here: `POST /api/analyze` is now uncalled (Yogesh's AI analysis; the screens that used it were deleted), kept for a decision.
 5. **Phase 7 — final QA:** rewrite `npm run test:ui` (scripts/mobile-usability-test.mjs still walks the deleted prototype flow: /onboarding → /journal → /analysis …); click through every flow in light + dark, `next build`, eslint, contrast, reduced motion, `npm run test:ui`.
 
 ## How to test (the user wants real click-through testing, not just screenshots)
@@ -39,6 +39,12 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 - Signed-in testing without real Mongo: in scratchpad `mongo/`, `npm i mongodb-memory-server@10` and run a script that does `MongoMemoryServer.create({ instance: { port: 27018 } })`. Start the backend with `MONGODB_URI=mongodb://127.0.0.1:27018/innerpause-test AUTH_SECRET=<anything> LOCAL_TEST_AUTH=true PORT=4000 npx tsx src/index.ts`, and the frontend with `API_URL=http://localhost:4000 NEXT_PUBLIC_LOCAL_TEST_AUTH=true npx next dev --port 3100`. Then `/local-test-sign-in` → "Enter as test listener". (Docker Desktop is installed but its daemon is usually off.)
 - Unit tests: `npm test` at the root (node --test, in `frontend/tests` and `backend/tests`).
 - Checks before each commit: `npx tsc --noEmit -p .` and `npx eslint <files>` in `frontend/`.
+
+## Backend notes (Phase 6)
+
+- Tests: `npm test` (root) runs frontend + backend (`tsx --test`). Database tests skip unless `TEST_MONGODB_URI` points at a throwaway DB (e.g. the in-memory Mongo on 27018).
+- Real push delivery can't be proven on this machine: Chrome here can't reach Google's push service (subscribe stalls), and headless/incognito Chrome has no Push API. The sender is proven by `backend/tests/push-sender.integration.test.mjs` (stand-in HTTPS push service, payload decrypted). Verify a real reminder on the deployed HTTPS site.
+- **Ports on this machine:** 4000 is another project ("Dustech" backend), 4100 is a VM. Run our backend on **4300** (`PORT=4300`, frontend `API_URL=http://localhost:4300`).
 
 ## Motion notes (Phase 4)
 
