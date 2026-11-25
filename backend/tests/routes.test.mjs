@@ -34,3 +34,16 @@ test("dev test sign-in does not exist unless switched on", async () => {
   const response = await app.request("http://localhost/api/auth/test-sign-in", { method: "POST" });
   assert.equal(response.status, 404);
 });
+
+test("the Pass is offered once, for life", async () => {
+  const { passStateOf } = await import("../src/pass-store.ts");
+  assert.deepEqual(passStateOf({ passLifetime: true }), { status: "active", lifetime: true, expiresAt: null });
+  assert.deepEqual(passStateOf({}), { status: "none", lifetime: false, expiresAt: null });
+  const ended = passStateOf({ passExpiresAt: new Date(Date.now() - 1000) });
+  assert.equal(ended.status, "expired", "an earlier 60 day Pass still reads as it was");
+  const offer = await (await app.request("/api/pass")).json().catch(() => null);
+  if (offer) {
+    assert.equal(offer.priceInr, 999);
+    assert.equal(offer.lifetime, true);
+  }
+});

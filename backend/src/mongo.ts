@@ -17,6 +17,8 @@ export interface UserDocument {
   passwordChangedAt?: Date;
   /** The Inner Pause Pass (pass-store.ts): when the current one ends. */
   passExpiresAt?: Date;
+  /** The lifetime Pass (pass-store.ts): never ends. */
+  passLifetime?: boolean;
   passActivatedAt?: Date;
 }
 

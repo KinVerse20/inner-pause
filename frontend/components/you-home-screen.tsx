@@ -59,7 +59,7 @@ export function YouHomeScreen() {
     };
   }, []);
 
-  const passStatusLabel = passState === "active" ? "Active" : passState === "expired" ? "Expired" : "Free";
+  const passStatusLabel = passState === "active" ? "For life" : passState === "expired" ? "Ended" : "Free";
   const displayName = account?.displayName?.trim() || "there";
   const initial = (account?.displayName?.trim().charAt(0) || "Y").toUpperCase();
 

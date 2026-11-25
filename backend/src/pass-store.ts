@@ -1,12 +1,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { PASS_DAYS, PASS_PRICE_INR, type PassState } from "@inner-pause/shared";
+import { PASS_PRICE_INR, type PassState } from "@inner-pause/shared";
 import { ObjectId, type Collection } from "mongodb";
 
 import { getDb, usersCollection, type UserDocument } from "./mongo";
 
-// The Inner Pause Pass: a one-time Razorpay payment that unlocks Practice
-// for PASS_DAYS, held on the user's account. Payments are confirmed on the
+// The Inner Pause Pass: one Razorpay payment, kept for life on the user's
+// account, with every Pass feature added later. (Passes bought earlier for
+// a fixed time still read as they were.) Payments are confirmed on the
 // server — by the checkout's signature (/api/pass/verify) and by Razorpay's
 // webhook, whichever arrives first — never by the browser alone.
 //
@@ -15,7 +16,6 @@ import { getDb, usersCollection, type UserDocument } from "./mongo";
 // without real money.
 
 export const PASS_AMOUNT_PAISE = PASS_PRICE_INR * 100;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function razorpayConfigured() {
   return Boolean(process.env.RAZORPAY_KEY_ID?.trim() && process.env.RAZORPAY_KEY_SECRET?.trim());
@@ -23,10 +23,12 @@ export function razorpayConfigured() {
 
 export const razorpayKeyId = () => process.env.RAZORPAY_KEY_ID?.trim() ?? "";
 
-export function passStateOf(user: Pick<UserDocument, "passExpiresAt">): PassState {
-  if (!user.passExpiresAt) return { status: "none", expiresAt: null };
+export function passStateOf(user: Pick<UserDocument, "passExpiresAt" | "passLifetime">): PassState {
+  if (user.passLifetime) return { status: "active", lifetime: true, expiresAt: null };
+  if (!user.passExpiresAt) return { status: "none", lifetime: false, expiresAt: null };
   return {
     status: user.passExpiresAt.getTime() > Date.now() ? "active" : "expired",
+    lifetime: false,
     expiresAt: user.passExpiresAt.toISOString(),
   };
 }
@@ -100,9 +102,8 @@ export function isValidWebhookSignature(rawBody: string, signature: string) {
 }
 
 /**
- * Marks an order paid and extends its user's Pass by PASS_DAYS — once per
- * order, however many times it is reported (checkout and webhook both do).
- * Buying while a Pass is active adds the days after its current end.
+ * Marks an order paid and gives its user the Pass for life, once per order,
+ * however many times it is reported (checkout and webhook both do).
  * Returns the user's Pass, or null for an unknown order (or another user's).
  */
 export async function completePassOrder(orderId: string, paymentId: string, expectedUserId?: string): Promise<PassState | null> {
@@ -117,15 +118,11 @@ export async function completePassOrder(orderId: string, paymentId: string, expe
   if (claimed && userId) {
     const user = await users.findOne({ _id: userId });
     if (user) {
-      const from = Math.max(Date.now(), user.passExpiresAt?.getTime() ?? 0);
-      await users.updateOne(
-        { _id: userId },
-        { $set: { passExpiresAt: new Date(from + PASS_DAYS * DAY_MS), passActivatedAt: user.passActivatedAt ?? new Date(), updatedAt: new Date() } },
-      );
+      await users.updateOne({ _id: userId }, { $set: { passLifetime: true, passActivatedAt: user.passActivatedAt ?? new Date(), updatedAt: new Date() } });
     }
   }
   const user = userId ? await users.findOne({ _id: userId }) : null;
-  return user ? passStateOf(user) : { status: "none", expiresAt: null };
+  return user ? passStateOf(user) : { status: "none", lifetime: false, expiresAt: null };
 }
 
 /** Keeps payment records when an account is deleted, without the link to it. */

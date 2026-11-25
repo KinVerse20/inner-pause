@@ -35,7 +35,7 @@ const MAX_PASSWORD_LENGTH = 128;
 const passwordField = (value: unknown) => (typeof value === "string" ? value : "");
 
 // The Pass comes from the account record, so it follows the user anywhere.
-function withAccount<T extends { email: string }>(user: T, record: Pick<UserDocument, "passExpiresAt">) {
+function withAccount<T extends { email: string }>(user: T, record: Pick<UserDocument, "passExpiresAt" | "passLifetime">) {
   return { ...user, pass: passStateOf(record) };
 }
 

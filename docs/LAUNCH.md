@@ -33,7 +33,7 @@ Any SMTP provider works. On AWS, use Amazon SES:
 Until these are set, the live app tells people that reset by email isn't
 available yet and to email the support address.
 
-## 3. Razorpay (the Inner Pause Pass, ₹199 for 60 days)
+## 3. Razorpay (the Inner Pause Pass, ₹999 once, for life)
 
 1. Create a Razorpay account and complete KYC. Razorpay reviews the website:
    the Terms (`/terms`), Privacy Policy (`/privacy-policy`), Refund and
@@ -48,8 +48,9 @@ available yet and to email the support address.
    app straight after paying.
 4. Switch to Live Mode keys when ready.
 
-The price and length are in `shared/src/brand.ts` (`PASS_PRICE_INR`,
-`PASS_DAYS`).
+The price is in `shared/src/brand.ts` (`PASS_PRICE_INR`). The Pass is for
+life: paying sets `passLifetime` on the account, and a second purchase is
+refused.
 
 ## 4. Sound storage on S3
 

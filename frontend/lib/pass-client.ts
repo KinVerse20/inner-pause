@@ -11,7 +11,8 @@ import { setServerPass } from "@/lib/entitlements";
 
 export interface PassOffer {
   priceInr: number;
-  durationDays: number;
+  /** Always true now: one payment, yours for life. */
+  lifetime: boolean;
   /** False until Razorpay is configured on the server. */
   available: boolean;
   /** The signed-in account's Pass; null when signed out. */
@@ -71,7 +72,7 @@ export class PaymentCancelledError extends Error {}
  * server has confirmed it; rejects with PaymentCancelledError if they close
  * the payment window, or an Error with a message to show.
  */
-export async function buyPass(durationDays: number): Promise<PassState> {
+export async function buyPass(): Promise<PassState> {
   const orderResponse = await apiFetch("/api/pass/order", { method: "POST" });
   if (!orderResponse.ok) throw new Error(await readError(orderResponse, "Couldn't start the payment. Please try again."));
   const order = (await orderResponse.json()) as {
@@ -90,7 +91,7 @@ export async function buyPass(durationDays: number): Promise<PassState> {
       amount: order.amount,
       currency: order.currency,
       name: "Inner Pause",
-      description: `Inner Pause Pass · ${durationDays} days`,
+      description: "Inner Pause Pass · for life",
       order_id: order.orderId,
       prefill: order.prefill,
       theme: { color: "#1d1b4c" },

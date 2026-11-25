@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { OPERATOR_COUNTRY, OPERATOR_NAME, PASS_DAYS, PASS_PRICE_INR } from "@inner-pause/shared";
+import { OPERATOR_COUNTRY, OPERATOR_NAME, PASS_PRICE_INR } from "@inner-pause/shared";
 
 import { LegalPage, SupportEmail, type LegalSection } from "@/components/legal-page";
 
@@ -50,11 +50,10 @@ const sections: LegalSection[] = [
     body: (
       <ul>
         <li>
-          The Pass costs ₹{PASS_PRICE_INR}, inclusive of applicable taxes, and gives you the Pass features for {PASS_DAYS} days from
-          purchase.
+          The Pass costs ₹{PASS_PRICE_INR}, inclusive of applicable taxes, and gives you lifetime access to the Pass features: for as
+          long as Inner Pause is offered, including Pass features we add later.
         </li>
-        <li>It&apos;s a one-time payment, not a subscription. It never renews or charges you again by itself.</li>
-        <li>Buying again while your Pass is active adds {PASS_DAYS} days after its current end.</li>
+        <li>It&apos;s a one-time payment, not a subscription. It never renews or charges you again.</li>
         <li>The Pass is linked to your account. Payments are processed by Razorpay.</li>
         <li>
           Refunds follow our{" "}
@@ -89,8 +88,8 @@ const sections: LegalSection[] = [
     heading: "Changes to Inner Pause",
     body: (
       <p>
-        We keep improving Inner Pause, so features may change. If we stop offering a Pass feature you&apos;ve paid for before your Pass ends,
-        we&apos;ll offer a fair refund for the unused time.
+        We keep improving Inner Pause, so features may change. If we stop offering a Pass feature you&apos;ve paid for, we&apos;ll replace
+        it with one of similar value or offer a fair refund.
       </p>
     ),
   },

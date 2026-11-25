@@ -1,4 +1,4 @@
-import { PASS_DAYS, PASS_PRICE_INR } from "@inner-pause/shared";
+import { PASS_PRICE_INR } from "@inner-pause/shared";
 import { Hono } from "hono";
 
 import { getVerifiedSession } from "../auth/session";
@@ -20,7 +20,7 @@ passRoutes.get("/", async (c) => {
   const verified = await getVerifiedSession(c);
   return c.json({
     priceInr: PASS_PRICE_INR,
-    durationDays: PASS_DAYS,
+    lifetime: true,
     available: razorpayConfigured(),
     pass: verified ? passStateOf(verified.record) : null,
   });
@@ -30,6 +30,8 @@ passRoutes.post("/order", async (c) => {
   const verified = await getVerifiedSession(c);
   if (!verified) return c.json({ error: "Sign in to get the Pass, so it stays with your account." }, 401);
   if (!razorpayConfigured()) return c.json({ error: "Payments aren't set up yet. Please try again later." }, 503);
+  // It's for life: never take a second payment for it.
+  if (passStateOf(verified.record).lifetime) return c.json({ error: "You already have the Pass for life." }, 409);
   try {
     const order = await createPassOrder(verified.record._id.toString());
     return c.json({

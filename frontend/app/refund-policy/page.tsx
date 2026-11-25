@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { PASS_DAYS, PASS_PRICE_INR } from "@inner-pause/shared";
+import { PASS_PRICE_INR } from "@inner-pause/shared";
 
 import { LegalPage, SupportEmail, type LegalSection } from "@/components/legal-page";
 
@@ -20,8 +20,8 @@ const sections: LegalSection[] = [
     heading: "Cancellation",
     body: (
       <p>
-        The Pass isn&apos;t a subscription, so there&apos;s nothing to cancel: it never renews or charges you again. It simply ends after{" "}
-        {PASS_DAYS} days.
+        The Pass isn&apos;t a subscription, so there&apos;s nothing to cancel: you pay once, it never renews or charges you again,
+        and it stays on your account for as long as Inner Pause is offered.
       </p>
     ),
   },
@@ -69,7 +69,7 @@ export default function RefundPolicyPage() {
       current="/refund-policy"
       intro={
         <p>
-          This policy covers the Inner Pause Pass: a one-time payment of ₹{PASS_PRICE_INR} for {PASS_DAYS} days of Pass features.
+          This policy covers the Inner Pause Pass: a one-time payment of ₹{PASS_PRICE_INR} for lifetime access to the Pass features.
         </p>
       }
       sections={sections}

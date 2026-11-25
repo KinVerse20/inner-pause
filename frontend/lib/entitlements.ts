@@ -3,7 +3,8 @@
 import type { PassState as ServerPassState } from "@inner-pause/shared";
 
 // The free/paid boundary (docs/PRODUCT_FLOW.md §36): the Inner Pause Pass.
-// One product, one price, 60 days, no recurring subscription. The Pass is
+// One product, one payment, kept for life (with every Pass feature added
+// later), no subscription. The Pass is
 // bought with Razorpay and held on the user's account on the server
 // (backend/src/pass-store.ts); this keeps the server's answer for the
 // signed-in account (setServerPass), refreshed on every app load.
@@ -16,8 +17,6 @@ const SERVER_PASS_KEY = "inner-pause:pass";
 const EVENT_NAME = "inner-pause:entitlements-change";
 const devPassAllowed = process.env.NODE_ENV !== "production";
 
-// §36: "Duration: 60 days."
-export const PASS_DURATION_MS = 60 * 24 * 60 * 60 * 1000;
 
 export type PassState = "free" | "active" | "expired";
 
@@ -31,23 +30,26 @@ function readActivatedAt(): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
-// When the account's Pass ends, as the server last reported it.
+// When the account's Pass ends, as the server last reported it: never
+// (Infinity) for the lifetime Pass, a date for an earlier time-limited one.
 function readServerExpiry(): number | null {
   if (!isBrowser()) return null;
   try {
     const raw = window.localStorage.getItem(SERVER_PASS_KEY);
-    const expiresAt = raw ? (JSON.parse(raw) as { expiresAt?: string | null }).expiresAt : null;
-    const ms = expiresAt ? Date.parse(expiresAt) : NaN;
+    const stored = raw ? (JSON.parse(raw) as { lifetime?: boolean; expiresAt?: string | null }) : null;
+    if (stored?.lifetime) return Number.POSITIVE_INFINITY;
+    const ms = stored?.expiresAt ? Date.parse(stored.expiresAt) : NaN;
     return Number.isFinite(ms) ? ms : null;
   } catch {
     return null;
   }
 }
 
-// The later of the account's Pass and (development only) the dev toggle.
+// The later of the account's Pass and (development only) the dev toggle,
+// which grants a lifetime Pass like the real one.
 function latestExpiry(): number | null {
   const devActivatedAt = devPassAllowed ? readActivatedAt() : null;
-  const candidates = [readServerExpiry(), devActivatedAt === null ? null : devActivatedAt + PASS_DURATION_MS].filter(
+  const candidates = [readServerExpiry(), devActivatedAt === null ? null : Number.POSITIVE_INFINITY].filter(
     (value): value is number => value !== null,
   );
   return candidates.length ? Math.max(...candidates) : null;
@@ -59,15 +61,20 @@ export function getPassState(): PassState {
   return Date.now() < expiry ? "active" : "expired";
 }
 
+/** When a time-limited Pass ends; null for the lifetime Pass or none. */
 export function getPassExpiresAt(): string | null {
   const expiry = latestExpiry();
-  return expiry === null ? null : new Date(expiry).toISOString();
+  return expiry === null || !Number.isFinite(expiry) ? null : new Date(expiry).toISOString();
+}
+
+export function hasLifetimePass(): boolean {
+  return latestExpiry() === Number.POSITIVE_INFINITY;
 }
 
 /** Records the server's Pass for the signed-in account (null when signed out). */
 export function setServerPass(pass: ServerPassState | null | undefined) {
   if (!isBrowser()) return;
-  if (pass?.expiresAt) window.localStorage.setItem(SERVER_PASS_KEY, JSON.stringify({ expiresAt: pass.expiresAt }));
+  if (pass?.lifetime || pass?.expiresAt) window.localStorage.setItem(SERVER_PASS_KEY, JSON.stringify({ lifetime: Boolean(pass.lifetime), expiresAt: pass.expiresAt }));
   else window.localStorage.removeItem(SERVER_PASS_KEY);
   window.dispatchEvent(new Event(EVENT_NAME));
 }
@@ -87,15 +94,9 @@ function write(activatedAtMs: number | null, flagValue: boolean) {
   window.dispatchEvent(new Event(EVENT_NAME));
 }
 
-// Dev-only: activates a fresh 60-day Pass window from now.
+// Dev-only: activates a (lifetime) Pass.
 export function activateDevPass() {
   write(Date.now(), true);
-}
-
-// Dev-only: back-dates activation so the Pass reads as expired, for
-// testing the "history remains after expiry" rule without waiting 60 days.
-export function expireDevPassForTesting() {
-  write(Date.now() - PASS_DURATION_MS - 24 * 60 * 60 * 1000, true);
 }
 
 export function clearPass() {
