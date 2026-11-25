@@ -1,6 +1,7 @@
 import type { PassState } from "@inner-pause/shared";
 
 import { apiFetch } from "@/lib/api";
+import { forgetJournalBackupOnThisDevice } from "@/lib/journal-sync";
 
 export interface AuthUser {
   id: string;
@@ -43,6 +44,7 @@ export async function login(input: { email: string; password: string }) {
 }
 
 export async function logout() {
+  forgetJournalBackupOnThisDevice();
   await apiFetch("/api/auth/logout", { method: "POST" });
 }
 

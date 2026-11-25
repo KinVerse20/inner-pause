@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { JournalBackupSetting } from "@/components/journal-backup-setting";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
 import { ToggleSwitch } from "@/components/toggle-switch";
@@ -124,6 +125,8 @@ export function YouPrivacyScreen() {
             </div>
           </div>
         </section>
+
+        <JournalBackupSetting />
 
         <section className="space-y-2">
           <SettingsSectionTitle>Export</SettingsSectionTitle>

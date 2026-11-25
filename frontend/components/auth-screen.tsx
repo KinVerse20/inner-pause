@@ -8,6 +8,7 @@ import { IconApple, IconChevronRight, IconGoogle, IconMail } from "@/components/
 import { Reveal } from "@/components/reveal";
 import { applyServerAccount } from "@/lib/account-store";
 import { login, requestPasswordReset, signup } from "@/lib/auth-client";
+import { syncJournalNow } from "@/lib/journal-sync";
 import { connectPendingReminder } from "@/lib/programme-notifications";
 import { setMvpAuthenticatedUser, upsertProfile } from "@/lib/mvp-storage";
 
@@ -39,6 +40,7 @@ export function AuthScreen() {
     applyServerAccount(user);
     // A Practice reminder chosen while signed out connects now.
     void connectPendingReminder();
+    void syncJournalNow();
   };
 
   const submit = async () => {

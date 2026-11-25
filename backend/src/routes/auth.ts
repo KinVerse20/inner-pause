@@ -20,6 +20,7 @@ import { invalidBody, readJsonObject, stringField } from "../http";
 import { mailerConfigured, sendPasswordResetEmail } from "../mailer";
 import type { UserDocument } from "../mongo";
 import { detachOrdersFromUser, passStateOf } from "../pass-store";
+import { deleteAllEntries } from "../journal-store";
 import { removeSubscriptionsForUser } from "../push-store";
 import { clearEvents, countRecent, recordEvent } from "../rate-limit";
 
@@ -160,6 +161,7 @@ authRoutes.post("/delete-account", async (c) => {
   const userId = verified.record._id.toString();
   await detachOrdersFromUser(userId);
   await removeSubscriptionsForUser(userId);
+  await deleteAllEntries(userId);
   await deleteUser(userId);
   clearSession(c);
   return c.json({ ok: true });

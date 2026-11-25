@@ -53,6 +53,18 @@ export const NOT_ROUTED_INTERPRETATION: TellInterpretation = {
 const STORAGE_KEY = "inner-pause:tell-entries";
 const EVENT_NAME = "inner-pause:tell-entries-change";
 
+// What changed, for the optional journal backup (lib/journal-sync.ts),
+// which follows these without this store knowing about it.
+export const JOURNAL_CHANGE_EVENT = "inner-pause:journal-change";
+export interface JournalChange {
+  upserted?: TellEntry[];
+  deleted?: string[];
+}
+
+function announce(change: JournalChange) {
+  if (isBrowser()) window.dispatchEvent(new CustomEvent<JournalChange>(JOURNAL_CHANGE_EVENT, { detail: change }));
+}
+
 const isBrowser = () => typeof window !== "undefined";
 
 function readAll(): TellEntry[] {
@@ -92,6 +104,7 @@ export function createTellEntry(input: {
     linkedPracticeSessionId: input.linkedPracticeSessionId,
   };
   writeAll([...readAll(), entry]);
+  announce({ upserted: [entry] });
   return entry;
 }
 
@@ -99,12 +112,27 @@ export function getTellEntry(id: string): TellEntry | null {
   return readAll().find((entry) => entry.id === id) ?? null;
 }
 
+function updateEntry(id: string, change: Partial<TellEntry>) {
+  let updated: TellEntry | undefined;
+  writeAll(readAll().map((entry) => (entry.id === id ? (updated = { ...entry, ...change }) : entry)));
+  if (updated) announce({ upserted: [updated] });
+}
+
 export function linkTellEntryToPause(id: string, pauseRecordId: string) {
-  writeAll(readAll().map((entry) => (entry.id === id ? { ...entry, linkedPauseRecordId: pauseRecordId } : entry)));
+  updateEntry(id, { linkedPauseRecordId: pauseRecordId });
 }
 
 export function linkTellEntryToMoment(id: string, momentId: string) {
-  writeAll(readAll().map((entry) => (entry.id === id ? { ...entry, linkedMomentId: momentId } : entry)));
+  updateEntry(id, { linkedMomentId: momentId });
+}
+
+/** Entries brought back from the journal backup; ones already here are left alone. */
+export function restoreTellEntries(entries: TellEntry[]) {
+  if (entries.length === 0) return;
+  const current = readAll();
+  const known = new Set(current.map((entry) => entry.id));
+  const added = entries.filter((entry) => !known.has(entry.id));
+  if (added.length) writeAll([...current, ...added]);
 }
 
 export function listTellEntries(): TellEntry[] {
@@ -114,6 +142,7 @@ export function listTellEntries(): TellEntry[] {
 /** Journey — Journal (this slice's brief §3): the user can open an entry and delete it. */
 export function deleteTellEntry(id: string) {
   writeAll(readAll().filter((entry) => entry.id !== id));
+  announce({ deleted: [id] });
 }
 
 export function subscribeTellEntries(callback: () => void) {

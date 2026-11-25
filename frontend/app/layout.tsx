@@ -6,6 +6,7 @@ import { AccountInvitationGate } from "@/components/account-invitation-gate";
 import { AuthSessionSync } from "@/components/auth-session-sync";
 import { ContentSync } from "@/components/content-sync";
 import { EntryGate } from "@/components/entry-gate";
+import { JournalSyncAgent } from "@/components/journal-sync-agent";
 import { ThemeApplier } from "@/components/theme-applier";
 import "./globals.css";
 
@@ -75,6 +76,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-[var(--ds-bg)] text-[var(--ds-text)]">
         <PlayerProvider>
           <AuthSessionSync />
+          <JournalSyncAgent />
           <ContentSync />
           <EntryGate />
           <ThemeApplier />

@@ -13,6 +13,7 @@ import { listPatterns, type PatternRecord } from "@/lib/pattern-storage";
 import { listPauseRecords, type PauseRecord } from "@/lib/pause-storage";
 import { readProgrammeState, type ProgrammeState } from "@/lib/programme-storage";
 import { deleteTellEntry, listTellEntries, type TellEntry } from "@/lib/tell-storage";
+import { JOURNAL_BACKUP_KEY, JOURNAL_TOMBSTONES_KEY, JOURNAL_WIPE_PENDING_KEY, wipeJournalBackupWithJourney } from "@/lib/journal-sync";
 import { clearAccount } from "@/lib/account-store";
 import { logout } from "@/lib/auth-client";
 
@@ -63,6 +64,9 @@ const ALL_LOCAL_DATA_KEYS = [
   "inner-pause:dev-now-offset-ms",
   "inner-pause:feedback-entries",
   "inner-pause:pattern-analysis-consent",
+  JOURNAL_BACKUP_KEY,
+  JOURNAL_TOMBSTONES_KEY,
+  JOURNAL_WIPE_PENDING_KEY,
 ];
 
 // ---------- AI / pattern-analysis consent ----------
@@ -162,6 +166,8 @@ export function deleteJournalEntry(id: string) {
 
 export function deleteJourneyData() {
   if (!isBrowser()) return;
+  // With the journal backup on, the account copy goes too.
+  wipeJournalBackupWithJourney();
   for (const key of JOURNEY_DATA_KEYS) window.localStorage.removeItem(key);
 }
 
