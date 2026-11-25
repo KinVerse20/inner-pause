@@ -79,25 +79,3 @@ export async function readContent(): Promise<Content> {
   return { cards, skills, updatedAt: doc?.updatedAt ?? null };
 }
 
-const cardListeners = new Set<() => void>();
-
-/** Called after every card write (backend/src/render-store.ts re-renders sounds). */
-export function onCardsWritten(listener: () => void) {
-  cardListeners.add(listener);
-}
-
-export async function writeCards(cards: CardDefinition[]) {
-  await (await contentCollection()).updateOne({ _id: CONTENT_ID }, { $set: { cards, updatedAt: new Date() } }, { upsert: true });
-  for (const listener of cardListeners) listener();
-}
-
-export async function writeSkills(skills: SkillDefinition[]) {
-  await (await contentCollection()).updateOne({ _id: CONTENT_ID }, { $set: { skills, updatedAt: new Date() } }, { upsert: true });
-}
-
-/** Removes a deleted sound from every card that listed it. */
-export async function detachSound(soundId: string) {
-  const { cards } = await readContent();
-  if (!cards.some((card) => card.sounds.some((item) => item.soundId === soundId))) return;
-  await writeCards(cards.map((card) => ({ ...card, sounds: card.sounds.filter((item) => item.soundId !== soundId) })));
-}

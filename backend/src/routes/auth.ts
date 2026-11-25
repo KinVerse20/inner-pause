@@ -3,7 +3,6 @@ import { Hono } from "hono";
 
 import { randomBytes } from "node:crypto";
 
-import { isAdminEmail } from "../auth/admin";
 import { LOCAL_TEST_EMAIL, LOCAL_TEST_NAME, localTestAuthEnabled } from "../auth/local-test";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { clearSession, createResetToken, getVerifiedSession, writeSession } from "../auth/session";
@@ -33,11 +32,9 @@ const MAX_PASSWORD_LENGTH = 128;
 // Passwords are taken as typed (never trimmed: spaces can be intentional).
 const passwordField = (value: unknown) => (typeof value === "string" ? value : "");
 
-// Role is derived per request from ADMIN_EMAILS (auth/admin.ts), never
-// stored in the session cookie, so revoking access takes effect at once.
 // The Pass comes from the account record, so it follows the user anywhere.
 function withAccount<T extends { email: string }>(user: T, record: Pick<UserDocument, "passExpiresAt">) {
-  return { ...user, isAdmin: isAdminEmail(user.email), pass: passStateOf(record) };
+  return { ...user, pass: passStateOf(record) };
 }
 
 // Wrong passwords per account before sign-in pauses, and for how long.

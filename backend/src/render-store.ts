@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { cardFrequencyHz, type CardDefinition } from "@inner-pause/shared";
 import type { Collection } from "mongodb";
 
-import { onCardsWritten, readContent } from "./content-store";
+import { readContent } from "./content-store";
 import { getDb } from "./mongo";
 import { renderSound } from "./renderer";
 import { TEMP_DIR, fileStore, removeLocalFile } from "./file-store";
@@ -94,28 +94,9 @@ async function removeRenderFiles(doc: RenderDocument) {
   for (const file of [doc.storedAs, doc.storedAsWebm]) if (file) await fileStore().remove(`${RENDERS}${file}`);
 }
 
-/** Current renderings (not stale), for the admin library: what each sound has and how far along it is. */
-export async function listRenders() {
-  return (await rendersCollection()).find({ staleSince: { $exists: false } }).sort({ createdAt: 1 }).toArray();
-}
-
 // The rendering in progress, so deleting its sound can stop it (and release
 // the file it has open).
 let current: { soundId: string; controller: AbortController } | null = null;
-
-/**
- * Removes every rendering of a sound that's being deleted from the library,
- * stopping one in progress first. Call before deleting the sound's files.
- */
-export async function deleteRendersForSound(soundId: string) {
-  const collection = await rendersCollection();
-  const docs = await collection.find({ soundId }).toArray();
-  // Out of the queue first, so it can't start another of them, then stop
-  // the one running.
-  await collection.deleteMany({ soundId });
-  if (current?.soundId === soundId) current.controller.abort();
-  for (const doc of docs) await removeRenderFiles(doc);
-}
 
 /** Brings the renderings in line with the cards, then renders what's missing. */
 export async function syncRenders() {
@@ -163,15 +144,6 @@ export async function syncRenders() {
     }
   }
   void processQueue();
-}
-
-let syncTimer: NodeJS.Timeout | undefined;
-/** Debounced sync: several card edits in a row cause one pass. */
-export function scheduleRenderSync() {
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(() => {
-    syncRenders().catch((error) => console.error("[renders] sync failed:", error instanceof Error ? error.message : error));
-  }, 500);
 }
 
 let processing = false;
@@ -263,6 +235,7 @@ export async function startRenderWorker() {
   await rm(TEMP_DIR, { recursive: true, force: true }).catch(() => {});
   const kept = new Set((await collection.find({ status: "ready" }).toArray()).flatMap((doc) => [doc.storedAs, doc.storedAsWebm]));
   for (const key of await fileStore().list(RENDERS)) if (!kept.has(key.slice(RENDERS.length))) await fileStore().remove(key);
-  onCardsWritten(scheduleRenderSync);
+  // Cards change only in the database now (no admin screen), so one sync
+  // at startup picks up anything new.
   await syncRenders();
 }

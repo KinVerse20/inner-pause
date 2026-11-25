@@ -7,8 +7,6 @@ export interface AuthUser {
   email: string;
   fullName: string;
   phone: string;
-  /** Derived server-side from ADMIN_EMAILS; grants access to /admin. */
-  isAdmin?: boolean;
   /** The account's Inner Pause Pass. */
   pass?: PassState;
 }
