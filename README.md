@@ -1,145 +1,84 @@
-# The InnerPause MVP
+# Inner Pause
 
-Mobile-first reflective wellness app: a private journal that turns a daily reflection into a reviewed emotional insight, a personalised healing plan, sequential local audio playback, and post-session feedback.
+A calm, sound-first app for the moments that ask something of you. You say
+how you feel, Pause plays the right sound, and your Journey keeps the story.
 
-Brand line: **Heal Within. Live Aligned.**
+**Start here if you're picking this up:** read [docs/HANDOFF.md](docs/HANDOFF.md).
+It has every product decision, what's done, what's next, and the gotchas.
 
-## What works now
+## The stack
 
-- Three-step onboarding
-- Home dashboard
-- Journal entry with text, save modes, intensity before session, and mock voice capture
-- Server-side analysis and Tell routing on the separate backend (`backend/`, `/api/analyze` and `/api/tell-interpret`)
-- Deterministic fallback insight when `OPENAI_API_KEY` is missing
-- Emotional insight review/edit flow
-- Safety interruption for crisis-like wording
-- Personalised healing-plan timeline
-- Sequential audio player using reusable local MP3 files
-- Post-session feedback and before/after comparison
-- Journal history
-- Insights dashboard
-- Mock WhatsApp morning guidance provider
-- Mock premium/billing provider
-- Profile and preference screen
-- PWA manifest/service worker from the existing project
-- Local persistence for development and personal testing
+An npm workspaces monorepo:
 
-## Local development
+| Folder      | What it is |
+|-------------|------------|
+| `frontend/` | Next.js 16 (App Router, Turbopack). The whole UI. `/api/*` is rewritten to `API_URL`. Read `frontend/AGENTS.md` first: this Next has breaking changes. |
+| `backend/`  | Yogesh's API: Node + [Hono](https://hono.dev) + MongoDB (official driver), run with `tsx`. Cookie sessions, Pass payments, Practice reminders, journal backup, sounds. |
+| `shared/`   | Types and constants used by both (brand, prices, `PassState`). |
 
-This repo is split into three packages:
+Main backend files: `backend/src/app.ts` (all routes), `src/index.ts` (server,
+reminder scheduler, render worker), `src/mongo.ts` (connection and documents),
+`src/routes/*`, `src/*-store.ts`.
 
-```text
-frontend/   Next.js UI (port 3000)
-backend/    API server (port 4000)
-shared/     schemas and deterministic routing used by both
+### MongoDB collections
+
+`users`, `pass_orders`, `push_subscriptions`, `journal_entries` (encrypted),
+`app_content`, `sounds`, `sound_renders`. Indexes are created by the stores
+on first use; there is no migration step.
+
+## Run it locally
+
+Needs **Node 24** and a MongoDB.
+
 ```
-
-```bash
 npm install
-npm run dev
+cp .env.local.example .env.local      # then fill in at least the two below
+npm run dev                           # API on :4000, web on :3000
 ```
 
-That starts the API and the UI together. Open:
+The backend reads `.env` / `.env.local` from `backend/` and from the repo root.
 
-```text
-http://localhost:3000
+**Required**
+
+- `MONGODB_URI`: any MongoDB. Atlas, a local `mongod`, or Docker
+  (`docker run -p 27017:27017 mongo` then `mongodb://127.0.0.1:27017/inner-pause`).
+- `AUTH_SECRET`: any long random string (signs session cookies).
+
+**Optional, each feature stays off and says so plainly until set**
+
+- `LOCAL_TEST_AUTH=true` and `NEXT_PUBLIC_LOCAL_TEST_AUTH=true`: one-tap test
+  sign-in at `/local-test-sign-in`. Dev only; ignored in production.
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`: Practice reminders by
+  web push. Generate with `npx web-push generate-vapid-keys`.
+- `JOURNAL_ENCRYPTION_KEY`: private journal backup (AES-256-GCM). Generate with
+  `openssl rand -base64 32`. Changing it makes existing backups unreadable.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`: the
+  Inner Pause Pass, ₹999 once, for life. `rzp_test_` keys for testing.
+- `SMTP_*`, `MAIL_FROM`: password reset emails. In dev the link is logged.
+- `OPENAI_API_KEY`: "Tell" interpretation.
+- `S3_*`: sound storage. Empty keeps files on local disk.
+
+**Ports taken?** Run the parts separately, for example:
+
+```
+PORT=4300 FRONTEND_ORIGIN=http://localhost:3100 npm run dev:backend
+cd frontend && API_URL=http://localhost:4300 npx next dev --port 3100
 ```
 
-The UI keeps calling `/api/*` on the same origin. Next.js rewrites those requests to the backend (`API_URL`, default `http://localhost:4000`).
+## Tests
 
-Run one side only:
-
-```bash
-npm run dev:frontend
-npm run dev:backend
+```
+npm test            # backend (tsx --test) and frontend (node --test)
+npm run lint
+npm run build
 ```
 
-## Environment variables
+The Mongo integration tests (push sender, journal store) run only when
+`TEST_MONGODB_URI` points at a throwaway database; otherwise they skip.
+`npm run test:ui` is out of date (walks old routes) and is due a rewrite in
+the final QA phase.
 
-Copy `.env.example` to `.env.local` at the repo root. Both apps read it: the backend loads `../.env.local`, and the frontend Next config loads the same file.
+## Going live
 
-Required for the optional external insight service:
-
-```text
-API_URL=http://localhost:4000
-OPENAI_API_KEY
-OPENAI_MODEL
-NEXT_PUBLIC_APP_URL
-```
-
-Required for MongoDB auth and accounts:
-
-```text
-MONGODB_URI
-AUTH_SECRET
-```
-
-Optional provider placeholders:
-
-```text
-WHATSAPP_PROVIDER
-META_WHATSAPP_ACCESS_TOKEN
-META_WHATSAPP_PHONE_NUMBER_ID
-TWILIO_ACCOUNT_SID
-TWILIO_AUTH_TOKEN
-TWILIO_WHATSAPP_FROM
-BILLING_PROVIDER
-STRIPE_SECRET_KEY
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-STRIPE_WEBHOOK_SECRET
-```
-
-## MongoDB setup
-
-Auth accounts are stored in MongoDB (`users` collection) using `MONGODB_URI`. The database name in the URI is used as-is. No SQL migrations are required.
-
-Copy `.env.example` to `.env.local` and set:
-
-```text
-MONGODB_URI
-AUTH_SECRET
-```
-
-## Audio files
-
-The MVP uses existing reusable local files:
-
-```text
-frontend/public/audio/root.mp3
-frontend/public/audio/sacral.mp3
-frontend/public/audio/solar-plexus.mp3
-frontend/public/audio/heart.mp3
-frontend/public/audio/throat.mp3
-frontend/public/audio/third-eye.mp3
-frontend/public/audio/crown.mp3
-```
-
-Current MP3s should be treated as placeholder/development audio unless you have production licenses. Replace them with licensed production audio before commercial launch.
-
-## Deployment
-
-The UI and API are separate apps.
-
-Frontend (Vercel or Amplify):
-
-1. Set the project root to the repository root so workspaces resolve.
-2. Build command: `npm run build`
-3. Output: `frontend/.next`
-4. Set `API_URL` to the deployed backend origin.
-
-Backend:
-
-1. Run `npm run start -w @inner-pause/backend` (or deploy the `backend/` package).
-2. Set `PORT`, `FRONTEND_ORIGIN`, `MONGODB_URI`, `AUTH_SECRET`, and `OPENAI_API_KEY` if used.
-
-Auth cookie exchange stays on the frontend at `/auth/confirm`. All other `/api/*` routes live on the backend.
-
-## Mocked until credentials are supplied
-
-- Google OAuth and password reset email delivery
-- WhatsApp delivery provider
-- Billing provider
-- Real speech-to-text transcription
-- Production licensed audio catalogue
-
-The local MVP avoids broken primary actions by using localStorage and safe mock providers where external credentials are absent.
+See [docs/LAUNCH.md](docs/LAUNCH.md) and `deploy/ec2/` (Caddy, systemd unit,
+deploy script, production env example).
