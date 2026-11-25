@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useState, ViewTransition, type ComponentType } from "react";
 
 import { LandscapeScene } from "@/components/landscape-scene";
+import { OutcomeEmblem } from "@/components/outcome-emblem";
 import { IconChevronDown, IconChevronRight, IconMic, IconMoon, IconPencil, IconSun, IconWave } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { ReturnToMeBanner } from "@/components/return-to-me-banner";
@@ -166,7 +167,7 @@ export function MomentsScreen() {
             <span className="min-w-0 flex-1">
               <span className="ds-h3 block">Explore moments</span>
               <span className="mt-0.5 block text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                Pick a moment similar to yours or start from scratch.
+                Pick a moment like yours, or describe your own.
               </span>
             </span>
             <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
@@ -309,6 +310,26 @@ export function MomentsScreen() {
               </div>
             </section>
           ))}
+
+          {/* Starting from scratch: your own moment, in your own words. */}
+          <section aria-labelledby="explore-own" className="rounded-[var(--ds-radius-lg)] px-5 py-5" style={{ background: "var(--ds-accent-soft)" }}>
+            <h2 id="explore-own" className="ds-h3">
+              Yours isn&rsquo;t here?
+            </h2>
+            <p className="mt-1 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+              Start from scratch. Say what&rsquo;s happening in your own words, and we&rsquo;ll find the right Pause for it.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
+              <Link href="/tell" className="ds-outlined" style={{ borderColor: "transparent" }} onClick={() => haptic("tap")}>
+                <IconPencil className="h-4 w-4" />
+                Write
+              </Link>
+              <Link href="/tell?mode=speak" className="ds-outlined" style={{ borderColor: "transparent" }} onClick={() => haptic("tap")}>
+                <IconMic className="h-4 w-4" />
+                Speak
+              </Link>
+            </div>
+          </section>
         </div>
       ) : null}
 
@@ -365,9 +386,11 @@ function SituationRow({
       onClick={onSelect}
       disabled={disabled && !starting}
       aria-busy={starting || undefined}
-      className="ds-tap flex min-h-[3.75rem] w-full items-center gap-3 px-4 py-3 text-left"
+      className="ds-tap flex min-h-[4.25rem] w-full items-center gap-3 px-3.5 py-3 text-left"
       style={{ borderColor: "var(--ds-border)", background: starting ? "var(--ds-accent-soft)" : undefined }}
     >
+      {/* The feeling this Pause works on, as on Home's tiles. */}
+      <OutcomeEmblem id={situation.categoryId} className={`h-11 w-11 shrink-0 ${starting ? "ds-breathe" : ""}`} />
       <span className="min-w-0 flex-1">
         <span className="block text-[0.95rem] font-medium leading-6">{situation.label}</span>
         {situation.subtitle ? (

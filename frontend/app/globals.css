@@ -681,6 +681,17 @@
   background: var(--ds-bg);
   border: 2px solid var(--ds-accent-secondary);
 }
+/* A Practice path's trail, swiped side to side: edges fade to say there's
+   more, and no scrollbar shows. */
+.path-trail-scroller {
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 1.5rem, black calc(100% - 1.5rem), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 1.5rem, black calc(100% - 1.5rem), transparent 100%);
+}
+.path-trail-scroller::-webkit-scrollbar {
+  display: none;
+}
+
 /* A Pause in the diary: a small stamp in its feeling's colour, dashed
    edge like a postage stamp, a slight hand-placed tilt. */
 .pause-stamp {

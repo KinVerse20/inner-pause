@@ -269,7 +269,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                 <h2 id="preview-title" className="ds-h3">
                   Your 14 days
                 </h2>
-                <span className="ds-caption">Tap a day to look ahead</span>
+                <span className="ds-caption">Swipe, and tap a day to look ahead</span>
               </div>
               <div className="overflow-hidden rounded-[var(--ds-radius-lg)] px-2 py-3" style={{ background: `color-mix(in srgb, var(--ds-outcome-${tone}) 7%, var(--ds-surface))` }}>
                 <PathTrail
@@ -364,9 +364,12 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
               </section>
             ) : null}
             <section aria-labelledby="trail-title" className="space-y-3">
-              <h2 id="trail-title" className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-                Your path
-              </h2>
+              <div className="flex items-baseline justify-between">
+                <h2 id="trail-title" className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+                  Your path
+                </h2>
+                <span className="ds-caption">Swipe to see all {path.days.length} days</span>
+              </div>
               <div className="overflow-hidden rounded-[var(--ds-radius-lg)] px-2 py-4" style={{ background: `color-mix(in srgb, var(--ds-outcome-${tone}) 7%, var(--ds-surface))` }}>
                 <PathTrail
                   path={path}
