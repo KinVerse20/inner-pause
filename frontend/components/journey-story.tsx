@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, ViewTransition } from "react";
 
 import { LandscapeScene } from "@/components/landscape-scene";
 import { IconCheck, IconPencil } from "@/components/pause-icons";
@@ -8,6 +8,7 @@ import { haptic } from "@/lib/haptics";
 import type { Highlight } from "@/lib/journey-highlights";
 import type { PauseRecord } from "@/lib/pause-storage";
 import { createTellEntry, NOT_ROUTED_INTERPRETATION, type TellEntry } from "@/lib/tell-storage";
+import { viewTransitionsSupported, vtName } from "@/lib/view-transition";
 
 // Journey as a journal (the product's core idea): one story, newest first,
 // grouped by day. Your own words are keepsake cards, Moments are polaroids,
@@ -263,10 +264,13 @@ export function JournalComposer({ onSaved }: { onSaved: () => void }) {
 
 export function StoryTimeline({
   items,
+  openEntryId = null,
   onOpenEntry,
   onOpenHighlight,
 }: {
   items: StoryItem[];
+  /** The entry open in its sheet: its card is lifted out, leaving its space. */
+  openEntryId?: string | null;
   onOpenEntry: (entry: TellEntry) => void;
   onOpenHighlight: (highlight: Highlight) => void;
 }) {
@@ -302,7 +306,17 @@ export function StoryTimeline({
               if (item.kind === "entry") {
                 return (
                   <li key={`e-${item.entry.id}`} className="story-node">
-                    <EntryCard item={item} onOpen={() => onOpenEntry(item.entry)} />
+                    {/* Shares its name with the entry sheet (journey-screen.tsx): the
+                        card grows into the sheet, and settles back on close. */}
+                    {openEntryId === item.entry.id ? (
+                      <div style={{ visibility: "hidden" }} aria-hidden="true">
+                        <EntryCard item={item} onOpen={() => {}} />
+                      </div>
+                    ) : (
+                      <ViewTransition name={vtName("entry", item.entry.id)} share="expand" default="none">
+                        <EntryCard item={item} onOpen={() => onOpenEntry(item.entry)} />
+                      </ViewTransition>
+                    )}
                   </li>
                 );
               }
@@ -310,7 +324,9 @@ export function StoryTimeline({
                 const tilt = polaroidIndex++ % 2 === 0 ? -0.8 : 0.7;
                 return (
                   <li key={`m-${item.highlight.id}`} className="story-node">
-                    <PolaroidCard highlight={item.highlight} tilt={tilt} onOpen={() => onOpenHighlight(item.highlight)} />
+                    <ViewTransition name={vtName("polaroid", item.highlight.id)} share="expand" default="none">
+                      <PolaroidCard highlight={item.highlight} tilt={tilt} onOpen={() => onOpenHighlight(item.highlight)} />
+                    </ViewTransition>
                   </li>
                 );
               }
@@ -446,8 +462,11 @@ export function MomentOpened({
   const returnNote = highlight.returnToMe;
   const otherEntries = linkedEntries.filter((entry) => entry.text.trim() !== highlight.expression?.trim());
   const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    ref.current?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  // Before paint, and instantly where the polaroid grows into place: a
+  // smooth scroll would move the page out from under that animation.
+  useLayoutEffect(() => {
+    const instant = viewTransitionsSupported() || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    ref.current?.scrollIntoView({ block: "start", behavior: instant ? "auto" : "smooth" });
   }, []);
   return (
     <section ref={ref} className="ds-settle scroll-mt-4 space-y-5">
@@ -464,6 +483,7 @@ export function MomentOpened({
       </button>
 
       {mode ? (
+        <ViewTransition name={vtName("polaroid", highlight.id)} share="expand" default="none">
         <figure className="polaroid mx-auto max-w-[22rem]" style={{ ["--tilt" as string]: "0deg" }}>
           <span className="relative block aspect-[4/3] overflow-hidden rounded-[0.4rem]" aria-hidden="true">
             <LandscapeScene variant={mode.landscape} className="absolute inset-0 h-full w-full scale-[1.2]" />
@@ -478,6 +498,7 @@ export function MomentOpened({
             </span>
           </figcaption>
         </figure>
+        </ViewTransition>
       ) : (
         <div className="ds-card px-5 py-5">
           <p className="ds-label uppercase" style={{ color: "var(--ds-accent)" }}>Practice</p>

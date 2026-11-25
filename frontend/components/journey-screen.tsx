@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState, ViewTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
@@ -14,6 +14,7 @@ import { computeGrowthStatements, type GrowthStatement } from "@/lib/growth-mode
 import { getLinkedJournalEntries, listHighlights, type Highlight } from "@/lib/journey-highlights";
 import { listMomentRecords } from "@/lib/moment-storage";
 import { listPauseRecords, type PauseRecord } from "@/lib/pause-storage";
+import { viewTransitionsSupported, vtName } from "@/lib/view-transition";
 import {
   generatePatternCandidates,
   resolvePatternHighlights,
@@ -95,25 +96,27 @@ export function JourneyScreen() {
 
   const story = buildStory(journalEntries, highlights, pauses);
 
+  // Opening and closing run as transitions, so a polaroid grows into the
+  // opened Moment and a journal card into its sheet (lib/view-transition.ts).
   const openHighlight = (highlight: Highlight) => {
-    setSelectedHighlight(highlight);
-    setSelectedEntry(null);
+    startTransition(() => {
+      setSelectedHighlight(highlight);
+      setSelectedEntry(null);
+    });
   };
+  const closeHighlight = () => startTransition(() => setSelectedHighlight(null));
   const openEntryFromList = (entry: TellEntry) => {
-    setSelectedEntry(entry);
-    setEntryOrigin("list");
+    haptic("tap");
+    startTransition(() => {
+      setSelectedEntry(entry);
+      setEntryOrigin("list");
+    });
   };
   const openEntryFromHighlight = (entry: TellEntry) => {
     setSelectedEntry(entry);
     setEntryOrigin("highlight");
   };
-  const closeEntry = () => {
-    if (entryOrigin === "highlight") {
-      setSelectedEntry(null);
-    } else {
-      setSelectedEntry(null);
-    }
-  };
+  const closeEntry = () => startTransition(() => setSelectedEntry(null));
   const deleteEntry = (id: string) => {
     deleteTellEntry(id);
     setSelectedEntry(null);
@@ -174,9 +177,14 @@ export function JourneyScreen() {
 
           {tab === "story" ? (
             selectedHighlight ? (
-              <MomentOpened highlight={selectedHighlight} linkedEntries={getLinkedJournalEntries(selectedHighlight)} onBack={() => setSelectedHighlight(null)} onOpenEntry={openEntryFromHighlight} />
+              <MomentOpened highlight={selectedHighlight} linkedEntries={getLinkedJournalEntries(selectedHighlight)} onBack={closeHighlight} onOpenEntry={openEntryFromHighlight} />
             ) : (
-              <StoryTimeline items={story} onOpenEntry={openEntryFromList} onOpenHighlight={openHighlight} />
+              <StoryTimeline
+                items={story}
+                openEntryId={selectedEntry && entryOrigin === "list" ? selectedEntry.id : null}
+                onOpenEntry={openEntryFromList}
+                onOpenHighlight={openHighlight}
+              />
             )
           ) : null}
 
@@ -197,7 +205,7 @@ export function JourneyScreen() {
           {tab === "growth" ? <GrowthList statements={growthStatements} pass={pass} /> : null}
 
         {selectedEntry ? (
-          <JournalEntryDetailOverlay entry={selectedEntry} onClose={closeEntry} onDelete={deleteEntry} />
+          <JournalEntryDetailOverlay entry={selectedEntry} fromCard={entryOrigin === "list"} onClose={closeEntry} onDelete={deleteEntry} />
         ) : null}
 
         {process.env.NODE_ENV === "development" ? (
@@ -225,10 +233,13 @@ export function JourneyScreen() {
 
 function JournalEntryDetailOverlay({
   entry,
+  fromCard,
   onClose,
   onDelete,
 }: {
   entry: TellEntry;
+  /** Opened from its card in the story: the sheet grows out of that card. */
+  fromCard: boolean;
   onClose: () => void;
   onDelete: (id: string) => void;
 }) {
@@ -241,70 +252,81 @@ function JournalEntryDetailOverlay({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
   const when = new Date(entry.createdAt);
+  // Grows out of its card where view transitions run; otherwise it rises as before.
+  const morph = fromCard && viewTransitionsSupported();
+  const panel = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Journal entry"
+      className={`sheet-panel ${morph ? "sheet-panel--morph " : ""}journal-paper relative max-h-[85dvh] w-full max-w-[30rem] overflow-y-auto rounded-t-[1.75rem] px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3`}
+    >
+      <span className="mx-auto mb-5 block h-1 w-10 rounded-full" style={{ background: "var(--ds-border)" }} aria-hidden="true" />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+            {when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          <p className="ds-caption mt-0.5">
+            {entry.source === "speak" ? "Spoken" : "Written"} · {when.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+          </p>
+        </div>
+        <button type="button" onClick={onClose} className="ds-tap min-h-11 rounded-full px-3 text-sm font-semibold" style={{ color: "var(--ds-accent)" }}>
+          Done
+        </button>
+      </div>
+      <p className="journal-lines mt-4 whitespace-pre-line text-[1.05rem] leading-8">{entry.text}</p>
+      {entry.chips.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {entry.chips.map((chip) => (
+            <span key={chip} className="rounded-full px-2.5 py-1 text-[0.78rem] font-medium" style={{ background: "var(--ds-accent-soft)", color: "var(--ds-text-secondary)" }}>
+              {chip}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-6 border-t pt-4">
+        {confirmingDelete ? (
+          <div className="flex items-center gap-2.5">
+            <p className="flex-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
+              Delete this entry for good?
+            </p>
+            <button type="button" onClick={() => setConfirmingDelete(false)} className="ds-tap min-h-11 rounded-full px-4 text-sm font-medium" style={{ color: "var(--ds-text-secondary)" }}>
+              Keep
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                haptic("success");
+                onDelete(entry.id);
+              }}
+              className="ds-tap min-h-11 rounded-full px-4 text-sm font-semibold"
+              style={{ background: "var(--ds-error)", color: "#fff" }}
+            >
+              Delete
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setConfirmingDelete(true)} className="ds-tap min-h-11 rounded-full text-sm font-medium" style={{ color: "var(--ds-error)" }}>
+            Delete entry
+          </button>
+        )}
+      </div>
+    </div>
+  );
   // Portalled to <body>: Journey content animates with a transform, which
   // would otherwise trap a fixed overlay inside it.
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
       <button type="button" aria-label="Close entry" onClick={onClose} className="sheet-backdrop absolute inset-0 cursor-default" style={{ background: "rgba(15, 23, 42, 0.35)" }} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Journal entry"
-        className="sheet-panel journal-paper relative max-h-[85dvh] w-full max-w-[30rem] overflow-y-auto rounded-t-[1.75rem] px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3"
-      >
-        <span className="mx-auto mb-5 block h-1 w-10 rounded-full" style={{ background: "var(--ds-border)" }} aria-hidden="true" />
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-              {when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
-            </p>
-            <p className="ds-caption mt-0.5">
-              {entry.source === "speak" ? "Spoken" : "Written"} · {when.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-            </p>
-          </div>
-          <button type="button" onClick={onClose} className="ds-tap min-h-11 rounded-full px-3 text-sm font-semibold" style={{ color: "var(--ds-accent)" }}>
-            Done
-          </button>
-        </div>
-        <p className="journal-lines mt-4 whitespace-pre-line text-[1.05rem] leading-8">{entry.text}</p>
-        {entry.chips.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {entry.chips.map((chip) => (
-              <span key={chip} className="rounded-full px-2.5 py-1 text-[0.78rem] font-medium" style={{ background: "var(--ds-accent-soft)", color: "var(--ds-text-secondary)" }}>
-                {chip}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="mt-6 border-t pt-4">
-          {confirmingDelete ? (
-            <div className="flex items-center gap-2.5">
-              <p className="flex-1 text-sm" style={{ color: "var(--ds-text-secondary)" }}>
-                Delete this entry for good?
-              </p>
-              <button type="button" onClick={() => setConfirmingDelete(false)} className="ds-tap min-h-11 rounded-full px-4 text-sm font-medium" style={{ color: "var(--ds-text-secondary)" }}>
-                Keep
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  haptic("success");
-                  onDelete(entry.id);
-                }}
-                className="ds-tap min-h-11 rounded-full px-4 text-sm font-semibold"
-                style={{ background: "var(--ds-error)", color: "#fff" }}
-              >
-                Delete
-              </button>
-            </div>
-          ) : (
-            <button type="button" onClick={() => setConfirmingDelete(true)} className="ds-tap min-h-11 rounded-full text-sm font-medium" style={{ color: "var(--ds-error)" }}>
-              Delete entry
-            </button>
-          )}
-        </div>
-      </div>
+      {morph ? (
+        <ViewTransition name={vtName("entry", entry.id)} share="expand" default="none">
+          {panel}
+        </ViewTransition>
+      ) : (
+        panel
+      )}
     </div>,
     document.body,
   );

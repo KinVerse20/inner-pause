@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, ViewTransition, type ComponentType, type ReactNode } from "react";
 
 import { IconHomeTab, IconJourneyTab, IconPracticeTab, IconYouTab } from "@/components/pause-icons";
 import { haptic } from "@/lib/haptics";
 import { composeGroundPause } from "@/lib/pause-engine";
 import { createPauseRecord } from "@/lib/pause-storage";
+import { EXPAND, expandName, markPageTransition } from "@/lib/view-transition";
 
 const destinations: Array<{ href: string; label: string; Icon: ComponentType<{ className?: string }> }> = [
   { href: "/", label: "Home", Icon: IconHomeTab },
@@ -29,7 +30,9 @@ export function PauseShell({ children, glow = "soft" }: { children: ReactNode; g
         className="relative mx-auto min-h-dvh w-full max-w-[30rem] px-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 md:max-w-[40rem]"
         style={{ paddingBottom: "calc(7.5rem + env(safe-area-inset-bottom))" }}
       >
-        {children}
+        {/* Slides forward or back when a You row or back link says so
+            (markPageTransition in lib/view-transition.ts). */}
+        <div className="page-content">{children}</div>
       </main>
       <PauseBottomNav />
     </div>
@@ -41,16 +44,24 @@ function PauseBottomNav() {
   const router = useRouter();
   const [starting, setStarting] = useState(false);
 
+  // Have the player ready before anyone taps: it only grows out of a tile
+  // or this button if it can render in the same moment (no loading step).
+  useEffect(() => {
+    router.prefetch("/pause/player");
+  }, [router]);
+
   const handlePause = () => {
     if (starting) return;
     setStarting(true);
     haptic("moment");
     const record = createPauseRecord(composeGroundPause());
-    router.push(`/pause/player?session=${record.id}`);
+    markPageTransition("hold");
+    router.push(`/pause/player?session=${record.id}&from=pause-action`, { transitionTypes: EXPAND });
   };
 
+  // Named so the tab bar holds still while page content slides beneath it.
   return (
-    <nav className="ds-nav fixed inset-x-0 bottom-0 z-40">
+    <nav className="ds-nav fixed inset-x-0 bottom-0 z-40" style={{ viewTransitionName: "ip-bottom-nav" }}>
       <div className="mx-auto grid max-w-[30rem] grid-cols-5 items-end px-1 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 md:max-w-[40rem]">
         {destinations.slice(0, 2).map((item) => (
           <NavDestination key={item.href} item={item} active={isActive(pathname, item.href)} />
@@ -65,6 +76,7 @@ function PauseBottomNav() {
             className="ds-tap -mt-7 grid justify-items-center gap-1 rounded-[var(--ds-radius-md)] text-[0.75rem] font-medium"
             style={{ color: "var(--ds-text)" }}
           >
+            <ViewTransition name={expandName("pause-action")} share="expand" default="none">
             <span
               className="grid h-[3.75rem] w-[3.75rem] place-items-center rounded-full transition-[filter] duration-[var(--ds-duration-base)]"
               style={{ boxShadow: "0 8px 20px rgba(29, 27, 76, 0.24)", filter: starting ? "brightness(0.92)" : undefined }}
@@ -72,6 +84,7 @@ function PauseBottomNav() {
               {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG, no benefit from next/image's raster pipeline */}
               <img src="/branding/innerpause-pause-action.svg" alt="" width={60} height={60} className="h-full w-full" />
             </span>
+            </ViewTransition>
             <span aria-hidden="true">Pause</span>
           </button>
         </div>

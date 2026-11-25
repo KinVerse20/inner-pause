@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, ViewTransition } from "react";
 
 import { DEFAULT_CARDS, type PublicCard } from "@inner-pause/shared";
 
@@ -15,6 +15,7 @@ import { haptic } from "@/lib/haptics";
 import { getVisibleCards, subscribeAppContent } from "@/lib/content-store";
 import { composeCardPause } from "@/lib/pause-engine";
 import { createPauseRecord } from "@/lib/pause-storage";
+import { EXPAND, expandName, markPageTransition } from "@/lib/view-transition";
 
 // The server render (and the first client paint) use the six shipped cards
 // so hydration matches; the admin-managed list from the content store is
@@ -49,7 +50,9 @@ export function PauseHomeScreen() {
       return;
     }
     const record = createPauseRecord(composeCardPause(card));
-    router.push(`/pause/player?session=${record.id}`);
+    markPageTransition("hold");
+    // "from" names the tile, so the player grows out of it (lib/view-transition.ts).
+    router.push(`/pause/player?session=${record.id}&from=${encodeURIComponent(card.id)}`, { transitionTypes: EXPAND });
   };
 
   return (
@@ -83,8 +86,8 @@ export function PauseHomeScreen() {
             {cards.map((card) => {
               const isStarting = startingId === card.id;
               return (
+                <ViewTransition key={card.id} name={expandName(card.id)} share="expand" default="none">
                 <button
-                  key={card.id}
                   type="button"
                   disabled={startingId !== null && !isStarting}
                   aria-busy={isStarting || undefined}
@@ -109,6 +112,7 @@ export function PauseHomeScreen() {
                     </span>
                   ) : null}
                 </button>
+                </ViewTransition>
               );
             })}
           </section>

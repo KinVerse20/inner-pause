@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import type { ComponentType, CSSProperties, ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { ViewTransition, type ComponentType, type CSSProperties, type ReactNode } from "react";
 
 import { IconChevronRight } from "@/components/pause-icons";
+import { markPageTransition, vtName } from "@/lib/view-transition";
 
 type IconType = ComponentType<{ className?: string; style?: CSSProperties }>;
 
@@ -39,7 +41,16 @@ export function SettingsRow({
         </span>
       ) : null}
       <span className="min-w-0 flex-1">
-        <span className="block text-[0.95rem] font-semibold">{label}</span>
+        {href ? (
+          // The label rises into the title of the page it opens (YouScreenHeader).
+          <span className="block text-[0.95rem] font-semibold">
+            <ViewTransition name={vtName("title", href)} share="title-morph" default="none">
+              <span className="inline-block">{label}</span>
+            </ViewTransition>
+          </span>
+        ) : (
+          <span className="block text-[0.95rem] font-semibold">{label}</span>
+        )}
         {description ? (
           <span className="block text-[0.78rem]" style={{ color: "var(--ds-text-secondary)" }}>
             {description}
@@ -62,7 +73,7 @@ export function SettingsRow({
 
   if (href) {
     return (
-      <Link href={href} className={className} style={style}>
+      <Link href={href} onClick={() => markPageTransition("forward")} className={className} style={style}>
         {content}
       </Link>
     );
@@ -86,17 +97,23 @@ export function SettingsSectionTitle({ children }: { children: ReactNode }) {
 // Shared back link + page title header, matching moments-screen.tsx's
 // pattern so every You screen looks like the same product.
 export function YouScreenHeader({ title, backHref = "/profile", backLabel = "You" }: { title: string; backHref?: string; backLabel?: string }) {
+  const pathname = usePathname();
   return (
     <header>
       <Link
         href={backHref}
+        onClick={() => markPageTransition("back")}
         className="ds-tap -my-3.5 inline-flex min-h-11 items-center gap-1 pr-2 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
         style={{ color: "var(--ds-text-secondary)" }}
       >
         <IconChevronRight className="h-3.5 w-3.5" style={{ transform: "scaleX(-1)" }} />
         {backLabel}
       </Link>
-      <h1 className="mt-2 ds-display text-[1.5rem]">{title}</h1>
+      <h1 className="mt-2 ds-display text-[1.5rem]">
+        <ViewTransition name={vtName("title", pathname)} share="title-morph" default="none">
+          <span className="inline-block">{title}</span>
+        </ViewTransition>
+      </h1>
     </header>
   );
 }

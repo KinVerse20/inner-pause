@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ComponentType } from "react";
+import { startTransition, useEffect, useState, ViewTransition, type ComponentType } from "react";
 
 import { LandscapeScene } from "@/components/landscape-scene";
 import { IconChevronDown, IconChevronRight, IconMic, IconMoon, IconPencil, IconSun, IconWave } from "@/components/pause-icons";
@@ -20,6 +20,7 @@ import { haptic } from "@/lib/haptics";
 import { createMomentRecord } from "@/lib/moment-storage";
 import { createPauseRecord } from "@/lib/pause-storage";
 import { computeInitialReturnToMeState } from "@/lib/return-to-me";
+import { vtName } from "@/lib/view-transition";
 
 // docs/PRODUCT_FLOW.md §11-14: mode is chosen first — "Coming up" /
 // "Happening now" / "Just happened" are the user-facing labels for
@@ -60,11 +61,15 @@ export function MomentsScreen() {
     setDevOffsetMs(getDevNowOffsetMs());
   }, []);
 
+  // A transition, so a mode card grows into the mode's header panel and
+  // shrinks back on the way out (lib/view-transition.ts).
   const go = (next: View) => {
     haptic("tap");
-    setShowAll(false);
-    setView(next);
     window.scrollTo({ top: 0 });
+    startTransition(() => {
+      setShowAll(false);
+      setView(next);
+    });
   };
 
   // Reuses the Core Pause engine end to end — composeBigMomentPause only
@@ -111,8 +116,8 @@ export function MomentsScreen() {
 
           <section aria-label="Choose when" className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {modes.map((item) => (
+              <ViewTransition key={item.id} name={vtName("moment-mode", item.id)} share="expand" default="none">
               <button
-                key={item.id}
                 type="button"
                 onClick={() => go({ kind: "mode", mode: item.id })}
                 className="ds-tap ds-card-lift relative grid min-h-[6.75rem] grid-cols-[1fr_7.5rem] overflow-hidden rounded-[var(--ds-radius-lg)] text-left sm:grid-cols-[1fr_9rem]"
@@ -144,6 +149,7 @@ export function MomentsScreen() {
                   <LandscapeScene variant={item.landscape} className="absolute inset-0 h-full w-full scale-[1.4]" />
                 </span>
               </button>
+              </ViewTransition>
             ))}
           </section>
 
@@ -177,12 +183,26 @@ export function MomentsScreen() {
                   <ModePill tone={mode.tone} text={`${mode.label} · ${mode.purpose}`} />
                 </header>
 
-                <div>
-                  <h1 className="ds-display text-[1.75rem] sm:text-[2rem]">{MODE_HEADLINE[mode.id]}</h1>
-                  <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                    Choose what&rsquo;s closest. Your Pause starts right away.
-                  </p>
-                </div>
+                {/* The mode card, opened: same tint, its landscape now a band on top. */}
+                <ViewTransition name={vtName("moment-mode", mode.id)} share="expand" default="none">
+                  <div
+                    className="overflow-hidden rounded-[var(--ds-radius-lg)]"
+                    style={{
+                      background: `color-mix(in srgb, var(--ds-outcome-${mode.tone}) 12%, var(--ds-surface))`,
+                      boxShadow: "var(--ds-elevation-1)",
+                    }}
+                  >
+                    <span className="relative block h-24 overflow-hidden" aria-hidden="true">
+                      <LandscapeScene variant={mode.landscape} className="absolute inset-0 h-full w-full scale-[1.15]" />
+                    </span>
+                    <div className="px-5 pb-5 pt-4">
+                      <h1 className="ds-display text-[1.75rem] sm:text-[2rem]">{MODE_HEADLINE[mode.id]}</h1>
+                      <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                        Choose what&rsquo;s closest. Your Pause starts right away.
+                      </p>
+                    </div>
+                  </div>
+                </ViewTransition>
 
                 <section aria-label="Choose a moment">
                   <div className="ds-card divide-y divide-[color:var(--ds-border)] overflow-hidden">

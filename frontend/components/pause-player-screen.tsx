@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { BreathingGuide, breathAt } from "@/components/breathing-guide";
@@ -22,6 +22,7 @@ import { findBuiltInSound, soundUrlFor, undertoneGain, type BuiltInSoundId, type
 import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
 import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
 import { useTunedSound } from "@/lib/use-tuned-sound";
+import { expandName, markPageTransition } from "@/lib/view-transition";
 
 // docs/PRODUCT_FLOW.md §4/§7: the center Pause action's "Get comfortable"
 // transition is a fixed, brief moment — not a duration-scaled Arrive, and
@@ -68,7 +69,11 @@ function currentCueIndex(elapsed: number, durationSeconds: number, cueCount: num
 
 export function PausePlayerScreen() {
   const router = useRouter();
-  const sessionId = useSearchParams().get("session");
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session");
+  // What opened this Pause (a Home tile, the nav's Pause button): the
+  // player grows out of it, and shrinks back into it on the way out.
+  const from = searchParams.get("from");
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const [record, setRecord] = useState<PauseRecord | null | undefined>(undefined);
@@ -435,10 +440,17 @@ export function PausePlayerScreen() {
     updatePreferences({ undertone: level });
   };
 
+  // Leaving shrinks the player back into what opened it, with the page
+  // you return to already in place beneath it (lib/view-transition.ts).
+  const leaveTo = (destination: string) => {
+    markPageTransition("hold");
+    router.push(destination);
+  };
+
   const finalizeAndLeave = (message: string, destination = "/") => {
     setAcknowledgedText(message);
     setCheckinStage("acknowledged");
-    window.setTimeout(() => router.push(destination), 1400);
+    window.setTimeout(() => leaveTo(destination), 1400);
   };
 
   const handleTopChoice = (feedback: PauseFeedback) => {
@@ -477,12 +489,12 @@ export function PausePlayerScreen() {
     if (!record) return;
     saveNote();
     completePauseRecord(record.id, undefined);
-    router.push(record.returnTo ?? "/");
+    leaveTo(record.returnTo ?? "/");
   };
 
   if (record === undefined) {
     return (
-      <PlayerFrame>
+      <PlayerFrame from={from}>
         <div className="grid flex-1 place-items-center">
           <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(44vw,12rem)] opacity-70" />
           <p className="sr-only">Preparing your Pause</p>
@@ -493,11 +505,11 @@ export function PausePlayerScreen() {
 
   if (record === null) {
     return (
-      <PlayerFrame>
+      <PlayerFrame from={from}>
         <div className="grid flex-1 place-items-center text-center">
           <div className="grid justify-items-center gap-4">
             <p className="text-base" style={{ color: "var(--ds-on-navy)" }}>We couldn&rsquo;t find that Pause.</p>
-            <NavyButton onClick={() => router.push("/")}>Back to Home</NavyButton>
+            <NavyButton onClick={() => leaveTo("/")}>Back to Home</NavyButton>
           </div>
         </div>
       </PlayerFrame>
@@ -518,7 +530,7 @@ export function PausePlayerScreen() {
   const subtitle = [record.chakraName, record.frequencyLabel].filter(Boolean).join(" · ");
 
   return (
-    <PlayerFrame>
+    <PlayerFrame from={from}>
       <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2">
         <button
           type="button"
@@ -953,10 +965,11 @@ function CompletionGlow() {
   );
 }
 
-function PlayerFrame({ children }: { children: ReactNode }) {
-  return (
+function PlayerFrame({ from, children }: { from: string | null; children: ReactNode }) {
+  // The app template already fades every page in, so no entrance of its own.
+  const frame = (
     <div
-      className="ds-page-enter flex min-h-dvh flex-col overflow-x-hidden px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+      className="flex min-h-dvh flex-col overflow-x-hidden px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
       style={{
         background: "radial-gradient(120% 70% at 50% 38%, #262357 0%, var(--ds-navy) 62%)",
         color: "var(--ds-on-navy)",
@@ -966,5 +979,11 @@ function PlayerFrame({ children }: { children: ReactNode }) {
     >
       {children}
     </div>
+  );
+  if (!from) return frame;
+  return (
+    <ViewTransition name={expandName(from)} share="expand" default="none">
+      {frame}
+    </ViewTransition>
   );
 }
