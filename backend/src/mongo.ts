@@ -50,3 +50,11 @@ export async function pingMongo() {
   const database = await getDb();
   await database.command({ ping: 1 });
 }
+
+/** Closes the connection (tests; a graceful shutdown). The next getDb() reconnects. */
+export async function closeMongo() {
+  const open = client;
+  client = null;
+  db = null;
+  await open?.close();
+}

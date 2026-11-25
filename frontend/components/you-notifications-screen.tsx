@@ -14,9 +14,10 @@ import {
   subscribeNotificationPreferences,
   type NotificationPreferencesState,
 } from "@/lib/notification-preferences";
+import { followPracticeNotificationsSetting } from "@/lib/programme-notifications";
 
-// You -> Notifications (docs/PRODUCT_FLOW.md §31): preference/state
-// storage only — no real push infrastructure in this slice. Declining the
+// You -> Notifications (docs/PRODUCT_FLOW.md §31). Practice is delivered by
+// web push (lib/programme-notifications.ts); its toggle starts and stops it. Declining the
 // prompt is respected and never re-pressured; this screen is always
 // available to change the choice later regardless of the initial answer.
 export function YouNotificationsScreen() {
@@ -92,7 +93,10 @@ export function YouNotificationsScreen() {
                 </span>
                 <ToggleSwitch
                   checked={state.categories[category.id]}
-                  onChange={(value) => setCategoryEnabled(category.id, value)}
+                  onChange={(value) => {
+                    setCategoryEnabled(category.id, value);
+                    if (category.id === "practice") void followPracticeNotificationsSetting(value);
+                  }}
                   label={category.label}
                 />
               </div>

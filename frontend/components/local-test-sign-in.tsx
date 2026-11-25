@@ -7,6 +7,7 @@ import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { applyServerAccount } from "@/lib/account-store";
 import { testSignIn } from "@/lib/auth-client";
 import { localTestAllowed } from "@/lib/local-test";
+import { connectPendingReminder } from "@/lib/programme-notifications";
 import { setMvpAuthenticatedUser, upsertProfile } from "@/lib/mvp-storage";
 
 const noSubscribe = () => () => {};
@@ -33,6 +34,7 @@ export function LocalTestSignIn() {
       setMvpAuthenticatedUser(user.id);
       upsertProfile({ fullName: user.fullName, email: user.email, onboardingCompleted: true });
       applyServerAccount(user);
+      void connectPendingReminder();
       router.replace("/");
       router.refresh();
     } catch (caught) {

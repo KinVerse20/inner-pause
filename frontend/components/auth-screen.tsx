@@ -8,6 +8,7 @@ import { IconApple, IconChevronRight, IconGoogle, IconMail } from "@/components/
 import { Reveal } from "@/components/reveal";
 import { applyServerAccount } from "@/lib/account-store";
 import { login, requestPasswordReset, signup } from "@/lib/auth-client";
+import { connectPendingReminder } from "@/lib/programme-notifications";
 import { setMvpAuthenticatedUser, upsertProfile } from "@/lib/mvp-storage";
 
 // Flip on once Apple/Google sign-in is wired to the backend.
@@ -36,6 +37,8 @@ export function AuthScreen() {
     // Signed in means past Entry too, so Home doesn't send them back to it.
     upsertProfile({ fullName: user.fullName, email: user.email, onboardingCompleted: true });
     applyServerAccount(user);
+    // A Practice reminder chosen while signed out connects now.
+    void connectPendingReminder();
   };
 
   const submit = async () => {

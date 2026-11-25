@@ -20,6 +20,7 @@ import { invalidBody, readJsonObject, stringField } from "../http";
 import { mailerConfigured, sendPasswordResetEmail } from "../mailer";
 import type { UserDocument } from "../mongo";
 import { detachOrdersFromUser, passStateOf } from "../pass-store";
+import { removeSubscriptionsForUser } from "../push-store";
 import { clearEvents, countRecent, recordEvent } from "../rate-limit";
 
 export const authRoutes = new Hono();
@@ -158,6 +159,7 @@ authRoutes.post("/delete-account", async (c) => {
   if (!verified) return c.json({ error: "Authentication required." }, 401);
   const userId = verified.record._id.toString();
   await detachOrdersFromUser(userId);
+  await removeSubscriptionsForUser(userId);
   await deleteUser(userId);
   clearSession(c);
   return c.json({ ok: true });

@@ -11,7 +11,7 @@ import { composeRightNowPause } from "@/lib/pause-engine";
 import { createPauseRecord, getPauseRecord } from "@/lib/pause-storage";
 import { PATH_LENGTH_DAYS, PATH_PRESENTATION } from "@/lib/practice-path-presentation";
 import { findProgramme, type Programme, type ProgrammeId } from "@/lib/programme-data";
-import { enableProgrammeReminder, notificationSupport } from "@/lib/programme-notifications";
+import { disableProgrammeReminder, enableProgrammeReminder, notificationSupport } from "@/lib/programme-notifications";
 import {
   currentProgrammeDay,
   longestProgrammeStreak,
@@ -83,6 +83,8 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
       if (record?.completedAt) {
         next = completeDay(next, enrollment.id, enrollment.pendingPause.day);
         writeProgrammeState(next);
+        // The last day: nothing left to remind you of.
+        if (latestEnrollment(next, path.id)?.status === "completed") void disableProgrammeReminder();
         justCompletedRef.current = true;
         haptic("success");
         nextStage = "complete";
@@ -119,9 +121,13 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
     setBusy(true);
     setNotice("");
     let permission: NotificationPermission | "unsupported" = notificationSupport() ? Notification.permission : "unsupported";
+    // On only when a reminder will actually arrive: connected, or waiting
+    // for sign-in. Allowed notifications alone aren't enough.
+    let reminderOn = false;
     try {
-      const result = await enableProgrammeReminder({ issueId: path.id, reminderTime });
+      const result = await enableProgrammeReminder({ pathId: path.id, reminderTime });
       permission = result.permission;
+      reminderOn = result.pushReady || Boolean(result.waitingForSignIn);
       setNotice(result.message);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Your path is saved. The reminder could not be connected.");
@@ -131,7 +137,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
       issueId: path.id,
       startedAt: new Date().toISOString(),
       reminderTime,
-      reminderEnabled: permission === "granted",
+      reminderEnabled: reminderOn,
       notificationPermission: permission,
       checkIns: [],
       completions: [],
@@ -321,7 +327,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
             </button>
             <p className="ds-caption">
               Daily reminder ·{" "}
-              {enrollment.reminderEnabled ? `on at ${enrollment.reminderTime}` : `${enrollment.reminderTime}, notifications are off`}
+              {enrollment.reminderEnabled ? `on at ${enrollment.reminderTime}` : `${enrollment.reminderTime}, reminders are off`}
             </p>
           </>
         ) : null}

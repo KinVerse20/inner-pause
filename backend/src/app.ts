@@ -7,6 +7,7 @@ import { analyzeRoutes } from "./routes/analyze";
 import { authRoutes } from "./routes/auth";
 import { contentRoutes } from "./routes/content";
 import { passRoutes } from "./routes/pass";
+import { practiceRoutes } from "./routes/practice";
 import { profileRoutes } from "./routes/profile";
 import { soundRoutes } from "./routes/sounds";
 import { tellRoutes } from "./routes/tell";
@@ -44,6 +45,7 @@ export function createApp() {
   app.route("/api/content", contentRoutes);
   app.route("/api/sounds", soundRoutes);
   app.route("/api/pass", passRoutes);
+  app.route("/api/practice", practiceRoutes);
 
   return app;
 }

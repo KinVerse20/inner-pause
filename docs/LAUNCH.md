@@ -74,4 +74,5 @@ rebuilt automatically if missing.
   business; ideally have a lawyer review them. They are written to match
   what the app does today.
 - Set a long random `AUTH_SECRET` (changing it later signs everyone out).
+- For Practice reminders, set `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (`npx web-push generate-vapid-keys`, once; changing them later drops every reminder). Reminders need the site on HTTPS.
 - Run `npm audit --omit=dev` and keep Next.js up to date.
