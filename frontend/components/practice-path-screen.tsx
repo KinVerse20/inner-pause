@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { IconCheck, IconChevronRight } from "@/components/pause-icons";
+import { PathScene } from "@/components/path-scene";
+import { PathTrail } from "@/components/path-trail";
 import { PauseShell } from "@/components/pause-shell";
 import { haptic } from "@/lib/haptics";
 import { composeRightNowPause } from "@/lib/pause-engine";
@@ -26,7 +28,7 @@ import {
 // The working is Kinverse's: start with a daily reminder time, then each
 // day check in → exercise → one real-world action → a sound Pause →
 // completion. Rhythm (streak) is shown gently and never as a failure.
-type Stage = "overview" | "dashboard" | "checkin" | "day" | "complete" | "path";
+type Stage = "overview" | "dashboard" | "checkin" | "day" | "complete";
 
 function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `p-${Date.now()}`;
@@ -108,6 +110,14 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
     haptic("tap");
     setStage(next);
     window.scrollTo({ top: 0 });
+  };
+
+  // Today's card and today's stop on the trail both begin here.
+  const beginToday = () => {
+    setCheckIn(savedCheckIn?.text ?? "");
+    setExercise(savedCheckIn?.exerciseResponse ?? "");
+    setRating(savedCheckIn?.rating ?? 3);
+    go("checkin");
   };
 
   const save = (next: ProgrammeState) => {
@@ -201,8 +211,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   };
 
   const tint = `color-mix(in srgb, var(--ds-outcome-${tone}) 13%, var(--ds-surface))`;
-  const back =
-    stage === "checkin" ? () => go("dashboard") : stage === "day" ? () => go("checkin") : stage === "path" ? () => go("dashboard") : null;
+  const back = stage === "checkin" ? () => go("dashboard") : stage === "day" ? () => go("checkin") : null;
 
   return (
     <PauseShell>
@@ -273,6 +282,9 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
 
         {loaded && stage === "dashboard" && enrollment ? (
           <>
+            <span className="relative block h-28 overflow-hidden rounded-[var(--ds-radius-lg)]" aria-hidden="true">
+              <PathScene pathId={path.id} className="absolute inset-0 h-full w-full" />
+            </span>
             <div>
               <h1 className="ds-display text-[1.85rem]">{path.title}</h1>
               <p className="mt-1.5 text-[0.95rem]" style={{ color: "var(--ds-text-secondary)" }}>
@@ -307,24 +319,25 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                 <p className="ds-caption ds-num mt-3">
                   {day.minutes} min · {path.frequencyHz} Hz
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCheckIn(savedCheckIn?.text ?? "");
-                    setExercise(savedCheckIn?.exerciseResponse ?? "");
-                    setRating(savedCheckIn?.rating ?? 3);
-                    go("checkin");
-                  }}
-                  className="ds-filled mt-4 w-full"
-                >
+                <button type="button" onClick={beginToday} className="ds-filled mt-4 w-full">
                   Begin today&rsquo;s Practice
                 </button>
               </section>
             ) : null}
-            <button type="button" onClick={() => go("path")} className="ds-tap flex w-full items-center justify-between rounded-[var(--ds-radius-md)] px-1 py-2">
-              <span className="text-[0.95rem] font-medium">See all 14 days</span>
-              <IconChevronRight className="h-4 w-4" style={{ color: "var(--ds-text-muted)" }} />
-            </button>
+            <section aria-labelledby="trail-title" className="space-y-3">
+              <h2 id="trail-title" className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+                Your path
+              </h2>
+              <div className="overflow-hidden rounded-[var(--ds-radius-lg)] px-2 py-4" style={{ background: `color-mix(in srgb, var(--ds-outcome-${tone}) 7%, var(--ds-surface))` }}>
+                <PathTrail
+                  path={path}
+                  enrollment={enrollment}
+                  today={enrollment.status === "completed" ? null : dayNumber}
+                  tone={tone}
+                  onBeginToday={beginToday}
+                />
+              </div>
+            </section>
             <p className="ds-caption">
               Daily reminder ·{" "}
               {enrollment.reminderEnabled ? `on at ${enrollment.reminderTime}` : `${enrollment.reminderTime}, reminders are off`}
@@ -461,40 +474,6 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
           </div>
         ) : null}
 
-        {loaded && stage === "path" && enrollment ? (
-          <>
-            <div>
-              <h1 className="ds-display text-[1.75rem]">Your 14 days</h1>
-              <p className="mt-1.5 text-[0.95rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                {enrollment.completions.length} complete · {programmeStreak(enrollment)} day rhythm
-              </p>
-            </div>
-            <ol className="ds-card divide-y overflow-hidden">
-              {path.days.map((item) => {
-                const done = enrollment.completions.some((entry) => entry.day === item.day);
-                const current = item.day === dayNumber && enrollment.status === "active";
-                return (
-                  <li key={item.day} className="flex items-center gap-3.5 px-4 py-3" style={current ? { background: tint } : undefined}>
-                    <span
-                      className="ds-num grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm"
-                      style={
-                        done
-                          ? { background: `var(--ds-outcome-${tone})`, color: "var(--ds-surface)" }
-                          : { background: "var(--ds-bg)", color: "var(--ds-text-secondary)" }
-                      }
-                    >
-                      {done ? <IconCheck className="h-4 w-4" /> : item.day}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[0.95rem] font-medium">{item.title}</span>
-                      <span className="ds-caption">{done ? "Completed" : current ? "Today" : "Upcoming"}</span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-          </>
-        ) : null}
       </div>
     </PauseShell>
   );

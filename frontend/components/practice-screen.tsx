@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { PathScene } from "@/components/path-scene";
 import { IconChevronRight } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { Stagger, StaggerItem } from "@/components/reveal";
@@ -59,38 +60,52 @@ export function PracticeScreen() {
             <h2 id="paths-title" className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
               {active ? "All paths" : "Choose a path"}
             </h2>
-            <div className="ds-card divide-y overflow-hidden">
+            <div className="grid gap-3">
               {programmes.map((path) => {
                 const { tone, Icon } = PATH_PRESENTATION[path.id];
                 const latest = latestFor(path);
+                const done = latest?.completions.length ?? 0;
                 const status = !latest
                   ? `${PATH_LENGTH_DAYS} days`
                   : latest.status === "completed"
                     ? "Completed"
                     : `Day ${currentProgrammeDay(latest)} of ${PATH_LENGTH_DAYS}`;
+                const wash = `color-mix(in srgb, var(--ds-outcome-${tone}) 12%, var(--ds-surface))`;
                 return (
                   <Link
                     key={path.id}
                     href={`/practice/${path.id}`}
                     onClick={() => haptic("tap")}
-                    className="ds-tap flex min-h-[4.75rem] items-center gap-3.5 px-4 py-3.5"
+                    className="ds-tap ds-card-lift relative grid min-h-[7.5rem] grid-cols-[1fr_36%] overflow-hidden rounded-[var(--ds-radius-lg)]"
+                    style={{ background: wash, boxShadow: "var(--ds-elevation-1)" }}
                   >
-                    <span
-                      className="ds-outcome-icon grid h-11 w-11 shrink-0 place-items-center rounded-full"
-                      style={{ ["--ds-outcome-color" as string]: `var(--ds-outcome-${tone})` }}
-                      aria-hidden="true"
-                    >
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="ds-h3 block">{path.title}</span>
-                      <span className="mt-0.5 block text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+                    <span className="flex flex-col justify-center gap-2 py-4 pl-4 pr-3">
+                      <span className="flex items-center gap-2.5">
+                        <span
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+                          style={{
+                            background: `color-mix(in srgb, var(--ds-outcome-${tone}) 30%, var(--ds-surface))`,
+                            color: `color-mix(in srgb, var(--ds-outcome-${tone}) 80%, var(--ds-text))`,
+                          }}
+                          aria-hidden="true"
+                        >
+                          <Icon className="h-[1.1rem] w-[1.1rem]" />
+                        </span>
+                        <span className="ds-h3">{path.title}</span>
+                      </span>
+                      <span className="text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
                         {path.subtitle}
                       </span>
+                      <span className="flex items-center gap-1.5">
+                        {latest ? <ProgressRing done={done} tone={tone} /> : null}
+                        <span className="ds-caption ds-num font-semibold" style={{ color: latest ? `color-mix(in srgb, var(--ds-outcome-${tone}) 75%, var(--ds-text))` : "var(--ds-text-muted)" }}>
+                          {status}
+                        </span>
+                      </span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      <span className="ds-caption ds-num">{status}</span>
-                      <IconChevronRight className="h-4 w-4" style={{ color: "var(--ds-text-muted)" }} />
+                    <span className="relative" aria-hidden="true">
+                      <PathScene pathId={path.id} className="absolute inset-0 h-full w-full" />
+                      <span className="absolute inset-y-0 left-0 w-8" style={{ background: `linear-gradient(to right, ${wash}, transparent)` }} />
                     </span>
                   </Link>
                 );
@@ -131,9 +146,13 @@ function ContinueCard({ path, enrollment }: { path: Programme; enrollment: Progr
     <Link
       href={`/practice/${path.id}`}
       onClick={() => haptic("tap")}
-      className="ds-tap ds-card-lift block overflow-hidden rounded-[var(--ds-radius-lg)] px-5 py-5"
+      className="ds-tap ds-card-lift block overflow-hidden rounded-[var(--ds-radius-lg)]"
       style={{ background: `color-mix(in srgb, var(--ds-outcome-${tone}) 13%, var(--ds-surface))`, boxShadow: "var(--ds-elevation-1)" }}
     >
+      <span className="relative block h-24 overflow-hidden" aria-hidden="true">
+        <PathScene pathId={path.id} className="absolute inset-0 h-full w-full" />
+      </span>
+      <span className="block px-5 pb-5 pt-4">
       <span className="flex items-center gap-2">
         <Icon className="h-4 w-4" />
         <span className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
@@ -160,6 +179,20 @@ function ContinueCard({ path, enrollment }: { path: Programme; enrollment: Progr
           style={{ width: `${(enrollment.completions.length / PATH_LENGTH_DAYS) * 100}%`, background: `var(--ds-outcome-${tone})` }}
         />
       </span>
+      </span>
     </Link>
+  );
+}
+
+// How far along a path is, as a small ring beside its status.
+function ProgressRing({ done, tone }: { done: number; tone: string }) {
+  const radius = 6.5;
+  const length = 2 * Math.PI * radius;
+  const fraction = Math.min(1, done / PATH_LENGTH_DAYS);
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4 -rotate-90" aria-hidden="true">
+      <circle cx="8" cy="8" r={radius} fill="none" stroke="color-mix(in srgb, var(--ds-text) 12%, transparent)" strokeWidth="2.5" />
+      <circle cx="8" cy="8" r={radius} fill="none" stroke={`var(--ds-outcome-${tone})`} strokeWidth="2.5" strokeLinecap="round" strokeDasharray={`${length * fraction} ${length}`} />
+    </svg>
   );
 }
