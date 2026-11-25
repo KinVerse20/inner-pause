@@ -4,8 +4,7 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 
 ## Where things are
 
-- Branch: `feature/our-ui-unification` (local only, **not pushed**). Base: `554815e` (Yogesh's latest on `feature/aws-full-stack-test`).
-- 31 commits so far (`536ca7e` … `7077638`). Working tree clean.
+- Branch: `feature/our-ui-unification`, pushed to origin (KinVerse20/inner-pause) on 2026-11-25 (head `bb4e4e6`, README rewritten for the current stack). Base: `554815e` (Yogesh's latest on `feature/aws-full-stack-test`). No PR opened yet.
 - Kinverse's branch `origin/feature/practice-guided-breathing-mindspace` (`010bc18`) is fetched but **never merged** — it overwrites the rebuild with an old app. Port features from it only.
 
 ## Decisions already made (don't re-ask)
@@ -34,7 +33,16 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 
 - Should the Inner Pause Pass gate Practice? Today all 5 paths are free; Pass copy only promises deeper Journey insight. (Option: first path or first 3 days free.)
 
-## Next up (agreed plan)
+## Next up (in this order)
+
+A. **Moments home tiles redesign** (founder, 2026-11-25): the current stacked cards copy the founder mockup too literally. Take the idea, not the look: make the tiles cohesive with Home's outcome tiles (emblems, `ds-wash` tint, our type and radius). File: `components/moments-screen.tsx`.
+B. **Practice "How this path is built"** (approved): in the app theme, on the path screen: the 14-day arc, how the sound grows with you, what you'll hear, why this centre and Hz. Also switch the **Rest path to Crown 963 Hz** (approved). Files: `components/practice-path-screen.tsx`, `lib/programme-data.ts`, `components/path-preview.tsx`.
+C. **Practice usefulness** (proposed, founder hasn't picked yet): 1 close the loop on yesterday's action (Yes / Partly / Not yet), 2 trend of the daily 1 to 5 ratings, 3 day-14 toolkit keepsake, 4 kinder catch-up ("Pick up at day 5?"), 5 "use it now" 1-minute tool. Recommended 1, 2, 4.
+D. Phase 7 final QA (below).
+
+Sound note for the founder's question: library sounds (Rain, Forest…) play the plain recording with the Pause's frequency as a soft **undertone** underneath (Tone: Off · Soft · … in the Sound sheet). So Rain sounds a little different per Pause because each Pause has its own Hz; Tone Off gives plain rain. The "tuned" sounds under More are recordings made at the frequency (no undertone).
+
+### Earlier phases
 
 1. ~~Phase 3~~ done (2026-11-23): Kinverse intro is an optional "How it works" sheet on Entry (not a gate, PRODUCT_FLOW §39.A) plus "I have an account"; dev-only test sign-in at `/local-test-sign-in`.
 2. ~~Phase 4~~ done (2026-11-25): tap-to-expand view transitions (see "Motion notes" below).

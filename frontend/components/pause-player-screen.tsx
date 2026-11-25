@@ -441,7 +441,9 @@ ${text}` : text });
     updatePreferences({ defaultSound: id });
     const audio = audioRef.current;
     const nextUrl = ambientOn ? soundUrlFor(findBuiltInSound(id), pauseHz) : null;
-    if (!audio || phase !== "playing") return;
+    // Also while letting it out, when the sound is already playing before
+    // the Pause begins: you choose by ear, so the change is heard at once.
+    if (!audio || (phase !== "playing" && audio.paused)) return;
     switchingRef.current = true;
     if (!nextUrl) {
       audio.pause();
