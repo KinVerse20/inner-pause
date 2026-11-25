@@ -21,6 +21,7 @@ export function SettingsRow({
   Icon,
   onClick,
   flush = false,
+  tone,
 }: {
   href?: string;
   label: string;
@@ -29,13 +30,19 @@ export function SettingsRow({
   Icon?: IconType;
   onClick?: () => void;
   flush?: boolean;
+  /** A colour for the icon's circle (any CSS colour); the accent when unset. */
+  tone?: string;
 }) {
   const content = (
     <>
       {Icon ? (
         <span
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full"
-          style={{ background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }}
+          style={
+            tone
+              ? { background: `color-mix(in srgb, ${tone} 16%, var(--ds-surface))`, color: `color-mix(in srgb, ${tone} 85%, var(--ds-text))` }
+              : { background: "var(--ds-accent-soft)", color: "var(--ds-accent)" }
+          }
         >
           <Icon className="h-4.5 w-4.5" />
         </span>
