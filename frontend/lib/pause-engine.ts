@@ -1,10 +1,10 @@
-import { formatFrequencyLabel, isBuiltInCardId, type PublicCard } from "@inner-pause/shared";
+import { formatFrequencyLabel, isBuiltInCardId, planFeelingStops, PAUSE_CATEGORY_IDS, type PauseStop, type PublicCard } from "@inner-pause/shared";
 
 import { chakraMap } from "@/data/chakras";
 import { getCard, getCardSound } from "@/lib/content-store";
 import type { PauseCategoryId } from "@/lib/pause-categories";
 import { getPreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, soundUrlFor, type BuiltInSoundId } from "@/lib/sound-library";
+import { findBuiltInSound, soundUrlFor, type BuiltInSound, type BuiltInSoundId } from "@/lib/sound-library";
 import {
   GENERIC_GUIDANCE_LINES,
   buildGroundPlaybackCues,
@@ -88,6 +88,12 @@ export interface PauseDefinition {
    * layers the frequency beneath it as an undertone.
    */
   builtInSoundId?: BuiltInSoundId;
+  /**
+   * A Pause for several feelings: its centres, played one after another,
+   * sharing its length (shared/src/session-plan.ts). Missing on single
+   * Pauses and on records from before; those are one stop.
+   */
+  blocks?: PauseStop[];
 }
 
 // The user's default built-in sound, for a Pause whose card has none.
@@ -96,8 +102,29 @@ function builtInSoundFields(): Pick<PauseDefinition, "builtInSoundId" | "ambient
   return { builtInSoundId: sound.id, ambientSoundUrl: soundUrlFor(sound, null) ?? undefined };
 }
 
+// Several centres play the library sound with the frequency beneath it as
+// an undertone that moves from centre to centre. The tuned recordings carry
+// one frequency in the file, so a tuned choice becomes its plain recording.
+const PLAIN_FOR_TUNED: Record<NonNullable<BuiltInSound["tunedFile"]>, BuiltInSoundId> = {
+  rain: "rain",
+  forest: "forest",
+  piano: "piano",
+  ambient: "rain",
+};
+
+function plainSoundFields(): Pick<PauseDefinition, "builtInSoundId" | "ambientSoundUrl"> {
+  const chosen = findBuiltInSound(getPreferences().defaultSound) ?? findBuiltInSound("rain")!;
+  const sound = chosen.tunedFile ? findBuiltInSound(PLAIN_FOR_TUNED[chosen.tunedFile])! : chosen;
+  return { builtInSoundId: sound.id, ambientSoundUrl: soundUrlFor(sound, null) ?? undefined };
+}
+
+/** The sound a Pause for these feelings will start with (Tell's "Your Pause" screen). */
+export function feelingsPauseSound(stopCount: number): BuiltInSoundId {
+  return (stopCount > 1 ? plainSoundFields().builtInSoundId : builtInSoundFields().builtInSoundId) ?? "rain";
+}
+
 // docs/PRODUCT_FLOW.md §7: Right Now = 10 minutes, uses Arrive by default.
-const RIGHT_NOW_DURATION_SECONDS = 10 * 60;
+export const RIGHT_NOW_DURATION_SECONDS = 10 * 60;
 
 // docs/PRODUCT_FLOW.md §7: full Arrive — two lines, then an explicit
 // "I'm ready" (rendered by the player, not part of this copy).
@@ -173,6 +200,47 @@ export function composeRightNowPause(
   const card = getCard(outcomeId);
   if (!card) throw new Error(`Unknown Right Now outcome: ${outcomeId}`);
   return composeCardPause(card, options);
+}
+
+// The Home card working a centre, if one does (Throat has none).
+function cardForCentre(chakraId: ChakraId) {
+  return PAUSE_CATEGORY_IDS.map((id) => getCard(id)).find((card) => card && card.chakraId === chakraId && !card.frequencyHz);
+}
+
+/**
+ * A Pause for the feelings picked in Tell: one stop per centre, root to
+ * crown, sharing the Right Now length. One stop on a centre with a Home
+ * card is that card's Pause, exactly as before; otherwise it's "Your Pause".
+ */
+export function composeFeelingsPause(feelings: string[]): PauseDefinition | null {
+  const blocks = planFeelingStops(feelings, RIGHT_NOW_DURATION_SECONDS);
+  if (blocks.length === 0) return null;
+  const first = blocks[0];
+  const card = cardForCentre(first.chakraId);
+  if (blocks.length === 1 && card) return { ...composeCardPause(card), blocks };
+  const chakra = chakraMap[first.chakraId];
+  const base = composeRightNowPause("calm");
+  return {
+    ...base,
+    ambientSoundUrl: undefined,
+    ambientTunedUrl: undefined,
+    ambientPlainUrl: undefined,
+    ambientGainDb: undefined,
+    ambientVolume: undefined,
+    ...(blocks.length > 1 ? plainSoundFields() : builtInSoundFields()),
+    outcomeId: undefined,
+    cardId: undefined,
+    title: "Your Pause",
+    intentLabel: blocks.flatMap((block) => block.feelings).join(" · "),
+    chakraId: first.chakraId,
+    chakraName: chakra.name,
+    traditionalAssociation: chakra.meaning,
+    frequencyLabel: chakra.frequencyLabel,
+    audioPath: chakra.audioPath,
+    // Gentle lines only: the player names each centre as it comes.
+    playbackCues: GENERIC_GUIDANCE_LINES.map((line) => ({ kind: "guidance" as const, lines: [line] })),
+    blocks,
+  };
 }
 
 export function composeGroundPause(): PauseDefinition {

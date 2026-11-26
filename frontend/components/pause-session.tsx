@@ -3,6 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
+import { stopAt, type PauseStop } from "@inner-pause/shared";
+
 import { haptic } from "@/lib/haptics";
 import { getPauseRecord, recordListening, type PauseRecord } from "@/lib/pause-storage";
 import { settlePracticeDays } from "@/lib/programme-storage";
@@ -41,6 +43,9 @@ const HANDOVER_FADE_SECONDS = 0.4;
 // Time listened is saved this often while playing, and whenever it stops.
 const LISTENING_SAVE_SECONDS = 5;
 
+// A Pause with several centres: the undertone crossfades over this long.
+const STOP_CROSSFADE_SECONDS = 4;
+
 function soundFadeOutSeconds(record: PauseRecord) {
   const seconds = record.outcomeId === "sleep" ? SLEEP_FADE_OUT_SECONDS : SOUND_FADE_OUT_SECONDS;
   return Math.min(seconds, Math.floor(record.durationSeconds / 4));
@@ -61,7 +66,10 @@ export interface PauseSession {
   undertone: UndertoneLevel;
   builtIn: boolean;
   builtInSoundId: BuiltInSoundId | null;
-  /** The frequency the Pause is tuned to, and the one actually sounding (dev tester). */
+  /** A Pause with several centres: its stops, and the one playing. Null for a single Pause. */
+  stops: PauseStop[] | null;
+  stopIndex: number;
+  /** The frequency the Pause is tuned to now (its current stop's), and the one actually sounding (dev tester). */
   pauseHz: number | null;
   targetHz: number | null;
   hasSoundFile: boolean;
@@ -136,7 +144,10 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   // until then). No sound, or Ambient sound off: a soft tone on its own.
   const builtIn = Boolean(record?.builtInSoundId);
   const builtInSound = builtIn ? findBuiltInSound(builtInSoundId ?? record?.builtInSoundId) : undefined;
-  const pauseHz = record ? parseFrequencyHz(record.frequencyLabel) : null;
+  // Several centres: the one playing now gives the frequency.
+  const stops = record?.blocks && record.blocks.length > 1 ? record.blocks : null;
+  const stopIndex = stops ? (stopAt(stops, elapsed)?.index ?? 0) : 0;
+  const pauseHz = stops ? stops[stopIndex].hz : record ? parseFrequencyHz(record.frequencyLabel) : null;
   const originalUrl = ambientOn ? (builtIn ? soundUrlFor(builtInSound, pauseHz) : (record?.ambientSoundUrl ?? null)) : null;
   // A tuned recording already carries the frequency: no undertone on top.
   const premixed = Boolean(builtInSound?.tunedFile);
@@ -159,7 +170,16 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     builtIn ? (premixed && originalUrl ? null : targetHz) : originalUrl ? null : targetHz,
     audible && phase === "playing",
     builtIn && originalUrl ? undertoneGain(undertone) : undefined,
+    stops ? STOP_CROSSFADE_SECONDS : 0,
   );
+
+  // Moving to the next centre: a soft haptic (the player says where).
+  const lastStopRef = useRef(stopIndex);
+  useEffect(() => {
+    if (stopIndex === lastStopRef.current) return;
+    lastStopRef.current = stopIndex;
+    if (stops && phase === "playing" && stopIndex > 0) haptic("moment");
+  }, [stopIndex, stops, phase]);
   const tunedSound = useTunedSound(audioRef, {
     enabled: Boolean(originalUrl) && !renderedUrl,
     frequencyHz: renderedUrl || devTuningOff || builtIn ? null : targetHz,
@@ -560,7 +580,9 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     if (typeof MediaMetadata !== "undefined") {
       media.metadata = new MediaMetadata({
         title: plainTitle(record.title),
-        artist: [record.chakraName.replace(/ Chakra$/, ""), record.frequencyLabel].filter(Boolean).join(" · "),
+        artist: stops
+          ? `${CENTRE_NAME[stops[stopIndex].chakraId]} · ${stops[stopIndex].hz} Hz`
+          : [record.chakraName.replace(/ Chakra$/, ""), record.frequencyLabel].filter(Boolean).join(" · "),
         album: "Inner Pause",
         artwork: [
           { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -584,7 +606,7 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
         media.setActionHandler("pause", null);
       } catch {}
     };
-  }, [record, finished, togglePlayback]);
+  }, [record, finished, togglePlayback, stops, stopIndex]);
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !("mediaSession" in navigator) || !record || finished) return;
@@ -603,6 +625,8 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     undertone,
     builtIn,
     builtInSoundId,
+    stops,
+    stopIndex,
     pauseHz,
     targetHz,
     hasSoundFile: Boolean(originalUrl),
@@ -643,6 +667,17 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     </SessionContext.Provider>
   );
 }
+
+/** A centre's short name: "Heart", "Solar Plexus". */
+export const CENTRE_NAME: Record<PauseStop["chakraId"], string> = {
+  root: "Root",
+  sacral: "Sacral",
+  "solar-plexus": "Solar Plexus",
+  heart: "Heart",
+  throat: "Throat",
+  "third-eye": "Third Eye",
+  crown: "Crown",
+};
 
 // Copy rule (DESIGN_SYSTEM.md §14): no dashes in user-facing copy. Some
 // stored titles predate the rule; show them with the centered dot instead.

@@ -72,3 +72,4 @@ export {
   type PassState,
   type PassStatus,
 } from "./brand";
+export { FEELING_CENTRES, MAX_PAUSE_STOPS, planFeelingStops, stopAt, type PauseStop } from "./session-plan";

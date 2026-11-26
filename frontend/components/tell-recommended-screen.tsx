@@ -4,8 +4,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { planFeelingStops, tellEmotions, type PauseStop } from "@inner-pause/shared";
+
 import { CardIcon } from "@/components/card-icon";
-import { IconChevronRight } from "@/components/pause-icons";
+import { IconChevronRight, IconSliders } from "@/components/pause-icons";
+import { CENTRE_NAME } from "@/components/pause-session";
+import { SoundSheet, type ToneSetting } from "@/components/sound-sheet";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { PauseShell } from "@/components/pause-shell";
 import { TileMotif } from "@/components/tile-motif";
@@ -16,7 +20,9 @@ import { getCard } from "@/lib/content-store";
 import { haptic } from "@/lib/haptics";
 import { createMomentRecord } from "@/lib/moment-storage";
 import { pauseCategoryMap, type PauseCategoryId } from "@/lib/pause-categories";
-import { composeRightNowPause } from "@/lib/pause-engine";
+import { composeFeelingsPause, composeRightNowPause, feelingsPauseSound, RIGHT_NOW_DURATION_SECONDS } from "@/lib/pause-engine";
+import { getPreferences, updatePreferences } from "@/lib/preferences-store";
+import { findBuiltInSound, UNDERTONE_LEVELS, type BuiltInSoundId } from "@/lib/sound-library";
 import { createPauseRecord } from "@/lib/pause-storage";
 import { computeInitialReturnToMeState } from "@/lib/return-to-me";
 import { getTellEntry, linkTellEntryToMoment, linkTellEntryToPause, type TellEntry } from "@/lib/tell-storage";
@@ -110,6 +116,25 @@ export function TellRecommendedScreen() {
   const { interpretation } = entry;
   const isConfident = interpretation.status === "confident" && interpretation.primary;
   const tellHref = entry.momentMode ? `/tell?momentMode=${entry.momentMode}` : "/tell";
+  // Feelings picked (outside Moments): a Pause with a stop for each centre.
+  const feelings = entry.momentMode ? [] : entry.chips.filter((chip) => tellEmotions.includes(chip));
+  const feelingsOnly = entry.text === entry.chips.join(", ");
+
+  if (feelings.length > 0 && planFeelingStops(feelings, RIGHT_NOW_DURATION_SECONDS).length > 0) {
+    return (
+      <PauseShell>
+        <div className="ds-settle space-y-6 pb-4 pt-2">
+          <header>
+            <Link href={tellHref} aria-label="Back to what's on your mind" className="ds-icon-btn" style={{ background: "var(--ds-surface)", color: "var(--ds-text)", boxShadow: "var(--ds-elevation-1)" }}>
+              <IconChevronRight className="h-4 w-4" style={{ transform: "scaleX(-1)" }} />
+            </Link>
+          </header>
+          {feelingsOnly ? null : <WhatYouShared entry={entry} />}
+          <YourPause entry={entry} feelings={feelings} />
+        </div>
+      </PauseShell>
+    );
+  }
 
   return (
     <PauseShell>
@@ -244,6 +269,133 @@ function ConfidentPause({
       </button>
     </section>
   );
+}
+
+// "Your Pause": the feelings you picked, each at its centre, one after
+// another, root to crown, sharing ten minutes. Visible before you begin,
+// nothing to fill in: the sound is already chosen (change it if you like),
+// and "Begin my Pause" is the only tap. Each centre opens its page.
+function YourPause({ entry, feelings }: { entry: TellEntry; feelings: string[] }) {
+  const router = useRouter();
+  const [starting, setStarting] = useState(false);
+  const stops = planFeelingStops(feelings, RIGHT_NOW_DURATION_SECONDS);
+  const [soundId, setSoundId] = useState<BuiltInSoundId>("rain");
+  const [tone, setTone] = useState<ToneSetting>("balanced");
+  const [soundOpen, setSoundOpen] = useState(false);
+
+  // Preferences live in localStorage, read after mount.
+  useEffect(() => {
+    const preferences = getPreferences();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSoundId(feelingsPauseSound(stops.length));
+    setTone(preferences.soundToneLayerEnabled ? preferences.undertone : "off");
+  }, [stops.length]);
+
+  const begin = () => {
+    if (starting) return;
+    const definition = composeFeelingsPause(feelings);
+    if (!definition) return;
+    haptic("moment");
+    setStarting(true);
+    const record = createPauseRecord(definition);
+    linkTellEntryToPause(entry.id, record.id);
+    router.push(`/pause/player?session=${record.id}`);
+  };
+
+  const sound = findBuiltInSound(soundId);
+  const toneLabel = tone === "off" ? "no tone" : `${UNDERTONE_LEVELS.find((level) => level.id === tone)?.label ?? "Balanced"} tone`;
+
+  return (
+    <section className="ds-card space-y-5 px-5 pb-5 pt-6" aria-labelledby="your-pause-title">
+      <h1 id="your-pause-title" className="ds-display text-[1.6rem]">
+        Your Pause <span className="ds-num" style={{ color: "var(--ds-text-muted)" }}>· {RIGHT_NOW_DURATION_SECONDS / 60} min</span>
+      </h1>
+
+      <ol className="relative">
+        {stops.map((stop, index) => (
+          <StopRow key={stop.chakraId} stop={stop} last={index === stops.length - 1} />
+        ))}
+      </ol>
+
+      <button
+        type="button"
+        onClick={() => {
+          haptic("tap");
+          setSoundOpen(true);
+        }}
+        aria-haspopup="dialog"
+        className="ds-tap flex min-h-12 w-full items-center gap-3 rounded-[var(--ds-radius-md)] px-4 text-left"
+        style={{ background: "var(--ds-accent-soft)" }}
+      >
+        <IconSliders className="h-4 w-4 shrink-0" />
+        <span className="font-semibold">Sound</span>
+        <span className="min-w-0 flex-1 truncate text-right text-[0.9rem]" style={{ color: "var(--ds-text-secondary)" }}>
+          {sound?.label ?? "Rain"} · {toneLabel}
+        </span>
+        <IconChevronRight className="h-4 w-4 shrink-0" style={{ color: "var(--ds-text-muted)" }} />
+      </button>
+
+      <button type="button" disabled={starting} onClick={begin} className="ds-filled w-full">
+        {starting ? "Starting your Pause" : "Begin my Pause"}
+      </button>
+
+      {soundOpen ? (
+        <SoundSheet
+          currentId={soundId}
+          tone={tone}
+          frequencyLabel={stops.length === 1 ? `${stops[0].hz} Hz` : null}
+          muted={false}
+          severalFrequencies={stops.length > 1}
+          onChoose={(id) => {
+            haptic("tap");
+            setSoundId(id);
+            updatePreferences({ defaultSound: id, soundAmbientEnabled: true });
+          }}
+          onTone={(next) => {
+            haptic("tap");
+            setTone(next);
+            updatePreferences(next === "off" ? { soundToneLayerEnabled: false } : { soundToneLayerEnabled: true, undertone: next });
+          }}
+          onClose={() => setSoundOpen(false)}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+// One centre on the way: its colour, name and Hz, your words for it, and
+// what it's traditionally linked with.
+function StopRow({ stop, last }: { stop: PauseStop; last: boolean }) {
+  const chakra = chakraMap[stop.chakraId];
+  return (
+    <li className="relative grid grid-cols-[1.5rem_1fr] gap-3 pb-1">
+      {last ? null : (
+        <span className="absolute -bottom-[0.55rem] left-[0.75rem] top-[2.45rem] w-px -translate-x-1/2" style={{ background: "var(--ds-border)" }} aria-hidden="true" />
+      )}
+      <span className="mt-[0.9rem] grid h-6 w-6 place-items-center" aria-hidden="true">
+        <span className="h-3.5 w-3.5 rounded-full" style={{ background: chakra.color, boxShadow: `0 0 0 4px color-mix(in srgb, ${chakra.color} 22%, transparent)` }} />
+      </span>
+      <Link href={`/chakras/${stop.chakraId}`} className="ds-tap block rounded-[var(--ds-radius-md)] py-2.5 pr-1">
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="ds-h3">
+            {CENTRE_NAME[stop.chakraId]} <span className="ds-num font-medium" style={{ color: "var(--ds-text-secondary)" }}>· {stop.hz} Hz</span>
+          </span>
+          <span className="ds-caption ds-num shrink-0">{stopLength(stop.seconds)}</span>
+        </span>
+        <span className="mt-0.5 block text-[0.95rem] font-medium">{stop.feelings.join(" · ")}</span>
+        <span className="block text-[0.85rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
+          {chakra.meaning}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+// "5 min", or "3:20" when a stop isn't whole minutes.
+function stopLength(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  return rest === 0 ? `${minutes} min` : `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
 // Unclear state (docs/PRODUCT_FLOW.md §16): honest about not having a

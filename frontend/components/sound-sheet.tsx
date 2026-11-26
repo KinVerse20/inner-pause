@@ -30,6 +30,7 @@ export function SoundSheet({
   onTone,
   onToggleMute,
   onClose,
+  severalFrequencies = false,
 }: {
   currentId: BuiltInSoundId;
   tone: ToneSetting;
@@ -37,8 +38,11 @@ export function SoundSheet({
   muted: boolean;
   onChoose: (id: BuiltInSoundId) => void;
   onTone: (tone: ToneSetting) => void;
-  onToggleMute: () => void;
+  /** Absent before the Pause has started: nothing to mute yet. */
+  onToggleMute?: () => void;
   onClose: () => void;
+  /** A Pause with several centres: the tuned recordings (one frequency each) aren't offered. */
+  severalFrequencies?: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const current = findBuiltInSound(currentId);
@@ -60,7 +64,7 @@ export function SoundSheet({
     };
   }, [onClose]);
 
-  const more = BUILT_IN_SOUNDS.filter((sound) => !MAIN.includes(sound.id));
+  const more = BUILT_IN_SOUNDS.filter((sound) => !MAIN.includes(sound.id) && !(severalFrequencies && sound.tunedFile));
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
@@ -78,6 +82,7 @@ export function SoundSheet({
           <h2 id="sound-sheet-title" className="ds-h2 flex-1">
             Sound
           </h2>
+          {onToggleMute ? (
           <button
             type="button"
             role="switch"
@@ -89,6 +94,7 @@ export function SoundSheet({
           >
             {muted ? <IconVolumeOff className="h-5 w-5" /> : <IconVolumeOn className="h-5 w-5" />}
           </button>
+          ) : null}
           <button type="button" onClick={onClose} className="ds-tap min-h-11 rounded-full px-3 text-sm font-semibold" style={{ color: "#C4B5FD" }}>
             Done
           </button>

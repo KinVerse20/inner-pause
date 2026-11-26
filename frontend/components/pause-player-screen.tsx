@@ -3,11 +3,14 @@
 import { useEffect, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { stopAt } from "@inner-pause/shared";
+
 import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { LetItOut } from "@/components/let-it-out";
 import { IconCheck, IconChevronDown, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
-import { formatTime, plainTitle, usePauseSession } from "@/components/pause-session";
+import { CENTRE_NAME, formatTime, plainTitle, usePauseSession } from "@/components/pause-session";
+import { chakraMap } from "@/data/chakras";
 import { SoundSheet } from "@/components/sound-sheet";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
@@ -18,6 +21,9 @@ import { completePauseRecord, getPauseRecord, getPreviousCompletedPauseRecord, t
 import { findBuiltInSound, UNDERTONE_LEVELS } from "@/lib/sound-library";
 import { buildJourney } from "@/lib/breath-journey";
 import { expandName, markPageTransition } from "@/lib/view-transition";
+
+// How long a change of centre is named in the player.
+const MOVING_SECONDS = 3;
 
 type CheckinStage = "question" | "same-options" | "not-better-options" | "acknowledged";
 
@@ -65,6 +71,10 @@ export function PausePlayerScreen() {
   useEffect(() => () => release(), [release]);
 
   const record = session.record && session.record.id === sessionId ? session.record : null;
+
+  // Moving to the next centre: its first three seconds say so ("Moving to Heart · 639 Hz").
+  const reached = session.stops ? stopAt(session.stops, session.elapsed) : null;
+  const movingTo = reached && reached.index > 0 && session.phase === "playing" && session.elapsed - reached.startsAt < MOVING_SECONDS ? reached.index : null;
   const { phase, elapsed, playing, muted, audioError, frequencyOn, undertone, builtIn } = session;
   const builtInSound = builtIn ? findBuiltInSound(session.builtInSoundId ?? record?.builtInSoundId) : undefined;
 
@@ -183,7 +193,14 @@ ${text}` : text });
     record.playbackCues.slice(0, -1).map((cue) => cue.lines[0]).filter(Boolean),
   );
   const breath = breathVisual(journey, elapsed, phase === "playing" && playing);
-  const subtitle = [record.chakraName, record.frequencyLabel].filter(Boolean).join(" · ");
+  // A Pause for feelings names the centre playing now and who it's for.
+  const stops = session.stops;
+  const stop = stops ? stops[session.stopIndex] : record.blocks?.[0];
+  const centre = stop ? `${CENTRE_NAME[stop.chakraId]} · ${stop.hz} Hz` : null;
+  const subtitle =
+    movingTo !== null && stops ? `Moving to ${CENTRE_NAME[stops[movingTo].chakraId]} · ${stops[movingTo].hz} Hz` : (centre ?? [record.chakraName, record.frequencyLabel].filter(Boolean).join(" · "));
+  const centreColor = stops ? chakraMap[stops[session.stopIndex].chakraId]?.color : undefined;
+  const centreChakra = chakraMap[stop?.chakraId ?? record.chakraId];
 
   return (
     <PlayerFrame from={from}>
@@ -202,10 +219,16 @@ ${text}` : text });
             {plainTitle(record.title)}
           </p>
           {subtitle ? (
-            <p className="ds-caption truncate" style={{ color: "var(--ds-on-navy-muted)" }}>
+            <p key={subtitle} className={`ds-caption truncate ${movingTo !== null ? "ds-settle" : ""}`} style={{ color: movingTo !== null ? "var(--ds-on-navy)" : "var(--ds-on-navy-muted)" }}>
               {subtitle}
             </p>
           ) : null}
+          {stop && phase !== "checkin" ? (
+            <p className="ds-caption truncate" style={{ color: "var(--ds-on-navy-muted)" }}>
+              for: {stop.feelings.join(" · ")}
+            </p>
+          ) : null}
+          {stops && phase !== "checkin" ? <StopDots stops={stops} current={session.stopIndex} /> : null}
         </div>
         {phase === "playing" || (phase === "transition" && playing) ? (
           <button
@@ -282,8 +305,18 @@ ${text}` : text });
 
       {phase === "playing" ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
-          <div className={`harmony-breath ${breath.className}`} style={{ transitionDuration: `${breath.seconds}s` }}>
-            <HarmonyFormVisual playing={playing} progress={progress} dark className="w-[min(68vw,19rem)]" />
+          <div className="relative grid place-items-center">
+            {/* Several centres: a soft glow in the colour of the one playing, drifting to the next. */}
+            {centreColor ? (
+              <span
+                className="pointer-events-none absolute inset-[8%] rounded-full blur-3xl"
+                style={{ backgroundColor: centreColor, opacity: 0.32, transition: "background-color 3s ease" }}
+                aria-hidden="true"
+              />
+            ) : null}
+            <div className={`harmony-breath ${breath.className}`} style={{ transitionDuration: `${breath.seconds}s` }}>
+              <HarmonyFormVisual playing={playing} progress={progress} dark progressColor={centreColor} className="w-[min(68vw,19rem)]" />
+            </div>
           </div>
 
           <BreathingGuide journey={journey} elapsed={elapsed} playing={playing} />
@@ -362,9 +395,9 @@ ${text}` : text });
 
           <WhyThisPausePanel
             input={{
-              chakraName: record.chakraName,
-              traditionalAssociation: record.traditionalAssociation,
-              frequencyLabel: record.frequencyLabel,
+              chakraName: centreChakra?.name ?? record.chakraName,
+              traditionalAssociation: centreChakra?.meaning ?? record.traditionalAssociation,
+              frequencyLabel: centreChakra?.frequencyLabel ?? record.frequencyLabel,
               intentLabel: record.intentLabel,
             }}
             dark
@@ -495,11 +528,12 @@ ${text}` : text });
         <SoundSheet
           currentId={session.builtInSoundId ?? record.builtInSoundId!}
           tone={frequencyOn ? undertone : "off"}
-          frequencyLabel={record.frequencyLabel ?? null}
+          frequencyLabel={stop ? `${stop.hz} Hz` : (record.frequencyLabel ?? null)}
           muted={muted}
           onChoose={session.chooseSound}
           onTone={session.chooseTone}
           onToggleMute={session.toggleMute}
+          severalFrequencies={Boolean(session.stops)}
           onClose={() => setSoundSheetOpen(false)}
         />
       ) : null}
@@ -594,6 +628,33 @@ function DevFrequencyTester({
         ) : null}
       </div>
     </section>
+  );
+}
+
+// A Pause with several centres: one dot each, the one playing lit in its colour.
+function StopDots({ stops, current }: { stops: Array<{ chakraId: keyof typeof CENTRE_NAME }>; current: number }) {
+  return (
+    <ol className="mt-2 flex items-center justify-center gap-2.5" aria-label={`Centre ${current + 1} of ${stops.length}: ${stops.map((item) => CENTRE_NAME[item.chakraId]).join(", then ")}`}>
+      {stops.map((item, index) => {
+        const color = chakraMap[item.chakraId]?.color ?? "#C4B5FD";
+        const lit = index === current;
+        return (
+          <li key={item.chakraId} aria-hidden="true">
+            <span
+              className="block rounded-full"
+              style={{
+                width: lit ? 10 : 7,
+                height: lit ? 10 : 7,
+                background: index <= current ? color : "transparent",
+                boxShadow: lit ? `0 0 0 4px color-mix(in srgb, ${color} 30%, transparent), 0 0 14px ${color}` : index > current ? `inset 0 0 0 1.5px ${color}` : "none",
+                opacity: index < current ? 0.5 : 1,
+                transition: "all 600ms ease",
+              }}
+            />
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

@@ -30,6 +30,7 @@ export function HarmonyFormVisual({
   progress = 0,
   dark = false,
   className = "",
+  progressColor: progressColorOverride,
 }: {
   /** Whether a Pause is actively playing — used only for a subtle liveliness shift, never a literal audio visualizer. */
   playing: boolean;
@@ -37,10 +38,12 @@ export function HarmonyFormVisual({
   progress?: number;
   dark?: boolean;
   className?: string;
+  /** The progress ring in a centre's colour (a Pause with several centres). */
+  progressColor?: string;
 }) {
   const rings = dark ? RINGS_DARK : RINGS_LIGHT;
   const barFill = dark ? "#F8FAFC" : "#1D1B4C";
-  const progressColor = dark ? "#C4B5FD" : "#7C6AED";
+  const progressColor = progressColorOverride ?? (dark ? "#C4B5FD" : "#7C6AED");
   const clamped = Math.min(1, Math.max(0, progress));
   const dashOffset = PROGRESS_CIRCUMFERENCE * (1 - clamped);
 
@@ -59,12 +62,12 @@ export function HarmonyFormVisual({
         strokeWidth={2}
         strokeLinecap="round"
         fill="none"
-        opacity={0.55}
+        opacity={progressColorOverride ? 0.9 : 0.55}
         transform={`rotate(-90 ${CENTER} ${CENTER})`}
         style={{
           strokeDasharray: PROGRESS_CIRCUMFERENCE,
           strokeDashoffset: dashOffset,
-          transition: "stroke-dashoffset 1s linear",
+          transition: "stroke-dashoffset 1s linear, stroke 3s ease",
         }}
       />
       {rings.map((ring, index) => (

@@ -11,7 +11,9 @@ import { IconCheck, IconPencil } from "@/components/pause-icons";
 import { haptic } from "@/lib/haptics";
 import type { Highlight } from "@/lib/journey-highlights";
 import { getVisibleCards } from "@/lib/content-store";
-import { composeCardPause, composeGroundPause } from "@/lib/pause-engine";
+import { CENTRE_NAME } from "@/components/pause-session";
+import { chakraMap } from "@/data/chakras";
+import { composeCardPause, composeFeelingsPause, composeGroundPause } from "@/lib/pause-engine";
 import { listenedSeconds, minutesLabel } from "@/lib/listening";
 import { createPauseRecord, type PauseRecord } from "@/lib/pause-storage";
 import { createTellEntry, NOT_ROUTED_INTERPRETATION, type TellEntry } from "@/lib/tell-storage";
@@ -107,10 +109,32 @@ function timeLabel(iso: string) {
 }
 
 // Named by the time you actually spent in it.
-function pauseName(pause: PauseRecord) {
+function pauseTitle(pause: PauseRecord) {
   const outcome = pause.outcomeId ? OUTCOME_LABEL[pause.outcomeId] : null;
   const name = outcome ? `${outcome} Pause` : pause.title.replace(/\s+[—–-]\s+/g, " · ");
   return `${minutesLabel(listenedSeconds(pause))} ${name}`;
+}
+
+// …and, for one with several centres, the way it went.
+function pauseName(pause: PauseRecord) {
+  const route = centreRoute(pause);
+  return route ? `${pauseTitle(pause)}, ${route}` : pauseTitle(pause);
+}
+
+// A Pause with several centres, as the way it went: "Root → Heart".
+function centreRoute(pause: PauseRecord) {
+  return pause.blocks && pause.blocks.length > 1 ? pause.blocks.map((block) => CENTRE_NAME[block.chakraId]).join(" → ") : null;
+}
+
+function CentreDots({ pause, size = 6 }: { pause: PauseRecord; size?: number }) {
+  if (!pause.blocks || pause.blocks.length < 2) return null;
+  return (
+    <span className="flex items-center gap-1" aria-hidden="true">
+      {pause.blocks.map((block) => (
+        <span key={block.chakraId} className="rounded-full" style={{ width: size, height: size, background: chakraMap[block.chakraId]?.color }} />
+      ))}
+    </span>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -454,9 +478,18 @@ function EntryCard({ item, onOpen }: { item: Extract<StoryItem, { kind: "entry" 
           <>
             <span>·</span>
             <span>
-              then {pauseName(pause)}
+              then {pauseTitle(pause)}
               {pause.feedback ? `, ${FEEDBACK_LABEL[pause.feedback]}` : ""}
             </span>
+            {centreRoute(pause) ? (
+              <>
+                <span>·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <CentreDots pause={pause} />
+                  {centreRoute(pause)}
+                </span>
+              </>
+            ) : null}
           </>
         ) : null}
       </span>
@@ -638,6 +671,7 @@ function PauseStamp({ pause }: { pause: PauseRecord }) {
         <OutcomeEmblem id={pause.outcomeId} className="h-9 w-9" />
         <span className="text-[0.72rem] font-semibold leading-tight">{pause.outcomeId && OUTCOME_LABEL[pause.outcomeId] ? OUTCOME_LABEL[pause.outcomeId] : "Pause"}</span>
         <span className="ds-caption ds-num leading-tight">{minutes}</span>
+        <CentreDots pause={pause} />
         {pause.feedback === "better" ? <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full" style={{ background: "var(--ds-success)" }} aria-hidden="true" /> : null}
       </button>
       {open ? <StampSheet pause={pause} onClose={() => setOpen(false)} /> : null}
@@ -664,7 +698,10 @@ function StampSheet({ pause, onClose }: { pause: PauseRecord; onClose: () => voi
     setStarting(true);
     haptic("moment");
     const card = pause.outcomeId ? getVisibleCards().find((item) => item.id === pause.outcomeId) : undefined;
-    const record = createPauseRecord(card ? composeCardPause(card) : composeGroundPause());
+    // A Pause for feelings: the same feelings again.
+    const feelings = pause.blocks?.flatMap((block) => block.feelings) ?? [];
+    const definition = (feelings.length ? composeFeelingsPause(feelings) : null) ?? (card ? composeCardPause(card) : composeGroundPause());
+    const record = createPauseRecord(definition);
     router.push(`/pause/player?session=${record.id}`);
   };
 
@@ -679,7 +716,13 @@ function StampSheet({ pause, onClose }: { pause: PauseRecord; onClose: () => voi
             <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
               {when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} · {timeLabel(when.toISOString())}
             </p>
-            <h2 className="ds-h2 mt-0.5">{pauseName(pause)}</h2>
+            <h2 className="ds-h2 mt-0.5">{pauseTitle(pause)}</h2>
+            {centreRoute(pause) ? (
+              <p className="mt-1 flex items-center gap-2 text-[0.9rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                <CentreDots pause={pause} size={8} />
+                {centreRoute(pause)}
+              </p>
+            ) : null}
             {pause.feedback ? (
               <p className="mt-0.5 text-[0.9rem]" style={{ color: "var(--ds-text-secondary)" }}>
                 Afterwards, you {FEEDBACK_LABEL[pause.feedback]}.
