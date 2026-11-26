@@ -1,5 +1,6 @@
 "use client";
 
+import { addListening, type Listening } from "@/lib/listening";
 import type { PauseDefinition } from "@/lib/pause-engine";
 
 // Minimal local-first store for the `Pause` entity
@@ -13,7 +14,7 @@ import type { PauseDefinition } from "@/lib/pause-engine";
 
 export type PauseFeedback = "better" | "same" | "not-better";
 
-export interface PauseRecord extends PauseDefinition {
+export interface PauseRecord extends PauseDefinition, Listening {
   id: string;
   startedAt: string;
   completedAt?: string;
@@ -75,6 +76,13 @@ export function completePauseRecord(id: string, feedback?: PauseFeedback) {
     record.id === id ? { ...record, completedAt: new Date().toISOString(), feedback } : record,
   );
   writeRecords(updated);
+}
+
+/** Adds time actually listened (lib/listening.ts), with the clock at `position`. */
+export function recordListening(id: string, seconds: number, position: number) {
+  if (seconds <= 0) return;
+  const records = readRecords();
+  writeRecords(records.map((record) => (record.id === id ? addListening(record, seconds, position) : record)));
 }
 
 /**

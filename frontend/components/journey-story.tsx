@@ -12,6 +12,7 @@ import { haptic } from "@/lib/haptics";
 import type { Highlight } from "@/lib/journey-highlights";
 import { getVisibleCards } from "@/lib/content-store";
 import { composeCardPause, composeGroundPause } from "@/lib/pause-engine";
+import { listenedSeconds, minutesLabel } from "@/lib/listening";
 import { createPauseRecord, type PauseRecord } from "@/lib/pause-storage";
 import { createTellEntry, NOT_ROUTED_INTERPRETATION, type TellEntry } from "@/lib/tell-storage";
 import { viewTransitionsSupported, vtName } from "@/lib/view-transition";
@@ -105,11 +106,11 @@ function timeLabel(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
+// Named by the time you actually spent in it.
 function pauseName(pause: PauseRecord) {
-  const minutes = Math.max(1, Math.round(pause.durationSeconds / 60));
   const outcome = pause.outcomeId ? OUTCOME_LABEL[pause.outcomeId] : null;
   const name = outcome ? `${outcome} Pause` : pause.title.replace(/\s+[—–-]\s+/g, " · ");
-  return `${minutes} min ${name}`;
+  return `${minutesLabel(listenedSeconds(pause))} ${name}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -621,7 +622,7 @@ export function MomentOpened({
 function PauseStamp({ pause }: { pause: PauseRecord }) {
   const [open, setOpen] = useState(false);
   const tone = pause.outcomeId && OUTCOME_LABEL[pause.outcomeId] ? `var(--ds-outcome-${pause.outcomeId})` : "var(--ds-accent)";
-  const minutes = Math.max(1, Math.round(pause.durationSeconds / 60));
+  const minutes = minutesLabel(listenedSeconds(pause));
   return (
     <>
       <button
@@ -636,7 +637,7 @@ function PauseStamp({ pause }: { pause: PauseRecord }) {
       >
         <OutcomeEmblem id={pause.outcomeId} className="h-9 w-9" />
         <span className="text-[0.72rem] font-semibold leading-tight">{pause.outcomeId && OUTCOME_LABEL[pause.outcomeId] ? OUTCOME_LABEL[pause.outcomeId] : "Pause"}</span>
-        <span className="ds-caption ds-num leading-tight">{minutes} min</span>
+        <span className="ds-caption ds-num leading-tight">{minutes}</span>
         {pause.feedback === "better" ? <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full" style={{ background: "var(--ds-success)" }} aria-hidden="true" /> : null}
       </button>
       {open ? <StampSheet pause={pause} onClose={() => setOpen(false)} /> : null}

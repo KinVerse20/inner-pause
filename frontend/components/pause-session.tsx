@@ -4,7 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { usePathname } from "next/navigation";
 
 import { haptic } from "@/lib/haptics";
-import { getPauseRecord, type PauseRecord } from "@/lib/pause-storage";
+import { getPauseRecord, recordListening, type PauseRecord } from "@/lib/pause-storage";
+import { settlePracticeDays } from "@/lib/programme-storage";
 import { getPreferences, updatePreferences } from "@/lib/preferences-store";
 import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
 import { findBuiltInSound, soundUrlFor, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
@@ -37,6 +38,9 @@ const SLEEP_FADE_OUT_SECONDS = 45;
 // Starting another Pause while one plays: the old one steps aside quickly.
 const HANDOVER_FADE_SECONDS = 0.4;
 
+// Time listened is saved this often while playing, and whenever it stops.
+const LISTENING_SAVE_SECONDS = 5;
+
 function soundFadeOutSeconds(record: PauseRecord) {
   const seconds = record.outcomeId === "sleep" ? SLEEP_FADE_OUT_SECONDS : SOUND_FADE_OUT_SECONDS;
   return Math.min(seconds, Math.floor(record.durationSeconds / 4));
@@ -65,8 +69,8 @@ export interface PauseSession {
   devTuningOff: boolean;
   /** The last page you were on outside the player: where minimising takes you. */
   backTo: string;
-  /** Load a Pause record into the session (no-op if it's already the one). */
-  load: (id: string) => void;
+  /** Load a Pause record into the session (no-op if it's already the one), its clock at `resumeAt`. */
+  load: (id: string, options?: { resumeAt?: number }) => void;
   /** The sound starts before the Pause does (letting it out first). */
   playAhead: () => void;
   begin: () => void;
@@ -206,19 +210,21 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(
-    (id: string) => {
+    (id: string, options: { resumeAt?: number } = {}) => {
       if (live.current.record?.id === id) return;
       const found = getPauseRecord(id) ?? null;
       // Another Pause was playing: it steps aside for this one.
       stopAudio(HANDOVER_FADE_SECONDS);
       reset();
+      const resumeAt = found ? Math.min(Math.max(0, options.resumeAt ?? 0), found.durationSeconds - 1) : 0;
+      setElapsed(resumeAt);
       const preferences = getPreferences();
       setFrequencyOn(preferences.soundToneLayerEnabled);
       setAmbientOn(preferences.soundAmbientEnabled);
       setUndertone(preferences.undertone);
       setBuiltInSoundId(found?.builtInSoundId ?? null);
       setRecord(found);
-      live.current = { ...live.current, record: found, phase: "transition", playing: false, finished: false };
+      live.current = { ...live.current, record: found, phase: "transition", playing: false, finished: false, elapsed: resumeAt };
     },
     [reset, stopAudio],
   );
@@ -361,6 +367,22 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     closingTimerRef.current = window.setTimeout(() => setPhase("checkin"), CLOSING_BEAT_MS);
   }, []);
 
+  // Time actually listened, saved to the Pause record (lib/listening.ts):
+  // Journey shows it, and a Practice day counts by it.
+  const unsavedListeningRef = useRef(0);
+  const saveListening = useCallback(() => {
+    const seconds = unsavedListeningRef.current;
+    const current = live.current.record;
+    unsavedListeningRef.current = 0;
+    if (!current || seconds <= 0) return;
+    recordListening(current.id, seconds, live.current.elapsed);
+    if (current.pauseType === "practice") settlePracticeDays();
+  }, []);
+  useEffect(() => {
+    window.addEventListener("pagehide", saveListening);
+    return () => window.removeEventListener("pagehide", saveListening);
+  }, [saveListening]);
+
   // The Pause clock adds real elapsed time on each tick rather than
   // counting ticks: browsers slow timers in hidden tabs and on locked
   // phones. Time spent paused is excluded.
@@ -371,6 +393,8 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
       const now = Date.now();
       const delta = (now - last) / 1000;
       last = now;
+      unsavedListeningRef.current += Math.max(0, Math.min(delta, record.durationSeconds - live.current.elapsed));
+      if (unsavedListeningRef.current >= LISTENING_SAVE_SECONDS) saveListening();
       setElapsed((current) => {
         const next = Math.min(record.durationSeconds, current + delta);
         // The end of the Pause: once (an updater can run twice in dev).
@@ -381,8 +405,11 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
         return next;
       });
     }, 1000);
-    return () => window.clearInterval(interval);
-  }, [phase, playing, record, beginClosing]);
+    return () => {
+      window.clearInterval(interval);
+      saveListening();
+    };
+  }, [phase, playing, record, beginClosing, saveListening]);
 
   // The closing fade starts once the remaining time is within it, at the
   // level the fade would have reached by then.

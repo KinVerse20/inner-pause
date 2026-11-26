@@ -24,6 +24,7 @@ export function PathTrail({
   path,
   enrollment,
   today,
+  tomorrow = false,
   tone,
   onBeginToday,
   preview,
@@ -32,6 +33,8 @@ export function PathTrail({
   enrollment: ProgrammeEnrollment | null;
   /** Today's day number, or null when the path is complete. */
   today: number | null;
+  /** Today's day is done: `today` is the next one, which opens tomorrow. */
+  tomorrow?: boolean;
   tone: string;
   onBeginToday: () => void;
   /** Before starting: each stop shows its day when tapped. */
@@ -92,7 +95,8 @@ export function PathTrail({
         {days.map((day, index) => {
           const { x, y } = point(index);
           const done = enrollment?.completions.some((entry) => entry.day === day.day) ?? false;
-          const isToday = today === day.day;
+          const upNext = today === day.day;
+          const isToday = upNext && !tomorrow;
           const selected = preview?.selected === day.day;
           const milestone = day.day === 7 ? "Halfway" : day.day === days.length ? "Finish" : null;
           const size = isToday ? 52 : milestone ? 44 : selected ? 42 : 38;
@@ -127,13 +131,13 @@ export function PathTrail({
 
           return (
             <li key={day.day} className="absolute grid justify-items-center" style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}>
-              {isToday || milestone ? (
+              {upNext || milestone ? (
                 <span
                   className="ds-label pointer-events-none absolute bottom-full mb-1.5 whitespace-nowrap rounded-full px-2 py-0.5 uppercase"
                   style={{ background: `color-mix(in srgb, ${color} 16%, var(--ds-surface))`, color: `color-mix(in srgb, ${color} 75%, var(--ds-text))` }}
                   aria-hidden="true"
                 >
-                  {isToday ? "Today" : milestone}
+                  {isToday ? "Today" : upNext ? "Tomorrow" : milestone}
                 </span>
               ) : null}
               {preview ? (

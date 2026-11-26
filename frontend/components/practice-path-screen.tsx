@@ -12,7 +12,8 @@ import { chakraIdFromName, findChakra } from "@/lib/chakra-guide";
 import { PauseShell } from "@/components/pause-shell";
 import { haptic } from "@/lib/haptics";
 import { composeRightNowPause } from "@/lib/pause-engine";
-import { createPauseRecord, getPauseRecord } from "@/lib/pause-storage";
+import { nextDayOpensTomorrow, resumeAt } from "@/lib/listening";
+import { createPauseRecord, getPauseRecord, subscribePauseRecords } from "@/lib/pause-storage";
 import { PATH_LENGTH_DAYS, PATH_PRESENTATION } from "@/lib/practice-path-presentation";
 import { findProgramme, type Programme, type ProgrammeId } from "@/lib/programme-data";
 import { disableProgrammeReminder, enableProgrammeReminder, notificationSupport } from "@/lib/programme-notifications";
@@ -21,6 +22,7 @@ import {
   longestProgrammeStreak,
   programmeStreak,
   readProgrammeState,
+  settlePracticeDays,
   writeProgrammeState,
   type ProgrammeEnrollment,
   type ProgrammeState,
@@ -40,22 +42,15 @@ function latestEnrollment(state: ProgrammeState, id: ProgrammeId) {
   return state.enrollments.filter((item) => item.issueId === id).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
 }
 
-function completeDay(state: ProgrammeState, enrollmentId: string, day: number): ProgrammeState {
+// The day just counted, if its "You showed up" hasn't been shown yet.
+function markCelebrated(state: ProgrammeState, enrollmentId: string): ProgrammeState {
   return {
     ...state,
-    enrollments: state.enrollments.map((enrollment) => {
-      if (enrollment.id !== enrollmentId) return enrollment;
-      const completions = [
-        ...enrollment.completions.filter((item) => item.day !== day),
-        { day, completedAt: new Date().toISOString() },
-      ].sort((a, b) => a.day - b.day);
-      return {
-        ...enrollment,
-        completions,
-        pendingPause: undefined,
-        status: completions.length >= PATH_LENGTH_DAYS ? ("completed" as const) : ("active" as const),
-      };
-    }),
+    enrollments: state.enrollments.map((enrollment) =>
+      enrollment.id === enrollmentId
+        ? { ...enrollment, completions: enrollment.completions.map((item) => (item.celebrated === false ? { ...item, celebrated: true } : item)) }
+        : enrollment,
+    ),
   };
 }
 
@@ -74,33 +69,40 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   const [exercise, setExercise] = useState("");
   const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(3);
 
-  // Read local state after mount; if the day's Pause has finished since we
-  // left, that day is complete — whatever the check-in answer was.
-  // Survives React's development double-run of effects, so the completion
-  // screen still shows after the first run already recorded the day.
+  // Read local state after mount. A day counts once half its session has
+  // been listened to in one calendar day (lib/listening.ts), which can
+  // happen while its Pause plays on elsewhere in the app; the first time
+  // this screen sees a newly counted day, it says so. Survives React's
+  // development double-run of effects.
   const justCompletedRef = useRef(false);
+  const [, setListeningTick] = useState(0);
   useEffect(() => {
     if (!path) return;
-    let next = readProgrammeState();
-    let nextStage: Stage = justCompletedRef.current ? "complete" : "overview";
-    const enrollment = latestEnrollment(next, path.id);
-    if (enrollment?.pendingPause) {
-      const record = getPauseRecord(enrollment.pendingPause.pauseRecordId);
-      if (record?.completedAt) {
-        next = completeDay(next, enrollment.id, enrollment.pendingPause.day);
+    const refresh = (opening: boolean) => {
+      let next = settlePracticeDays() ?? readProgrammeState();
+      const enrollment = latestEnrollment(next, path.id);
+      if (enrollment?.completions.some((item) => item.celebrated === false)) {
+        next = markCelebrated(next, enrollment.id);
         writeProgrammeState(next);
         // The last day: nothing left to remind you of.
-        if (latestEnrollment(next, path.id)?.status === "completed") void disableProgrammeReminder();
+        if (enrollment.status === "completed") void disableProgrammeReminder();
         justCompletedRef.current = true;
         haptic("success");
-        nextStage = "complete";
+        setStage("complete");
+      } else if (opening) {
+        setStage(justCompletedRef.current ? "complete" : enrollment ? "dashboard" : "overview");
       }
-    }
-    if (nextStage === "overview" && enrollment) nextStage = "dashboard";
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState(next);
-    setStage(nextStage);
-    setLoaded(true);
+      setState(next);
+      setLoaded(true);
+    };
+    refresh(true);
+    // Listening saved while you're here (the Pause playing on) updates the day.
+    const onChange = () => {
+      setListeningTick((tick) => tick + 1);
+      refresh(false);
+    };
+    const unsubscribe = subscribePauseRecords(onChange);
+    return unsubscribe;
   }, [path]);
 
   if (!path) return null;
@@ -110,6 +112,13 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   const dayNumber = enrollment ? currentProgrammeDay(enrollment) : 1;
   const day = path.days[dayNumber - 1];
   const savedCheckIn = enrollment?.checkIns.find((item) => item.day === dayNumber);
+  // One day a day: done for today, the next opens tomorrow.
+  const opensTomorrow = enrollment ? enrollment.status === "active" && nextDayOpensTomorrow(enrollment.completions, PATH_LENGTH_DAYS) : false;
+  const doneToday = opensTomorrow ? path.days[dayNumber - 2] : undefined;
+  // Stopped part way: pick up where you left off.
+  const pendingRecord = enrollment?.pendingPause?.day === dayNumber ? getPauseRecord(enrollment.pendingPause.pauseRecordId) : undefined;
+  const pickUpAt = pendingRecord ? resumeAt(pendingRecord) : 0;
+  const partway = pendingRecord && pickUpAt > 0 ? pendingRecord : undefined;
 
   const go = (next: Stage) => {
     haptic("tap");
@@ -185,10 +194,23 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
     go("day");
   };
 
+  const pickUp = () => {
+    if (!partway || busy) return;
+    haptic("moment");
+    setBusy(true);
+    router.push(`/pause/player?session=${partway.id}&resume=1`);
+  };
+
   const startDayPause = () => {
     if (!enrollment || !day || busy) return;
     haptic("moment");
     setBusy(true);
+    // The day's Pause already exists: carry on with it, so every sitting
+    // today adds up (from the start if what's left can't make up the half).
+    if (pendingRecord) {
+      router.push(`/pause/player?session=${pendingRecord.id}&resume=1`);
+      return;
+    }
     const base = composeRightNowPause(category);
     const record = createPauseRecord({
       ...base,
@@ -347,6 +369,34 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                   Begin again
                 </button>
               </section>
+            ) : opensTomorrow ? (
+              <section className="rounded-[var(--ds-radius-lg)] px-5 py-5" style={{ background: tint }}>
+                <p className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
+                  Day {dayNumber} · Tomorrow
+                </p>
+                <h2 className="ds-h2 mt-2">Day {dayNumber} opens tomorrow.</h2>
+                <p className="mt-1 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                  Carry today&rsquo;s task with you.
+                </p>
+                {doneToday ? (
+                  <p className="mt-3 rounded-[var(--ds-radius-md)] px-4 py-3 text-[0.95rem] leading-6" style={{ background: "var(--ds-surface)" }}>
+                    {doneToday.action}
+                  </p>
+                ) : null}
+              </section>
+            ) : day && partway ? (
+              <section className="rounded-[var(--ds-radius-lg)] px-5 py-5" style={{ background: tint }}>
+                <p className="ds-label ds-num uppercase" style={{ color: "var(--ds-text-secondary)" }}>
+                  Day {dayNumber} · {Math.floor(pickUpAt / 60)} of {day.minutes} min
+                </p>
+                <h2 className="ds-h2 mt-2">{day.title}</h2>
+                <p className="mt-1 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                  {day.intention}
+                </p>
+                <button type="button" onClick={pickUp} disabled={busy} className="ds-filled mt-4 w-full">
+                  Pick up where you left off
+                </button>
+              </section>
             ) : day ? (
               <section className="rounded-[var(--ds-radius-lg)] px-5 py-5" style={{ background: tint }}>
                 <p className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
@@ -376,8 +426,9 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                   path={path}
                   enrollment={enrollment}
                   today={enrollment.status === "completed" ? null : dayNumber}
+                  tomorrow={opensTomorrow}
                   tone={tone}
-                  onBeginToday={beginToday}
+                  onBeginToday={partway ? pickUp : beginToday}
                 />
               </div>
             </section>

@@ -3,6 +3,8 @@
 // Programme enrollments, check-ins and streaks — Kinverse's Practice
 // storage (same localStorage key, so existing test data carries over).
 
+import { countsAsDay, localDateKey } from "@/lib/listening";
+import { getPauseRecord } from "@/lib/pause-storage";
 import type { ProgrammeId } from "@/lib/programme-data";
 
 export interface ProgrammeCheckIn {
@@ -17,6 +19,8 @@ export interface ProgrammeCompletion {
   day: number;
   completedAt: string;
   reflection?: string;
+  /** The path screen has shown this day's "You showed up". Missing on older records: shown. */
+  celebrated?: boolean;
 }
 
 export interface ProgrammeEnrollment {
@@ -108,9 +112,35 @@ export function longestProgrammeStreak(enrollment: ProgrammeEnrollment) {
   return longest;
 }
 
-function localDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+const PATH_DAYS = 14;
+
+/**
+ * Completes every pending Practice day whose Pause has been listened to
+ * enough (lib/listening.ts: half the session within one calendar day).
+ * Called as listening is saved, and when a path screen opens. Returns the
+ * new state, or null when nothing changed.
+ */
+export function settlePracticeDays(state: ProgrammeState = readProgrammeState()): ProgrammeState | null {
+  let changed = false;
+  const enrollments = state.enrollments.map((enrollment) => {
+    const pending = enrollment.pendingPause;
+    if (!pending) return enrollment;
+    const record = getPauseRecord(pending.pauseRecordId);
+    if (!record || !countsAsDay(record)) return enrollment;
+    changed = true;
+    const completions = [
+      ...enrollment.completions.filter((item) => item.day !== pending.day),
+      { day: pending.day, completedAt: new Date().toISOString(), celebrated: false },
+    ].sort((a, b) => a.day - b.day);
+    return {
+      ...enrollment,
+      completions,
+      pendingPause: undefined,
+      status: completions.length >= PATH_DAYS ? ('completed' as const) : ('active' as const),
+    };
+  });
+  if (!changed) return null;
+  const next = { ...state, enrollments };
+  writeProgrammeState(next);
+  return next;
 }

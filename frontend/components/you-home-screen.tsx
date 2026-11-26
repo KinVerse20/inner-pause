@@ -22,6 +22,7 @@ import { SettingsRow } from "@/components/settings-row";
 import { getAccount, subscribeAccount, type LocalAccount } from "@/lib/account-store";
 import { getPassState, subscribeEntitlements, type PassState } from "@/lib/entitlements";
 import { haptic } from "@/lib/haptics";
+import { listenedSeconds } from "@/lib/listening";
 import { listPauseRecords, subscribePauseRecords } from "@/lib/pause-storage";
 
 const GOLD = "#E0A868";
@@ -30,7 +31,7 @@ function readStats() {
   const completed = listPauseRecords().filter((record) => record.completedAt);
   return {
     pauses: completed.length,
-    minutes: Math.round(completed.reduce((sum, record) => sum + record.durationSeconds, 0) / 60),
+    minutes: Math.round(completed.reduce((sum, record) => sum + listenedSeconds(record), 0) / 60),
     checkins: completed.filter((record) => record.feedback).length,
   };
 }

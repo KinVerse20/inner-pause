@@ -13,6 +13,7 @@ import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
 import { createTellEntry, linkTellEntryToMoment, linkTellEntryToPause, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
 import { listMomentRecords, updateMomentRecord, type MomentRecord } from "@/lib/moment-storage";
+import { resumeAt } from "@/lib/listening";
 import { completePauseRecord, getPauseRecord, getPreviousCompletedPauseRecord, type PauseFeedback } from "@/lib/pause-storage";
 import { findBuiltInSound, UNDERTONE_LEVELS } from "@/lib/sound-library";
 import { buildJourney } from "@/lib/breath-journey";
@@ -27,6 +28,8 @@ export function PausePlayerScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session");
+  // A Practice day picks up where you left off (lib/listening.ts).
+  const resume = searchParams.get("resume") === "1";
   // What opened this Pause (a Home tile, the nav's Pause button): the
   // player grows out of it, and shrinks back into it on the way out.
   const from = searchParams.get("from");
@@ -51,11 +54,11 @@ export function PausePlayerScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMissing(!found);
     if (!found) return;
-    load(found.id);
+    load(found.id, resume ? { resumeAt: resumeAt(found) } : undefined);
     // The Moment this Pause belongs to, if any (for letting it out first).
     setMoment(listMomentRecords().find((item) => item.linkedPauseRecordId === found.id) ?? null);
     setNotBetterStreak(getPreviousCompletedPauseRecord(found.id)?.feedback === "not-better");
-  }, [sessionId, load]);
+  }, [sessionId, resume, load]);
 
   // Leaving the player keeps a started Pause playing; one that never
   // started, or is already checked in, is let go.
