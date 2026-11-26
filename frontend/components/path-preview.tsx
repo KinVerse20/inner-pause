@@ -19,7 +19,7 @@ export function DayPeek({ day, tone, total }: { day: ProgrammeDay; tone: string;
       className="ds-settle rounded-[var(--ds-radius-lg)] px-5 py-4"
       style={{ background: `color-mix(in srgb, ${color} 10%, var(--ds-surface))`, boxShadow: "var(--ds-elevation-1)" }}
     >
-      <p className="ds-label uppercase" style={{ color: `color-mix(in srgb, ${color} 75%, var(--ds-text))` }}>
+      <p className="ds-label uppercase" style={{ color: `color-mix(in srgb, ${color} 50%, var(--ds-text))` }}>
         Day {day.day} of {total} · {day.minutes} min
       </p>
       <h3 className="ds-h3 mt-1">{day.title}</h3>

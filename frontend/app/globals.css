@@ -164,10 +164,10 @@
   --ds-border: #cbd5e1;
   --ds-text: #0f172a;
   --ds-text-secondary: #334155;
-  /* Locked Neutral 500. Measures ~4.5:1 against --ds-bg — a floor, not a
-     default (BRAND_IDENTITY.md §4.3): fine at 14px-medium and above, prefer
-     --ds-text-secondary for anything smaller. */
-  --ds-text-muted: #64748b;
+  /* Neutral 500, darker than #64748b, which measured 4.45:1 against --ds-bg,
+     just under WCAG AA, and less on tinted cards (npm run test:ui). Still a
+     floor, not a default (BRAND_IDENTITY.md §4.3). */
+  --ds-text-muted: #526074;
   --ds-accent: #4338ca;
   --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 10%, var(--ds-bg));
   --ds-accent-on: #f8fafc;
@@ -192,6 +192,11 @@
   --ds-outcome-confidence: #b4587a;
   --ds-outcome-calm: #7c6aed;
   --ds-outcome-release: #6b9080;
+  /* Text on a filled outcome colour (the Practice trail's Today): white
+     where it reads, ink on the lighter amber and green. */
+  --ds-on-outcome-focus: #0f172a;
+  --ds-on-outcome-reset: #0f172a;
+  --ds-on-outcome-release: #0f172a;
 
   --ds-radius-sm: 0.85rem;
   --ds-radius-md: 1.15rem;
@@ -218,15 +223,15 @@
     --ds-surface-raised: #2c2860;
     --ds-border: rgba(196, 181, 253, 0.18);
     --ds-text: #f8fafc;
-    --ds-text-secondary: #c4b5fd;
-    --ds-text-muted: #9c93c4;
-    --ds-accent: #7c6aed;
+    --ds-text-secondary: #d2c8fe;
+    --ds-text-muted: #aaa2d0;
+    --ds-accent: #a594f9;
     --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 16%, var(--ds-bg));
-    --ds-accent-on: #f8fafc;
+    --ds-accent-on: #1d1b4c;
     --ds-accent-secondary: #c4b5fd;
     --ds-success: #6cae8b;
     --ds-warning: #e0a868;
-    --ds-error: #d97b70;
+    --ds-error: #e8968c;
     --ds-chakra: #c4b5fd;
 
     --ds-outcome-sleep: #a692ea;
@@ -252,15 +257,15 @@
   --ds-surface-raised: #2c2860;
   --ds-border: rgba(196, 181, 253, 0.18);
   --ds-text: #f8fafc;
-  --ds-text-secondary: #c4b5fd;
-  --ds-text-muted: #9c93c4;
-  --ds-accent: #7c6aed;
+  --ds-text-secondary: #d2c8fe;
+  --ds-text-muted: #aaa2d0;
+  --ds-accent: #a594f9;
   --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 16%, var(--ds-bg));
-  --ds-accent-on: #f8fafc;
+  --ds-accent-on: #1d1b4c;
   --ds-accent-secondary: #c4b5fd;
   --ds-success: #6cae8b;
   --ds-warning: #e0a868;
-  --ds-error: #d97b70;
+  --ds-error: #e8968c;
   --ds-chakra: #c4b5fd;
 
   --ds-outcome-sleep: #a692ea;
@@ -280,7 +285,7 @@
   --ds-border: #cbd5e1;
   --ds-text: #0f172a;
   --ds-text-secondary: #334155;
-  --ds-text-muted: #64748b;
+  --ds-text-muted: #526074;
   --ds-accent: #4338ca;
   --ds-accent-soft: color-mix(in srgb, var(--ds-accent) 10%, var(--ds-bg));
   --ds-accent-on: #f8fafc;
@@ -296,6 +301,11 @@
   --ds-outcome-confidence: #b4587a;
   --ds-outcome-calm: #7c6aed;
   --ds-outcome-release: #6b9080;
+  /* Text on a filled outcome colour (the Practice trail's Today): white
+     where it reads, ink on the lighter amber and green. */
+  --ds-on-outcome-focus: #0f172a;
+  --ds-on-outcome-reset: #0f172a;
+  --ds-on-outcome-release: #0f172a;
 
   --ds-shadow-raised: 0 10px 28px rgba(29, 27, 76, 0.08);
 }

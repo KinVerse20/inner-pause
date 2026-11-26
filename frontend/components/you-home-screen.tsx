@@ -131,7 +131,7 @@ export function YouHomeScreen() {
                 {hasPass ? "Yours for life. Thank you." : `₹${PASS_PRICE_INR} once, yours for life`}
               </span>
             </span>
-            <span className="ds-label shrink-0 rounded-full px-2.5 py-1 uppercase" style={{ background: `color-mix(in srgb, ${GOLD} 22%, var(--ds-surface))`, color: `color-mix(in srgb, ${GOLD} 75%, var(--ds-text))` }}>
+            <span className="ds-label shrink-0 rounded-full px-2.5 py-1 uppercase" style={{ background: `color-mix(in srgb, ${GOLD} 22%, var(--ds-surface))`, color: `color-mix(in srgb, ${GOLD} 45%, var(--ds-text))` }}>
               {passStatusLabel}
             </span>
           </Link>

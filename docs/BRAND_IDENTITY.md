@@ -142,12 +142,13 @@ This is not an arbitrary off-white. It's the intentional, warm-shifted counterpa
 | Soft violet | `#C4B5FD` | Primary |
 | Primary text | `#0F172A` | Neutral 900 |
 | Secondary text | `#334155` | Neutral 700 |
-| Muted text | `#64748B` | Neutral 500 |
+| Muted text | `#57667B` | Neutral 500, one step darker (2026-11-26: `#64748B` measured 4.45:1, just under AA) |
 | Border | `#CBD5E1` | Neutral 300 |
 | Light surface | `#FFFFFF` | White (cards/raised elements on light) |
 | Warm background | `#FAF7F2` | Warm surface — the living background of the product |
 | Dark background | `#1D1B4C` | Brand navy, used directly as the dark-mode base |
 | Dark surface | `#262357` | Brand navy, lightened ~12% — raised elements in dark mode read as *lighter* than the background, matching `DESIGN_SYSTEM.md` §2.3's elevation model |
+| Dark accent | `#A594F9` | Secondary violet lightened for dark mode (2026-11-26): links, the active tab and filled buttons, with brand navy text on buttons. `#7C6AED` measured 3.9:1 as text on navy and under white button text |
 
 **Why primary text is Neutral 900, not brand navy**: brand navy (`#1D1B4C`) is a *saturated, colorful* dark tone — excellent for the logo and as a deliberate accent, but using it as the default body-text color would tint every screen faintly violet and blur the line between "brand color" and "neutral ink." Neutral 900 (`#0F172A`) is the true structural ink; brand navy is reserved for the identity itself and for deliberate accent use (§7).
 
@@ -155,7 +156,7 @@ This is not an arbitrary off-white. It's the intentional, warm-shifted counterpa
 
 - Primary text (`#0F172A`) on warm background (`#FAF7F2`) or light surface (`#FFFFFF`): well over 15:1 — passes AAA.
 - Secondary text (`#334155`) on warm background: comfortably passes AA (≈9:1) for any text size.
-- Muted text (`#64748B`) on warm background: measures **≈4.5:1** — right at the AA floor for normal text. Treat this as a floor, not a default: fine for 14px-medium-and-above supporting text (captions, timestamps, secondary labels), but prefer secondary text (`#334155`) for anything smaller or thinner. Do not introduce a lighter "extra-muted" tone below this.
+- Muted text (`#57667B`) on warm background: about **5:1**. (`#64748B` measured 4.45:1, just under the AA floor, and was darkened a step on 2026-11-26.) Treat this as a floor, not a default: fine for 14px-medium-and-above supporting text (captions, timestamps, secondary labels), but prefer secondary text (`#334155`) for anything smaller or thinner. Do not introduce a lighter "extra-muted" tone below this.
 - Primary violet (`#4338CA`) and secondary violet (`#7C6AED`) both clear 3:1 against warm background and white — safe for icons, focus rings, and other non-text UI components at their locked values.
 - Soft violet (`#C4B5FD`) is **not** an accessible foreground color against warm background or white — it is a tint/wash color only (backgrounds, decorative ring layers, disabled fills), never text, never a small icon on its own.
 - On dark background (`#1D1B4C`): use Neutral 50 (`#F8FAFC`) as primary text (contrast ≈14:1), soft violet (`#C4B5FD`) for secondary text/icons (contrast ≈7:1), and avoid primary violet as dark-mode body text (too close in value to the background family).

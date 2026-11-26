@@ -95,7 +95,7 @@ export function YouPassScreen() {
           <HarmonyFormVisual playing dark className="ds-only-dark mx-auto w-24" />
           {owned ? (
             <>
-              <p className="ds-label mt-4 uppercase" style={{ color: `color-mix(in srgb, ${GOLD} 70%, var(--ds-text))` }}>
+              <p className="ds-label mt-4 uppercase" style={{ color: `color-mix(in srgb, ${GOLD} 45%, var(--ds-text))` }}>
                 Inner Pause Pass
               </p>
               <h2 className="ds-h2 mt-1">Yours for life</h2>
@@ -105,7 +105,7 @@ export function YouPassScreen() {
             </>
           ) : (
             <>
-              <p className="ds-label mt-4 uppercase" style={{ color: `color-mix(in srgb, ${GOLD} 70%, var(--ds-text))` }}>
+              <p className="ds-label mt-4 uppercase" style={{ color: `color-mix(in srgb, ${GOLD} 45%, var(--ds-text))` }}>
                 Inner Pause Pass
               </p>
               <p className="mt-1 text-[2rem] font-semibold tracking-[-0.02em]">₹{price}</p>

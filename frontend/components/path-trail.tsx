@@ -109,7 +109,8 @@ export function PathTrail({
                 width: size,
                 height: size,
                 background: done || isToday ? color : "var(--ds-surface)",
-                color: done || isToday ? "var(--ds-surface)" : "var(--ds-text-muted)",
+                // Readable on the path's colour (app/globals.css --ds-on-outcome-*).
+                color: done || isToday ? `var(--ds-on-outcome-${tone}, var(--ds-surface))` : "var(--ds-text-muted)",
                 boxShadow: isToday
                   ? `0 0 0 6px color-mix(in srgb, ${color} 22%, transparent), 0 8px 20px color-mix(in srgb, ${color} 35%, transparent)`
                   : selected
@@ -124,7 +125,7 @@ export function PathTrail({
               ) : day.day === days.length ? (
                 <FlagMark />
               ) : (
-                <span className={`ds-num ${isToday ? "text-[1.05rem] font-bold" : "text-sm font-semibold"}`}>{day.day}</span>
+                <span className={`ds-num ${isToday ? "text-[1.2rem] font-bold" : "text-sm font-semibold"}`}>{day.day}</span>
               )}
             </span>
           );

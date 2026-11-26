@@ -246,7 +246,7 @@ function PreferenceToggleRow({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 py-3" style={disabled ? { opacity: 0.55 } : undefined}>
+    <div className="flex items-center gap-3 py-3">
       <span className="min-w-0 flex-1">
         <span className="block text-[0.9rem] font-medium">{label}</span>
         <span className="block text-[0.76rem]" style={{ color: "var(--ds-text-secondary)" }}>

@@ -23,7 +23,7 @@ export function ToggleSwitch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="ds-tap relative h-7 w-12 shrink-0 rounded-full after:absolute after:-inset-2 after:content-[''] disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--ds-accent)]"
+      className="ds-tap relative h-7 w-12 shrink-0 rounded-full after:absolute after:-inset-2 after:content-[''] disabled:cursor-not-allowed disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--ds-accent)]"
       style={{ background: checked ? "var(--ds-accent)" : "var(--ds-border)" }}
     >
       {/* left-0 anchors the knob: a button centres its content, so without

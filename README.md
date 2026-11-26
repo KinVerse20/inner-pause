@@ -75,8 +75,13 @@ npm run build
 
 The Mongo integration tests (push sender, journal store) run only when
 `TEST_MONGODB_URI` points at a throwaway database; otherwise they skip.
-`npm run test:ui` is out of date (walks old routes) and is due a rewrite in
-the final QA phase.
+`npm run test:ui` walks the whole app on a phone in light and dark with
+Google Chrome: every screen (no errors, no sideways scroll, reaches the
+bottom, nothing under the tab bar, no dashes in copy, WCAG AA contrast,
+named controls), every flow end to end, 320 and 768 wide, and reduced
+motion. Start the app first; `TEST_BASE_URL` (default
+`http://localhost:3000`) says where it is, `TEST_SCREENSHOTS=dir` saves a
+screenshot of every screen. It takes about ten minutes.
 
 ## Going live
 

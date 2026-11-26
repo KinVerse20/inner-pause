@@ -1,281 +1,470 @@
-import { createRequire } from "node:module";
+// npm run test:ui: the whole app on a phone, light and dark, the way a
+// person uses it. Every screen is checked for what breaks on phones, and
+// every flow is walked end to end.
+//
+// Needs the app running (npm run dev, or next start) and Google Chrome.
+//   TEST_BASE_URL=http://localhost:3000   where the app is (default)
+//   TEST_SCREENSHOTS=some/folder          save a screenshot of every screen
+//   TEST_SIGN_IN=1                        sign in first (/local-test-sign-in, dev only)
+//   PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH   a browser other than Chrome
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 
-const require = createRequire(import.meta.url);
-let chromium;
-try {
-  ({ chromium } = require("playwright"));
-} catch {
-  console.log("Playwright is not installed in this project. Skipping mobile usability smoke test.");
-  process.exit(0);
-}
+import { chromium } from "playwright-core";
 
-const baseUrl = process.env.TEST_BASE_URL ?? "http://localhost:3000";
-const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ?? undefined;
-const e2eEmail = process.env.E2E_AUTH_EMAIL;
-const e2ePassword = process.env.E2E_AUTH_PASSWORD;
-const useRealAuth = Boolean(e2eEmail && e2ePassword);
+const BASE = (process.env.TEST_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const SHOTS = process.env.TEST_SCREENSHOTS;
+const SIGN_IN = process.env.TEST_SIGN_IN === "1";
+const PHONE = { width: 390, height: 844 };
+const THEMES = ["light", "dark"];
 
-const viewports = [
-  { width: 320, height: 568 },
-  { width: 360, height: 800 },
-  { width: 375, height: 812 },
-  { width: 390, height: 844 },
-  { width: 430, height: 932 },
-  { width: 768, height: 1024 },
-  { width: 1440, height: 900 },
+// Every screen people can reach. `full` screens are checked closely.
+const ROUTES = [
+  "/", "/moments", "/practice", "/practice/anxiety", "/practice/confidence", "/practice/focus", "/practice/reactivity", "/practice/sleep",
+  "/journey", "/profile", "/profile/account", "/profile/calendar", "/profile/help", "/profile/notifications", "/profile/pass",
+  "/profile/preferences", "/profile/privacy", "/about", "/chakras", "/chakras/heart", "/chakras/root", "/tell", "/tell?mode=speak",
+  "/entry", "/offline", "/privacy-policy", "/terms", "/refund-policy", "/auth", "/auth/reset-password", "/pause/calm",
+  // Empty, missing and not found.
+  "/no-such-page", "/pause/player?session=missing", "/tell/recommended?entry=missing", "/chakras/not-a-centre",
 ];
+const NARROW = [{ width: 320, height: 568 }, { width: 768, height: 1024 }];
 
-const assert = (condition, message) => {
-  if (!condition) throw new Error(message);
+const failures = [];
+let checks = 0;
+const check = (ok, label) => {
+  checks += 1;
+  if (!ok) failures.push(label);
 };
 
-const checkNoHorizontalOverflow = async (page, label) => {
-  const metrics = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth,
-    bodyScrollWidth: document.body.scrollWidth,
-  }));
-  const overflow = Math.max(metrics.scrollWidth, metrics.bodyScrollWidth) - metrics.clientWidth;
-  assert(overflow <= 2, `${label}: horizontal overflow ${overflow}px`);
-};
-
-const checkLastActionReachable = async (page, label) => {
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await page.waitForTimeout(80);
-  const result = await page.evaluate(() => {
-    const nav = document.querySelector("nav");
-    const navTop = nav?.getBoundingClientRect().top ?? window.innerHeight;
-    const actions = [...document.querySelectorAll("button, a, input, textarea, select")]
-      .filter((item) => {
-        const rect = item.getBoundingClientRect();
-        const style = window.getComputedStyle(item);
-        const closedDetails = item.closest("details:not([open])");
-        if (closedDetails && item.tagName.toLowerCase() !== "summary") return false;
-        return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
-      });
-    const last = actions.at(-1);
-    if (!last) return { ok: true };
-    const rect = last.getBoundingClientRect();
-    return {
-      ok: rect.bottom <= navTop - 4 || rect.bottom <= window.innerHeight - 4,
-      bottom: rect.bottom,
-      navTop,
-      text: last.textContent?.trim() || last.getAttribute("aria-label") || last.tagName,
-    };
-  });
-  assert(result.ok, `${label}: last action may be hidden behind navigation (${JSON.stringify(result)})`);
-};
-
-const checkPage = async (page, label) => {
-  await page.waitForLoadState("networkidle");
-  await checkNoHorizontalOverflow(page, label);
-  await checkLastActionReachable(page, label);
-};
-
-const assertFixedBottomNav = async (page, activeLabel, label) => {
-  const result = await page.evaluate((expectedLabel) => {
-    const nav = document.querySelector("nav");
-    if (!nav) return { ok: false, reason: "missing nav" };
-    const rect = nav.getBoundingClientRect();
-    const style = window.getComputedStyle(nav);
-    const active = nav.querySelector('a[aria-current="page"]');
-    return {
-      ok:
-        style.position === "fixed" &&
-        Math.abs(window.innerHeight - rect.bottom) <= 2 &&
-        rect.left >= -1 &&
-        rect.right <= window.innerWidth + 1 &&
-        (!expectedLabel || active?.textContent?.toLowerCase().includes(expectedLabel.toLowerCase())),
-      position: style.position,
-      bottomGap: window.innerHeight - rect.bottom,
-      left: rect.left,
-      right: rect.right,
-      width: rect.width,
-      activeText: active?.textContent?.trim() ?? null,
-    };
-  }, activeLabel);
-  assert(result.ok, `${label}: fixed bottom nav invalid (${JSON.stringify(result)})`);
-};
-
-const assertJournalHeaderAction = async (page, label) => {
-  const action = page.getByRole("button", { name: "View Details" });
-  await action.waitFor({ timeout: 10000 });
-  assert(await action.isVisible(), `${label}: View History action is not visible`);
-  const text = (await action.innerText()).trim();
-  assert(/view details/i.test(text), `${label}: header action text does not describe the action: "${text}"`);
-  await action.click();
-  await page.waitForURL(/\/history$/, { timeout: 15000 });
-  await assertFixedBottomNav(page, null, `${label} history nav visible`);
-  await page.goto(`${baseUrl}/journal`, { waitUntil: "networkidle" });
-};
-
-const seedLocalAuthenticatedState = async (page) => {
-  await page.evaluate(() => {
-    const userId = "e2e-local-user";
-    const now = new Date().toISOString();
-    localStorage.setItem("innerpause-current-user-id", userId);
-    localStorage.setItem(
-      `chakra-healing-mvp:${userId}`,
-      JSON.stringify({
-        profile: {
-          fullName: "Sahil",
-          email: "sahil@example.com",
-          phone: "",
-          onboardingCompleted: true,
-          preferredSessionDuration: 20,
-          preferredVoice: "Soft guide",
-          preferredMusicStyle: "Cosmic ambient",
-          preferredGuidanceLevel: "Balanced",
-          affirmationsEnabled: true,
-          natureSoundsEnabled: false,
-          aiMemoryEnabled: true,
-          morningGuidanceEnabled: false,
-          guidanceTime: "08:00",
-        },
-        entries: [],
-        activePlanId: null,
-        premiumOfferSeen: false,
-        morningGuidanceMessages: [],
-        seededAt: now,
-      }),
-    );
-  });
-};
-
-const assertNoPremiumCta = async (page, label) => {
-  const visibleText = await page.locator("body").innerText();
-  assert(!/(start mock upgrade|upgrade|checkout|pricing|manage subscription|\$9|premium healing)/i.test(visibleText), `${label}: visible premium/subscription CTA found`);
-  assert(!/\/premium|\/subscription/i.test(page.url()), `${label}: navigated to a premium/subscription route`);
-};
-
-for (const viewport of viewports) {
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath,
-  });
-  const page = await browser.newPage({ viewport });
-  const errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
-  });
-
+async function launch() {
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
   try {
-    await page.goto(baseUrl, { waitUntil: "networkidle" });
-    await page.evaluate(() => localStorage.clear());
-
-    await page.goto(`${baseUrl}/onboarding`, { waitUntil: "networkidle" });
-    await checkPage(page, `onboarding ${viewport.width}x${viewport.height}`);
-
-    if (useRealAuth) {
-      await page.goto(`${baseUrl}/auth`, { waitUntil: "networkidle" });
-      await checkPage(page, `auth ${viewport.width}x${viewport.height}`);
-      await page.getByRole("button", { name: "I already have an account" }).click();
-      await page.getByLabel("Email").fill(e2eEmail);
-      await page.getByLabel("Password").fill(e2ePassword);
-      await page.getByRole("button", { name: "Log In" }).click();
-      await page.waitForURL(`${baseUrl}/`, { timeout: 60000 });
-    } else {
-      await page.goto(`${baseUrl}/auth`, { waitUntil: "networkidle" });
-      await checkPage(page, `auth ${viewport.width}x${viewport.height}`);
-      await seedLocalAuthenticatedState(page);
-      await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
-    }
-    await checkPage(page, `home ${viewport.width}x${viewport.height}`);
-    await assertNoPremiumCta(page, `home ${viewport.width}x${viewport.height}`);
-    await assertFixedBottomNav(page, "Home", `home nav ${viewport.width}x${viewport.height}`);
-
-    await page.getByRole("link", { name: /Start Expressing/ }).click();
-    await page.waitForURL(/\/journal$/, { timeout: 15000 });
-    await checkPage(page, `journal ${viewport.width}x${viewport.height}`);
-    await assertFixedBottomNav(page, null, `journal nav ${viewport.width}x${viewport.height}`);
-    await assertJournalHeaderAction(page, `journal header action ${viewport.width}x${viewport.height}`);
-    await checkPage(page, `journal after header action ${viewport.width}x${viewport.height}`);
-    await assertFixedBottomNav(page, null, `journal nav after scroll ${viewport.width}x${viewport.height}`);
-    await page.getByPlaceholder("What is weighing on you right now?").fill("I felt ignored during an office meeting today. I wanted to speak up but stayed quiet. Now I feel angry with myself and anxious about tomorrow.");
-    await page.getByRole("button", { name: "Continue" }).click();
-    await page.waitForURL(/\/analysis\?entry=/, { timeout: 60000 });
-    await page.getByText("Here is what I understood").waitFor({ timeout: 20000 });
-    await checkPage(page, `analysis ${viewport.width}x${viewport.height}`);
-    await assertVisible(page, "Your reflection", `analysis shared ${viewport.width}x${viewport.height}`);
-    await assertVisible(page, "Chakra Themes", `analysis understood ${viewport.width}x${viewport.height}`);
-    await page.locator('button[aria-expanded="false"]').first().click();
-    await assertVisible(page, "Why it may be relevant", `analysis chakra reason ${viewport.width}x${viewport.height}`);
-    await assertVisible(page, "How the reset may support you", `analysis chakra support ${viewport.width}x${viewport.height}`);
-    assert(await page.getByTestId("emotional-insight-artwork").isVisible(), `analysis artwork missing ${viewport.width}x${viewport.height}`);
-
-    await page.getByRole("button", { name: "Begin My Reset" }).click();
-    await page.waitForURL(/\/healing\?entry=/);
-    await checkPage(page, `personalised reset ${viewport.width}x${viewport.height}`);
-    await page.getByRole("button", { name: "Save to My Journey" }).click();
-    await page.getByRole("button", { name: "Adjust Session" }).click();
-    await page.getByRole("button", { name: "10 min" }).first().click();
-    await assertVisible(page, "10 min", `duration summary ${viewport.width}x${viewport.height}`);
-    await page.getByRole("button", { name: "None" }).first().click();
-    await page.getByRole("button", { name: "Off" }).click();
-
-    await page.getByRole("button", { name: "Start Reset" }).click();
-    await page.waitForURL(/\/healing\/player\?plan=/);
-    await checkPage(page, `audio player ${viewport.width}x${viewport.height}`);
-    await assertStoredPlanDuration(page, 10, `player selected duration ${viewport.width}x${viewport.height}`);
-    await assertStoredPlanSetting(page, "voiceGuidanceLevel", "none", `player selected voice ${viewport.width}x${viewport.height}`);
-    await page.getByRole("button", { name: /Pause|Play/ }).click();
-    page.once("dialog", (dialog) => dialog.accept());
-    await page.getByRole("button", { name: "Audio settings" }).click();
-    await page.getByRole("button", { name: "Exit safely" }).last().click();
-    await page.waitForURL(/\/feedback\?plan=/);
-    await checkPage(page, `feedback ${viewport.width}x${viewport.height}`);
-    await page.getByRole("button", { name: "Save Session" }).click();
-    await page.waitForURL(`${baseUrl}/`);
-    await assertNoPremiumCta(page, `save session ${viewport.width}x${viewport.height}`);
-
-    await page.goto(`${baseUrl}/history`, { waitUntil: "networkidle" });
-    await checkPage(page, `history ${viewport.width}x${viewport.height}`);
-    await assertNoPremiumCta(page, `history ${viewport.width}x${viewport.height}`);
-    await page.goto(`${baseUrl}/insights`, { waitUntil: "networkidle" });
-    await checkPage(page, `insights ${viewport.width}x${viewport.height}`);
-    await assertNoPremiumCta(page, `insights ${viewport.width}x${viewport.height}`);
-    await page.goto(`${baseUrl}/guidance`, { waitUntil: "networkidle" });
-    await checkPage(page, `guidance ${viewport.width}x${viewport.height}`);
-    await assertNoPremiumCta(page, `guidance ${viewport.width}x${viewport.height}`);
-    await page.goto(`${baseUrl}/profile`, { waitUntil: "networkidle" });
-    await checkPage(page, `profile ${viewport.width}x${viewport.height}`);
-    await assertNoPremiumCta(page, `profile ${viewport.width}x${viewport.height}`);
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await page.waitForURL(`${baseUrl}/auth`);
-
-    assert(errors.length === 0, `${viewport.width}x${viewport.height}: browser errors:\n${errors.join("\n")}`);
-    console.log(`✓ ${viewport.width}x${viewport.height}`);
-  } finally {
-    await browser.close();
+    return await chromium.launch(executablePath ? { executablePath } : { channel: "chrome" });
+  } catch (error) {
+    console.error("Couldn't start Chrome. Install Google Chrome, or set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.\n", error.message);
+    process.exit(1);
   }
 }
 
-async function assertVisible(page, text, label) {
-  const bodyText = await page.locator("body").innerText();
-  assert(bodyText.toLowerCase().includes(text.toLowerCase()), `${label}: expected page text "${text}"`);
+// A fresh visitor: past the Entry gate, signed in if asked. Page errors are failures.
+async function visitor(browser, { theme = "light", viewport = PHONE, reducedMotion = "no-preference" } = {}) {
+  const context = await browser.newContext({ viewport, colorScheme: theme, reducedMotion, deviceScaleFactor: 2 });
+  // The Next.js dev badge sits over the tab bar; it isn't part of the app.
+  await context.addInitScript(() =>
+    addEventListener("DOMContentLoaded", () => {
+      const style = document.createElement("style");
+      style.textContent = "nextjs-portal{display:none!important}";
+      document.head.append(style);
+    }),
+  );
+  const page = await context.newPage();
+  page.errors = [];
+  page.on("pageerror", (error) => page.errors.push(error.message.split("\n")[0]));
+  await page.goto(`${BASE}/entry`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Begin", exact: true }).click();
+  await page.waitForTimeout(500);
+  if (SIGN_IN) {
+    await page.goto(`${BASE}/local-test-sign-in`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /Enter as test listener/ }).click();
+    await page.waitForTimeout(1200);
+  }
+  return { context, page };
 }
 
-async function assertStoredPlanDuration(page, minutes, label) {
-  const duration = await page.evaluate(() => {
-    const userId = localStorage.getItem("innerpause-current-user-id");
-    const raw = localStorage.getItem(userId ? `chakra-healing-mvp:${userId}` : "chakra-healing-mvp");
-    if (!raw) return null;
-    const state = JSON.parse(raw);
-    const plan = state.entries?.find((entry) => entry.plan)?.plan;
-    return plan?.totalDurationMinutes ?? null;
+async function settle(page, ms = 450) {
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(ms);
+}
+
+async function shot(page, name) {
+  if (!SHOTS) return;
+  mkdirSync(SHOTS, { recursive: true });
+  await page.screenshot({ path: join(SHOTS, `${name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "home"}.png`) });
+}
+
+// What breaks on phones, on the screen as it is now.
+const inspect = (page) =>
+  page.evaluate(() => {
+    const visible = (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      if (rect.width < 1 || rect.height < 1 || style.visibility === "hidden" || style.display === "none") return false;
+      if (element.closest("[aria-hidden='true'], .sr-only, details:not([open]) > :not(summary)")) return false;
+      for (let node = element; node; node = node.parentElement) if (Number(getComputedStyle(node).opacity) === 0) return false;
+      return true;
+    };
+
+    // Sideways scroll.
+    const overflow = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - document.documentElement.clientWidth;
+
+    // Dashes in what people read (DESIGN_SYSTEM.md §14).
+    const dashes = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const parent = node.parentElement;
+      if (!parent || ["SCRIPT", "STYLE", "NOSCRIPT"].includes(parent.tagName) || !visible(parent)) continue;
+      if (/[—–]|\s-\s/.test(node.textContent)) dashes.push(node.textContent.trim().slice(0, 60));
+    }
+
+    // Controls with no name for a screen reader.
+    const unnamed = [...document.querySelectorAll("button, a[href], [role='button'], [role='radio'], input, textarea, select")]
+      .filter(visible)
+      .filter((element) => {
+        const name = element.getAttribute("aria-label") || element.getAttribute("aria-labelledby") || element.getAttribute("title") || element.textContent.trim() || element.getAttribute("placeholder");
+        const labelled = element.id && document.querySelector(`label[for="${element.id}"]`);
+        return !name && !labelled && !element.closest("label") && element.type !== "hidden";
+      })
+      .map((element) => element.outerHTML.slice(0, 80));
+
+    // Images that didn't load.
+    const brokenImages = [...document.images].filter((image) => visible(image) && image.complete && image.naturalWidth === 0).map((image) => image.src);
+
+    // Text contrast against what's behind it (WCAG AA: 4.5, or 3 for large text).
+    // Chrome writes colours as rgb(…), or as color(srgb …) for color-mix().
+    const COLOUR = /rgba?\([^)]+\)|color\(srgb [^)]+\)/g;
+    const parse = (value) => {
+      const match = /rgba?\(([^)]+)\)|color\(srgb ([^)]+)\)/.exec(value ?? "");
+      if (!match) return null;
+      if (match[1]) {
+        const [r, g, b, a = 1] = match[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+        return { r, g, b, a };
+      }
+      const [r, g, b, a = 1] = match[2].split(/[ /]+/).filter(Boolean).map(Number);
+      return { r: r * 255, g: g * 255, b: b * 255, a };
+    };
+    const over = (top, bottom) => ({ r: top.r * top.a + bottom.r * (1 - top.a), g: top.g * top.a + bottom.g * (1 - top.a), b: top.b * top.a + bottom.b * (1 - top.a), a: 1 });
+    const luminance = ({ r, g, b }) => {
+      const channel = (value) => {
+        const c = value / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const ratio = (a, b) => {
+      const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (light + 0.05) / (dark + 0.05);
+    };
+    // Every colour that can sit behind an element: solid fills and gradient stops, down to something opaque.
+    // Also returns the element that paints the nearest backdrop: opacity on
+    // it or above fades text and backdrop together, so it doesn't count.
+    const backdrops = (element) => {
+      const layers = [];
+      let painter = null;
+      for (let node = element; node; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (style.backgroundImage.includes("url(")) return null;
+        const stops = (style.backgroundImage.match(COLOUR) ?? []).map(parse);
+        const fill = parse(style.backgroundColor);
+        const solid = [...stops.filter((stop) => stop.a === 1), ...(fill && fill.a === 1 ? [fill] : [])];
+        const clear = [...stops.filter((stop) => stop.a < 1 && stop.a > 0), ...(fill && fill.a > 0 && fill.a < 1 ? [fill] : [])];
+        if (solid.length || clear.length) painter ??= node;
+        // See-through stops sit over the same element's solid ones when it has any.
+        if (solid.length) {
+          layers.push(solid.flatMap((base) => [base, ...clear.map((top) => over(top, base))]));
+          break;
+        }
+        if (clear.length) layers.push(clear);
+      }
+      let behind = [{ r: 255, g: 255, b: 255, a: 1 }];
+      for (const colours of layers.reverse()) behind = colours.flatMap((colour) => behind.map((under) => over(colour, under)));
+      return { behind, painter };
+    };
+    const lowContrast = [];
+    const seen = new Set();
+    const textWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = textWalker.nextNode(); node; node = textWalker.nextNode()) {
+      const element = node.parentElement;
+      if (!node.textContent.trim() || !element || seen.has(element) || !visible(element)) continue;
+      seen.add(element);
+      if (element.closest("[disabled], [aria-disabled='true'], input::placeholder, [data-dev], [aria-label^='Dev']")) continue;
+      const style = getComputedStyle(element);
+      const colour = parse(style.color);
+      const found = backdrops(element);
+      if (!colour || !found) continue;
+      const { behind, painter } = found;
+      let opacity = 1;
+      for (let n = element; n && n !== painter; n = n.parentElement) opacity *= Number(getComputedStyle(n).opacity);
+      const size = parseFloat(style.fontSize);
+      const large = size >= 24 || (size >= 18.66 && Number(style.fontWeight) >= 700);
+      const needed = large ? 3 : 4.5;
+      const worst = Math.min(...behind.map((back) => ratio(over({ ...colour, a: colour.a * opacity }, back), back)));
+      if (worst < needed) lowContrast.push(`${worst.toFixed(2)} < ${needed}: "${node.textContent.trim().slice(0, 40)}"`);
+    }
+
+    return { overflow, dashes, unnamed, brokenImages, lowContrast };
   });
-  assert(duration === minutes, `${label}: expected stored plan duration ${minutes}, received ${duration}`);
+
+// Scroll to the very end with the wheel: the page moves, and the last control isn't stuck under the tab bar.
+async function reachesBottom(page) {
+  await page.mouse.move(PHONE.width / 2, PHONE.height / 2);
+  for (let i = 0; i < 30; i++) {
+    await page.mouse.wheel(0, 900);
+    await page.waitForTimeout(60);
+    if (await page.evaluate(() => scrollY >= document.documentElement.scrollHeight - innerHeight - 2)) break;
+  }
+  await page.waitForTimeout(300);
+  return page.evaluate(() => {
+    const atBottom = scrollY >= document.documentElement.scrollHeight - innerHeight - 2;
+    const nav = document.querySelector("nav.ds-nav");
+    const navTop = nav ? nav.getBoundingClientRect().top : innerHeight;
+    const controls = [...document.querySelectorAll("main button, main a[href], main textarea, main input")].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== "hidden";
+    });
+    const last = controls.at(-1);
+    return { atBottom, lastClear: !last || last.getBoundingClientRect().bottom <= navTop + 1 };
+  });
 }
 
-async function assertStoredPlanSetting(page, key, expected, label) {
-  const value = await page.evaluate((settingKey) => {
-    const userId = localStorage.getItem("innerpause-current-user-id");
-    const raw = localStorage.getItem(userId ? `chakra-healing-mvp:${userId}` : "chakra-healing-mvp");
-    if (!raw) return null;
-    const state = JSON.parse(raw);
-    const plan = state.entries?.find((entry) => entry.plan)?.plan;
-    return plan?.customisation?.[settingKey] ?? null;
-  }, key);
-  assert(value === expected, `${label}: expected ${key}=${expected}, received ${value}`);
+async function checkScreen(page, label) {
+  const found = await inspect(page);
+  check(found.overflow <= 1, `${label}: scrolls sideways by ${found.overflow}px`);
+  check(found.dashes.length === 0, `${label}: dashes in copy: ${found.dashes.join(" | ")}`);
+  check(found.unnamed.length === 0, `${label}: controls with no name: ${found.unnamed.join(" | ")}`);
+  check(found.brokenImages.length === 0, `${label}: images didn't load: ${found.brokenImages.join(" | ")}`);
+  check(found.lowContrast.length === 0, `${label}: low contrast: ${found.lowContrast.slice(0, 4).join(" | ")}`);
+  check(page.errors.length === 0, `${label}: page errors: ${[...new Set(page.errors)].join(" | ")}`);
+  page.errors.length = 0;
 }
+
+async function screens(browser, theme) {
+  const { context, page } = await visitor(browser, { theme });
+  for (const route of ROUTES) {
+    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+    await settle(page);
+    const label = `${theme} ${route}`;
+    await checkScreen(page, label);
+    await shot(page, `${theme}-${route}`);
+    const { atBottom, lastClear } = await reachesBottom(page);
+    check(atBottom, `${label}: the wheel doesn't reach the bottom`);
+    check(lastClear, `${label}: the last control is under the tab bar`);
+  }
+  // 404s and missing things say so plainly.
+  await page.goto(`${BASE}/no-such-page`, { waitUntil: "networkidle" });
+  check((await page.locator("main, body").first().innerText()).length > 20, `${theme} 404: blank`);
+  await page.goto(`${BASE}/pause/player?session=missing`, { waitUntil: "networkidle" });
+  await settle(page);
+  check(await page.getByText("We couldn’t find that Pause.").isVisible(), `${theme} missing Pause: no message`);
+  await page.goto(`${BASE}/tell/recommended?entry=missing`, { waitUntil: "networkidle" });
+  await settle(page);
+  check(await page.getByText("That entry isn’t here").isVisible(), `${theme} missing entry: no message`);
+  await context.close();
+}
+
+async function narrowAndWide(browser) {
+  for (const viewport of NARROW) {
+    const { context, page } = await visitor(browser, { viewport });
+    for (const route of ROUTES) {
+      await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+      await settle(page, 300);
+      const overflow = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - document.documentElement.clientWidth);
+      check(overflow <= 1, `${viewport.width}px ${route}: scrolls sideways by ${overflow}px`);
+    }
+    await context.close();
+  }
+}
+
+// The flows, end to end.
+async function flows(browser, theme) {
+  const step = async (name, run) => {
+    const { context, page } = await visitor(browser, { theme });
+    try {
+      await run(page);
+      check(page.errors.length === 0, `${theme} ${name}: page errors: ${[...new Set(page.errors)].join(" | ")}`);
+    } catch (error) {
+      check(false, `${theme} ${name}: ${error.message.split("\n")[0]}`);
+      await shot(page, `${theme}-FAILED-${name}`);
+    }
+    await context.close();
+  };
+  const expect = async (page, text, label) => check(await page.getByText(text).first().isVisible().catch(() => false), `${theme} ${label}: "${text}" not shown`);
+
+  await step("home tile, minimise, mini player, check in", async (page) => {
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    // A Home tile opens its Pause (or first its sounds, when the card has several).
+    await page.locator("main").getByRole("button", { name: /Calm/ }).first().click();
+    await page.waitForURL(/pause\//);
+    if (!page.url().includes("/pause/player")) await page.getByRole("button", { name: /^(Start|Begin)/ }).first().click();
+    await page.waitForURL(/pause\/player/);
+    await page.getByRole("button", { name: /ready/i }).click({ timeout: 8000 });
+    await page.waitForTimeout(2500);
+    await checkScreen(page, `${theme} player`);
+    await shot(page, `${theme}-flow-player`);
+    await page.getByRole("button", { name: "Sound", exact: true }).click();
+    await page.waitForTimeout(500);
+    await checkScreen(page, `${theme} sound sheet`);
+    await shot(page, `${theme}-flow-sound-sheet`);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.getByRole("button", { name: "Keep playing and go back" }).click();
+    await page.waitForTimeout(800);
+    check(await page.locator(".mini-player").isVisible(), `${theme} mini player: not shown after minimising`);
+    await checkScreen(page, `${theme} with mini player`);
+    await page.getByRole("navigation").last().getByRole("link", { name: "Practice" }).click();
+    await page.waitForTimeout(800);
+    check(await page.locator(".mini-player").isVisible(), `${theme} mini player: gone after changing tab`);
+    await page.locator(".mini-player").getByRole("button", { name: /Open your Pause/ }).click();
+    await page.waitForURL(/pause\/player/);
+    await page.getByRole("button", { name: "End Pause" }).click();
+    await page.waitForTimeout(600);
+    await expect(page, "How do you feel now?", "check in");
+    await checkScreen(page, `${theme} check in`);
+    await page.getByRole("button", { name: "Better", exact: true }).click();
+    await page.waitForTimeout(2200);
+    check(!(await page.locator(".mini-player").count()), `${theme} mini player: still there after the check in`);
+  });
+
+  await step("tell, two feelings, Your Pause", async (page) => {
+    await page.goto(`${BASE}/tell`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Anxiety", exact: true }).click();
+    await page.getByRole("button", { name: "Loneliness", exact: true }).click();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.waitForURL(/tell\/recommended/);
+    await settle(page);
+    await expect(page, "Root · 396 Hz", "Your Pause");
+    await expect(page, "Heart · 639 Hz", "Your Pause");
+    await checkScreen(page, `${theme} Your Pause`);
+    await shot(page, `${theme}-flow-your-pause`);
+    await page.getByRole("button", { name: /^Sound/ }).click();
+    await page.waitForTimeout(400);
+    await checkScreen(page, `${theme} Your Pause sound sheet`);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.getByRole("button", { name: "Begin my Pause" }).click();
+    await page.waitForURL(/pause\/player/);
+    await settle(page);
+    await page.getByRole("button", { name: /ready/i }).click();
+    await page.waitForTimeout(1500);
+    await expect(page, "for: Anxiety", "player with stops");
+  });
+
+  await step("tell, text only", async (page) => {
+    await page.goto(`${BASE}/tell`, { waitUntil: "networkidle" });
+    await page.locator("textarea").fill("I can't sleep, my mind is racing at night");
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.waitForURL(/tell\/recommended/);
+    await settle(page);
+    await expect(page, "Sleep Pause", "text routing");
+    await checkScreen(page, `${theme} Tell recommended`);
+  });
+
+  await step("moments, let it out inside the Pause", async (page) => {
+    await page.goto(`${BASE}/moments`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: /Just happened/ }).click();
+    await settle(page, 400);
+    await checkScreen(page, `${theme} Moments mode`);
+    await page.getByRole("button", { name: /Made a mistake/ }).click();
+    await page.waitForURL(/pause\/player/);
+    await page.waitForTimeout(1500);
+    await page.locator('section[aria-label="Let it out"]').getByRole("button", { name: "Write" }).click();
+    await page.getByRole("textbox", { name: "Let it out" }).fill("I sent the wrong file.");
+    await checkScreen(page, `${theme} let it out panel`);
+    await shot(page, `${theme}-flow-let-it-out`);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.waitForTimeout(400);
+    await page.goto(`${BASE}/journey`, { waitUntil: "networkidle" });
+    await settle(page);
+    await expect(page, "I sent the wrong file.", "Journey polaroid");
+  });
+
+  await step("practice, start and check in", async (page) => {
+    await page.goto(`${BASE}/practice/confidence`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start Confidence", exact: true }).click();
+    await page.getByRole("button", { name: /Begin today/ }).click();
+    await settle(page, 400);
+    await checkScreen(page, `${theme} Practice check in`);
+    await shot(page, `${theme}-flow-practice-check-in`);
+    await page.getByRole("button", { name: "Okay", exact: true }).click();
+    await page.getByRole("button", { name: "Begin my Pause" }).click();
+    await page.waitForURL(/pause\/player/);
+    await settle(page);
+    await page.getByRole("button", { name: /ready/i }).click();
+    await page.waitForTimeout(1200);
+    await page.getByRole("button", { name: "End Pause" }).click();
+    await page.getByRole("button", { name: "Skip for now" }).click();
+    await page.waitForURL(/practice\/confidence/);
+    await settle(page);
+    await expect(page, "Pick up where you left off", "Practice part way");
+    await page.getByText("How this path is built").click();
+    await checkScreen(page, `${theme} Practice dashboard`);
+  });
+
+  await step("journey: stamp and entry", async (page) => {
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start a Pause" }).click();
+    await page.waitForURL(/pause\/player/);
+    await page.waitForTimeout(6500);
+    await page.getByRole("button", { name: "End Pause" }).click();
+    await page.getByRole("button", { name: "Better", exact: true }).click();
+    await page.waitForTimeout(2200);
+    await page.goto(`${BASE}/journey`, { waitUntil: "networkidle" });
+    await settle(page);
+    await page.locator(".pause-stamp").first().click();
+    await page.waitForTimeout(400);
+    await checkScreen(page, `${theme} Journey stamp sheet`);
+    await shot(page, `${theme}-flow-journey-stamp`);
+  });
+
+  await step("empty journey", async (page) => {
+    await page.goto(`${BASE}/journey`, { waitUntil: "networkidle" });
+    await settle(page);
+    await expect(page, "Your story begins", "empty Journey");
+    await checkScreen(page, `${theme} empty Journey`);
+  });
+}
+
+// Reduced motion: nothing keeps moving on its own.
+async function reducedMotion(browser) {
+  const { context, page } = await visitor(browser, { reducedMotion: "reduce" });
+  const moving = () =>
+    page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((animation) => animation.playState === "running")
+        .filter((animation) => {
+          const frames = animation.effect?.getKeyframes?.() ?? [];
+          const transition = animation.transitionProperty;
+          return frames.some((frame) => frame.transform || frame.translate || frame.scale || frame.rotate) || ["transform", "translate", "scale", "rotate"].includes(transition);
+        })
+        .map((animation) => `${animation.effect?.target?.className?.baseVal ?? animation.effect?.target?.className ?? "?"} (${animation.animationName ?? animation.transitionProperty})`),
+    );
+  for (const route of ["/", "/moments", "/practice", "/practice/focus", "/journey"]) {
+    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+    await settle(page, 1200);
+    const found = await moving();
+    check(found.length === 0, `reduced motion ${route}: still moving: ${[...new Set(found)].join(" | ")}`);
+  }
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Start a Pause" }).click();
+  await page.waitForURL(/pause\/player/);
+  await page.waitForTimeout(7000);
+  const found = await moving();
+  check(found.length === 0, `reduced motion player: still moving: ${[...new Set(found)].join(" | ")}`);
+  await page.getByRole("button", { name: "Keep playing and go back" }).click();
+  await page.waitForTimeout(1200);
+  const mini = await moving();
+  check(mini.length === 0, `reduced motion mini player: still moving: ${[...new Set(mini)].join(" | ")}`);
+  await context.close();
+}
+
+const browser = await launch();
+try {
+  await (await fetch(BASE)).text();
+} catch {
+  console.error(`Nothing is running at ${BASE}. Start the app (npm run dev) or set TEST_BASE_URL.`);
+  process.exit(1);
+}
+const started = Date.now();
+for (const theme of THEMES) {
+  await screens(browser, theme);
+  await flows(browser, theme);
+}
+await narrowAndWide(browser);
+await reducedMotion(browser);
+await browser.close();
+
+const seconds = Math.round((Date.now() - started) / 1000);
+if (failures.length) {
+  console.log(`\n${failures.length} of ${checks} checks failed (${seconds} s):\n`);
+  for (const failure of failures) console.log(`  ✖ ${failure}`);
+  process.exit(1);
+}
+console.log(`All ${checks} checks passed (${seconds} s): ${ROUTES.length} screens and 7 flows, light and dark, at 390 × 844, 320 and 768 wide, and with reduced motion.`);

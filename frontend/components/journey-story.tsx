@@ -182,10 +182,10 @@ export function JourneySummary({ pauses, entries, moments }: { pauses: PauseReco
   return (
     <section aria-label="Your month" className="ds-card ds-wash overflow-hidden px-5 pb-4 pt-5">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+        <p className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
           {now.toLocaleDateString(undefined, { month: "long" })}
         </p>
-        <p className="ds-caption ds-num">
+        <p className="ds-caption ds-num" style={{ color: "var(--ds-text-secondary)" }}>
           {moments} {moments === 1 ? "moment" : "moments"}
         </p>
       </div>

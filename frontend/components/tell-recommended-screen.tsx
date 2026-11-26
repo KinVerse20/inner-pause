@@ -245,7 +245,7 @@ function ConfidentPause({
           {card ? <CardIcon icon={card.icon} className="h-[1.3rem] w-[1.3rem]" /> : null}
         </span>
         <div>
-          <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+          <p className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
             A Pause for you
           </p>
           <h1 className="ds-display text-[1.6rem]">{category.label} Pause</h1>
