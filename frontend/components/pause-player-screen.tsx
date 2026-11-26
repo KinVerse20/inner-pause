@@ -8,6 +8,7 @@ import { stopAt } from "@inner-pause/shared";
 import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { LetItOutOffer, LetItOutPanel, type LetOutMode } from "@/components/let-it-out";
+import { useVoiceTranscription } from "@/lib/use-voice-transcription";
 import { IconCheck, IconChevronDown, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
 import { CENTRE_NAME, formatTime, plainTitle, usePauseSession } from "@/components/pause-session";
 import { chakraMap } from "@/data/chakras";
@@ -88,8 +89,16 @@ export function PausePlayerScreen() {
 
   // What was let out stays with the Moment: in the journal, and as the
   // words on its polaroid in Journey. Nothing is analysed.
+  // The microphone for letting it out. Speak starts it inside the tap.
+  const voice = useVoiceTranscription();
+  const openLetOut = (mode: LetOutMode) => {
+    setLetOut(mode);
+    if (mode === "speak") voice.start();
+  };
+
   const keepWhatWasLetOut = (text: string, source: LetOutMode) => {
     setLetOut(null);
+    voice.stop();
     if (!text || !record || !momentMode) return;
     const entry = createTellEntry({ text, source, chips: [], interpretation: NOT_ROUTED_INTERPRETATION, momentMode });
     linkTellEntryToPause(entry.id, record.id);
@@ -391,7 +400,7 @@ ${text}` : text });
             </p>
           ) : null}
 
-          {offerLetOut ? <LetItOutOffer onOpen={setLetOut} /> : null}
+          {offerLetOut ? <LetItOutOffer onOpen={openLetOut} /> : null}
 
           <ThoughtCard journey={journey} elapsed={elapsed} playing={playing} />
 
@@ -529,6 +538,7 @@ ${text}` : text });
       {letOut && momentMode ? (
         <LetItOutPanel
           mode={letOut}
+          voice={voice}
           prompt={
             momentMode === "before"
               ? "Speak or write whatever's on your mind about it. Nobody else will read this."

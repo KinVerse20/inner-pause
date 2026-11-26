@@ -6,7 +6,9 @@ import { createPortal } from "react-dom";
 import { IconMic, IconPencil } from "@/components/pause-icons";
 import { haptic } from "@/lib/haptics";
 import { SpeechLanguageToggle } from "@/components/speech-language-toggle";
-import { useVoiceTranscription } from "@/lib/use-voice-transcription";
+import type { useVoiceTranscription } from "@/lib/use-voice-transcription";
+
+type Voice = ReturnType<typeof useVoiceTranscription>;
 
 // Letting it out, inside a Moment's Pause (pause-player-screen.tsx). The
 // Pause is already running; this is only an offer you can ignore. Speak or
@@ -57,24 +59,22 @@ function OfferButton({ label, icon, onClick }: { label: string; icon: React.Reac
 export function LetItOutPanel({
   mode,
   prompt,
+  voice,
   onClose,
 }: {
   mode: LetOutMode;
   /** The Moment's own invitation, e.g. "Get it off your chest, however it comes." */
   prompt: string;
+  /**
+   * The microphone, owned by the player: Speak starts it inside the tap
+   * itself, which phones (iPhone Safari) need before they'll listen.
+   */
+  voice: Voice;
   onClose: (text: string, source: LetOutMode) => void;
 }) {
   const [view, setView] = useState<LetOutMode>(mode);
   const [text, setText] = useState("");
-  const voice = useVoiceTranscription();
   const fieldRef = useRef<HTMLTextAreaElement>(null);
-
-  // Opened to speak: listening starts straight away.
-  useEffect(() => {
-    if (mode === "speak") voice.start();
-    // Once, on opening.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (view === "write") fieldRef.current?.focus();
@@ -126,17 +126,35 @@ export function LetItOutPanel({
               style={{ background: listening ? "#C4B5FD" : "rgba(248,250,252,0.1)", color: listening ? "#1D1B4C" : "var(--ds-on-navy)" }}
             >
               {listening ? <span className="ds-breathe absolute -inset-3 rounded-full" style={{ background: "rgba(196,181,253,0.18)" }} aria-hidden="true" /> : null}
-              <IconMic className="relative h-7 w-7" />
+              {/* While listening the button stops: it shows a stop sign, not a mic. */}
+              {listening ? <span className="relative h-6 w-6 rounded-[0.3rem]" style={{ background: "currentColor" }} aria-hidden="true" /> : <IconMic className="relative h-7 w-7" />}
             </button>
             <SpeechLanguageToggle language={voice.language} onChange={voice.setLanguage} dark />
-            <p className="ds-caption" style={{ color: "var(--ds-on-navy-muted)" }}>
-              {listening ? "Listening. Take your time." : voice.status === "unsupported" ? "Speaking isn't available here. You can write instead." : "Tap to speak"}
+            <p role="status" className="ds-caption text-center" style={{ color: voice.error ? "#F2B8B0" : "var(--ds-on-navy-muted)" }}>
+              {listening
+                ? "Listening. Tap to stop."
+                : voice.status === "unsupported"
+                  ? "Speaking isn't available here. You can write instead."
+                  : voice.error
+                    ? voice.error
+                    : voice.transcript
+                      ? "Tap to speak again"
+                      : "Tap the mic to speak"}
             </p>
             <div className="max-h-[32dvh] min-h-[6rem] w-full overflow-y-auto rounded-[var(--ds-radius-md)] px-4 py-3 text-[1rem] leading-7" style={{ background: "rgba(248,250,252,0.06)" }}>
               {voice.transcript || <span style={{ color: "var(--ds-on-navy-muted)" }}>Your words will appear here.</span>}
             </div>
             {voice.status === "unsupported" || voice.error ? (
-              <button type="button" onClick={() => setView("write")} className="ds-tap min-h-11 text-sm font-semibold" style={{ color: "#C4B5FD" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  voice.stop();
+                  setText(voice.transcript);
+                  setView("write");
+                }}
+                className="ds-tap min-h-11 text-sm font-semibold"
+                style={{ color: "#C4B5FD" }}
+              >
                 Write instead
               </button>
             ) : null}
