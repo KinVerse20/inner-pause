@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
-import { PlayerProvider } from "@/components/player-provider";
+import { PauseSessionProvider } from "@/components/pause-session";
 import { PwaRegistration } from "@/components/pwa-registration";
 import { AccountInvitationGate } from "@/components/account-invitation-gate";
 import { AuthSessionSync } from "@/components/auth-session-sync";
@@ -74,7 +74,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-[var(--ds-bg)] text-[var(--ds-text)]">
-        <PlayerProvider>
+        <PauseSessionProvider>
           <AuthSessionSync />
           <JournalSyncAgent />
           <ContentSync />
@@ -83,7 +83,7 @@ export default function RootLayout({
           {children}
           <AccountInvitationGate />
           <PwaRegistration />
-        </PlayerProvider>
+        </PauseSessionProvider>
       </body>
     </html>
   );

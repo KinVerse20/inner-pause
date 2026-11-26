@@ -1,65 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState, ViewTransition, type ReactNode } from "react";
+import { useEffect, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { LetItOut } from "@/components/let-it-out";
-import { IconCheck, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
-import { SoundSheet, type ToneSetting } from "@/components/sound-sheet";
+import { IconCheck, IconChevronDown, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
+import { formatTime, plainTitle, usePauseSession } from "@/components/pause-session";
+import { SoundSheet } from "@/components/sound-sheet";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
 import { createTellEntry, linkTellEntryToMoment, linkTellEntryToPause, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
 import { listMomentRecords, updateMomentRecord, type MomentRecord } from "@/lib/moment-storage";
-import {
-  completePauseRecord,
-  getPauseRecord,
-  getPreviousCompletedPauseRecord,
-  type PauseFeedback,
-  type PauseRecord,
-} from "@/lib/pause-storage";
-import { getPreferences, updatePreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, soundUrlFor, UNDERTONE_LEVELS, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
-import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
-import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
-import { useTunedSound } from "@/lib/use-tuned-sound";
+import { completePauseRecord, getPauseRecord, getPreviousCompletedPauseRecord, type PauseFeedback } from "@/lib/pause-storage";
+import { findBuiltInSound, UNDERTONE_LEVELS } from "@/lib/sound-library";
 import { buildJourney } from "@/lib/breath-journey";
 import { expandName, markPageTransition } from "@/lib/view-transition";
 
-// docs/PRODUCT_FLOW.md §4/§7: the center Pause action's "Get comfortable"
-// transition is a fixed, brief moment — not a duration-scaled Arrive, and
-// (unlike Arrive) it always auto-advances, never waits for confirmation.
-const COMFORTABLE_SECONDS = 5;
-
-// docs/PRODUCT_FLOW.md §10: a brief, quiet closing beat between playback
-// ending and the check-in question — never a hard cut.
-const CLOSING_BEAT_MS = 2600;
-
-// A Pause's sound swells in gently rather than starting at full level, and
-// eases back in after being paused.
-const SOUND_FADE_IN_SECONDS = 10;
-const SOUND_RESUME_FADE_SECONDS = 1.5;
-
-// …and fades out over its final stretch instead of stopping. Sleep gets a
-// long, slow fade so the end of the Pause never wakes anyone.
-const SOUND_FADE_OUT_SECONDS = 10;
-const SLEEP_FADE_OUT_SECONDS = 45;
-
-function soundFadeOutSeconds(record: PauseRecord) {
-  const seconds = record.outcomeId === "sleep" ? SLEEP_FADE_OUT_SECONDS : SOUND_FADE_OUT_SECONDS;
-  return Math.min(seconds, Math.floor(record.durationSeconds / 4));
-}
-
-type Phase = "transition" | "playing" | "closing" | "checkin";
 type CheckinStage = "question" | "same-options" | "not-better-options" | "acknowledged";
 
-function formatTime(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60);
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
+// The player: a view of the running Pause (components/pause-session.tsx).
+// Leaving it, by the chevron or by going back, keeps the Pause playing; the
+// mini player above the tab bar brings you back. The X ends the Pause.
 export function PausePlayerScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,246 +30,50 @@ export function PausePlayerScreen() {
   // What opened this Pause (a Home tile, the nav's Pause button): the
   // player grows out of it, and shrinks back into it on the way out.
   const from = searchParams.get("from");
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const session = usePauseSession();
+  const { load, release } = session;
 
-  const [record, setRecord] = useState<PauseRecord | null | undefined>(undefined);
-  const [phase, setPhase] = useState<Phase>("transition");
-  const [elapsed, setElapsed] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [audioError, setAudioError] = useState(false);
+  // Not found is decided here; the session only holds Pauses that exist.
+  const [missing, setMissing] = useState(false);
   const [notBetterStreak, setNotBetterStreak] = useState(false);
   const [checkinStage, setCheckinStage] = useState<CheckinStage>("question");
   const [acknowledgedText, setAcknowledgedText] = useState("");
-  // Kinverse's "Anything you want to remember?" — an optional note saved to
+  // Kinverse's "Anything you want to remember?": an optional note saved to
   // the journal, linked to this Pause.
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
-  // You -> Preferences -> Ambient sound and Frequency. Read after mount:
-  // preferences live in localStorage, which the server render can't see
-  // (same reasoning as components/you-preferences-screen.tsx).
-  const [frequencyOn, setFrequencyOn] = useState(false);
-  const [ambientOn, setAmbientOn] = useState(true);
-  // Built-in library sound (Kinverse) and undertone strength, switchable live
-  // from the Sound sheet. Only used when the Pause plays a library sound.
-  const [builtInSoundId, setBuiltInSoundId] = useState<BuiltInSoundId | null>(null);
-  const [undertone, setUndertone] = useState<UndertoneLevel>("balanced");
   const [soundSheetOpen, setSoundSheetOpen] = useState(false);
   const [moment, setMoment] = useState<MomentRecord | null>(null);
-  // Ignore the audio element's own pause event while we swap sources, so a
-  // sound change never stops the Pause clock.
-  const switchingRef = useRef(false);
+
+  // One-time read from localStorage on mount or id change.
   useEffect(() => {
-    const preferences = getPreferences();
+    const found = sessionId ? getPauseRecord(sessionId) : undefined;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFrequencyOn(preferences.soundToneLayerEnabled);
-    setAmbientOn(preferences.soundAmbientEnabled);
-    setUndertone(preferences.undertone);
-  }, []);
-
-  // Dev-only frequency tester overrides (DevFrequencyTester below): a
-  // chosen frequency replaces the Pause's own, and tuning can be switched
-  // off to compare against the original recording.
-  const [devToneHz, setDevToneHz] = useState<number | null>(null);
-  const [devTuningOff, setDevTuningOff] = useState(false);
-
-  // What a Pause plays: the sound the admin uploaded for its card (river,
-  // rain…, chosen on the card's screen), tuned to the Pause's frequency so
-  // the sound itself resonates at it — no separate tone. Normally that's
-  // the file the server rendered (tuned, levelled, seamlessly looped, with
-  // the card's volume applied); until it's ready, or while the dev tester
-  // picks another frequency, the original is tuned live instead
-  // (lib/use-tuned-sound.ts). The built-in chakra track (record.audioPath)
-  // is no longer played. A Pause with no uploaded sound — or with Ambient
-  // sound switched off — plays a soft tone at the frequency instead.
-  const builtIn = Boolean(record?.builtInSoundId);
-  const builtInSound = builtIn ? findBuiltInSound(builtInSoundId ?? record?.builtInSoundId) : undefined;
-  const pauseHz = record ? parseFrequencyHz(record.frequencyLabel) : null;
-  const originalUrl = ambientOn ? (builtIn ? soundUrlFor(builtInSound, pauseHz) : (record?.ambientSoundUrl ?? null)) : null;
-  // A tuned recording already carries the frequency: no undertone on top.
-  const premixed = Boolean(builtInSound?.tunedFile);
-  const targetHz = devToneHz ?? (frequencyOn ? pauseHz : null);
-  // Rendered files come as AAC and Opus (lib/render-format.ts). If one
-  // can't play, the player falls back: AAC → Opus → the original, tuned
-  // live (handleAudioError). The original also covers a Pause started
-  // before its sound was re-rendered, whose files have since been replaced.
-  const [aacFailed, setAacFailed] = useState(false);
-  const [renderFailed, setRenderFailed] = useState(false);
-  const rendering =
-    devToneHz !== null || renderFailed || !ambientOn
-      ? null
-      : ((frequencyOn && !devTuningOff ? record?.ambientTunedUrl : record?.ambientPlainUrl) ?? null);
-  const renderedUrl = rendering ? (aacFailed ? webmUrl(rendering) : playableRenderUrl(rendering)) : null;
-  const soundUrl = renderedUrl ?? originalUrl;
-
-  // Both follow playback exactly: audible only while the Pause is actually
-  // playing and unmuted, fading out with the closing beat.
-  // Library sounds keep their own pitch; the frequency sits beneath them as
-  // an undertone at the chosen strength (Kinverse's model). Uploaded sounds
-  // are tuned to the frequency instead, with the tone only when silent.
-  useToneLayer(
-    builtIn ? (premixed && originalUrl ? null : targetHz) : originalUrl ? null : targetHz,
-    phase === "playing" && playing && !muted,
-    builtIn && originalUrl ? undertoneGain(undertone) : undefined,
-  );
-  const tunedSound = useTunedSound(audioRef, {
-    enabled: Boolean(originalUrl) && !renderedUrl,
-    frequencyHz: renderedUrl || devTuningOff || builtIn ? null : targetHz,
-    // A rendered file already carries the card's volume and level.
-    volume: renderedUrl ? 1 : builtIn ? 0.8 : (record?.ambientVolume ?? 1),
-    muted,
-    trimDb: renderedUrl ? 0 : (record?.ambientGainDb ?? 0),
-  });
-
-  // One-time read from an external system (localStorage) on mount/id
-  // change — there's no async boundary to defer into, since the read
-  // itself is synchronous.
-  useEffect(() => {
-    if (!sessionId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRecord(null);
-      return;
-    }
-    const found = getPauseRecord(sessionId);
-    setRecord(found ?? null);
+    setMissing(!found);
+    if (!found) return;
+    load(found.id);
     // The Moment this Pause belongs to, if any (for letting it out first).
-    setMoment(found ? (listMomentRecords().find((item) => item.linkedPauseRecordId === found.id) ?? null) : null);
-    setBuiltInSoundId(found?.builtInSoundId ?? null);
-    if (found) {
-      setNotBetterStreak(getPreviousCompletedPauseRecord(found.id)?.feedback === "not-better");
-    }
-  }, [sessionId]);
+    setMoment(listMomentRecords().find((item) => item.linkedPauseRecordId === found.id) ?? null);
+    setNotBetterStreak(getPreviousCompletedPauseRecord(found.id)?.feedback === "not-better");
+  }, [sessionId, load]);
 
-  // Only the Ground Pause's brief "Get comfortable" transition auto-advances
-  // (docs/PRODUCT_FLOW.md §4/§7). Full Arrive never auto-advances — it waits
-  // for the explicit "I'm ready" action (handleReady below). Big Moments —
-  // During has no arrival copy at all (lib/big-moment-engine.ts) and skips
-  // the transition instantly rather than waiting out the brief window, per
-  // §13's "near-zero friction... sound begins almost immediately."
-  useEffect(() => {
-    if (phase !== "transition" || !record || record.requiresArrive) return;
-    const delayMs = record.arrivalGuidance.length > 0 ? COMFORTABLE_SECONDS * 1000 : 0;
-    const timer = window.setTimeout(() => {
-      haptic("moment");
-      setPhase("playing");
-    }, delayMs);
-    return () => window.clearTimeout(timer);
-  }, [phase, record]);
+  // Leaving the player keeps a started Pause playing; one that never
+  // started, or is already checked in, is let go.
+  useEffect(() => () => release(), [release]);
+
+  const record = session.record && session.record.id === sessionId ? session.record : null;
+  const { phase, elapsed, playing, muted, audioError, frequencyOn, undertone, builtIn } = session;
+  const builtInSound = builtIn ? findBuiltInSound(session.builtInSoundId ?? record?.builtInSoundId) : undefined;
 
   // A Moment (coming up, just happened) offers letting it out first, with
   // its sound already playing. Happening now starts at once, so it doesn't.
   const offerLetOut = phase === "transition" && Boolean(record?.requiresArrive) && Boolean(moment) && moment?.mode !== "during";
-
-  // The sound starts with the offer and carries on into the Pause.
+  const { playAhead } = session;
   useEffect(() => {
-    if (!offerLetOut) return;
-    const audio = audioRef.current;
-    if (!audio || !soundUrl || !audio.paused) return;
-    audio.src = soundUrl;
-    audio.loop = true;
-    tunedSound.resume();
-    tunedSound.fadeIn(SOUND_FADE_IN_SECONDS);
-    audio.play().catch(() => undefined);
+    if (offerLetOut) playAhead();
     // Starts once per offer; later sound changes go through chooseSound.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offerLetOut]);
-
-  // Start playback on entering the playing phase.
-  useEffect(() => {
-    if (phase !== "playing" || !record) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAudioError(false);
-    const audio = audioRef.current;
-    if (!soundUrl || !audio) {
-      // Tone only: there is no file to load, so the Pause clock starts now.
-      setPlaying(true);
-      return;
-    }
-    // Already playing from letting it out: carry on, don't start over.
-    if (!audio.paused && audio.src === new URL(soundUrl, window.location.href).href) {
-      setPlaying(true);
-      return;
-    }
-    audio.src = soundUrl;
-    audio.loop = true;
-    audio.currentTime = 0;
-    tunedSound.resume();
-    tunedSound.fadeIn(SOUND_FADE_IN_SECONDS);
-    const startedWith = audio.src;
-    audio
-      .play()
-      .then(() => setPlaying(true))
-      .catch(() => {
-        // Already retrying with another file (handleAudioError).
-        if (audio.src !== startedWith) return;
-        setAudioError(true);
-        setPlaying(false);
-      });
-    // Only re-run when entering "playing" for a given record — volume and
-    // mute are applied by useTunedSound, not by restarting.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, record]);
-
-  // Switching between the rendered file and the live original mid-Pause
-  // (a rendering became the choice, or the dev tester took over) carries on
-  // from the same point.
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (phase !== "playing" || !audio || !soundUrl || !audio.src) return;
-    if (audio.src === new URL(soundUrl, window.location.href).href) return;
-    const wasPlaying = !audio.paused;
-    const at = audio.currentTime;
-    audio.src = soundUrl;
-    audio.currentTime = at;
-    if (!wasPlaying) return;
-    tunedSound.resume();
-    audio.play().catch(() => setAudioError(true));
-  }, [phase, soundUrl, tunedSound]);
-
-  // A rendered file that can't play: carry on with the next one instead of
-  // showing an error — the Opus version, then the original tuned live.
-  const handleAudioError = () => {
-    const audio = audioRef.current;
-    const retryWith = (url: string) => {
-      if (!audio) return;
-      const at = audio.currentTime;
-      audio.src = url;
-      audio.currentTime = at;
-      tunedSound.resume();
-      audio
-        .play()
-        .then(() => {
-          setAudioError(false);
-          setPlaying(true);
-        })
-        // A failure here fires another error event, handled by this function.
-        .catch(() => {
-          if (audio.src === new URL(url, window.location.href).href) setAudioError(true);
-        });
-    };
-    // Decided from what the element is actually playing, which is always
-    // current (several errors can arrive before a re-render).
-    const current = audio?.src ?? "";
-    const onRendering = new URL(current || "/", window.location.href).pathname.startsWith("/api/sounds/renders/");
-    if (audio && onRendering && !isWebmUrl(current)) {
-      markAacUnplayable();
-      setAacFailed(true);
-      retryWith(webmUrl(current));
-      return;
-    }
-    if (audio && onRendering && originalUrl) {
-      setRenderFailed(true);
-      retryWith(originalUrl);
-      return;
-    }
-    setAudioError(true);
-  };
-
-  const handleReady = () => {
-    if (!record) return;
-    haptic("moment");
-    setPhase("playing");
-  };
 
   // What was let out stays with the Moment: in the journal, and as the
   // words on its polaroid in Journey. Nothing is analysed.
@@ -319,171 +86,7 @@ export function PausePlayerScreen() {
 
 ${text}` : text });
     }
-    handleReady();
-  };
-
-  const finishToCheckin = () => {
-    haptic("tap");
-    audioRef.current?.pause();
-    setPhase("checkin");
-  };
-
-  // Natural completion only: a brief quiet closing beat before check-in,
-  // never a hard cut (docs/PRODUCT_FLOW.md §10). Manual exit skips straight
-  // to check-in (docs/UX_ARCHITECTURE.md's Pause Player exit points).
-  const beginClosing = () => {
-    audioRef.current?.pause();
-    haptic("moment");
-    setPhase("closing");
-    window.setTimeout(() => setPhase("checkin"), CLOSING_BEAT_MS);
-  };
-
-  // Session-duration timer, independent of the underlying track's own
-  // length. It adds real elapsed time on each tick rather than counting
-  // ticks: browsers slow or freeze timers in hidden tabs and on locked
-  // phones, and a tick counter would then let the Pause run on long past
-  // its length. Time spent paused is excluded.
-  const closingStartedRef = useRef(false);
-  useEffect(() => {
-    if (phase !== "playing" || !playing || !record) return;
-    let last = Date.now();
-    const interval = window.setInterval(() => {
-      const now = Date.now();
-      const delta = (now - last) / 1000;
-      last = now;
-      setElapsed((current) => {
-        const next = Math.min(record.durationSeconds, current + delta);
-        // The end of the Pause: once (an updater can run twice in dev).
-        if (next >= record.durationSeconds && !closingStartedRef.current) {
-          closingStartedRef.current = true;
-          window.setTimeout(beginClosing, 0);
-        }
-        return next;
-      });
-    }, 1000);
-    return () => window.clearInterval(interval);
-  }, [phase, playing, record]);
-
-  // The closing fade starts once the remaining time is within it (time can
-  // jump past any exact second after the tab was hidden), at the level the
-  // fade would have reached by then.
-  const closingFadeStartedRef = useRef(false);
-  useEffect(() => {
-    if (phase !== "playing" || !playing || !record || !soundUrl || closingFadeStartedRef.current) return;
-    const fadeSeconds = soundFadeOutSeconds(record);
-    const remaining = Math.max(0, record.durationSeconds - elapsed);
-    if (fadeSeconds > 0 && remaining <= fadeSeconds) {
-      closingFadeStartedRef.current = true;
-      tunedSound.fadeOut(remaining, (remaining / fadeSeconds) ** 2);
-    }
-  }, [phase, playing, record, soundUrl, elapsed, tunedSound]);
-
-  // Always interactive, even after a load failure — a failed placeholder
-  // track should offer a retry, not a permanently dead control.
-  const togglePlayback = () => {
-    haptic("tap");
-    if (!soundUrl) {
-      setPlaying((current) => !current);
-      return;
-    }
-    if (!audioRef.current) return;
-    if (playing) {
-      audioRef.current.pause();
-      return;
-    }
-    tunedSound.resume();
-    // Resuming inside the closing fade rejoins it where it left off.
-    const fadeSeconds = record ? soundFadeOutSeconds(record) : 0;
-    const remaining = record ? Math.max(0, record.durationSeconds - elapsed) : Infinity;
-    if (fadeSeconds > 0 && remaining <= fadeSeconds) {
-      closingFadeStartedRef.current = true;
-      tunedSound.fadeOut(remaining, (remaining / fadeSeconds) ** 2);
-    } else tunedSound.fadeIn(SOUND_RESUME_FADE_SECONDS);
-    audioRef.current
-      .play()
-      .then(() => setAudioError(false))
-      .catch(() => setAudioError(true));
-  };
-
-  const handleRestart = () => {
-    if (!record) return;
-    haptic("tap");
-    closingFadeStartedRef.current = false;
-    if (!soundUrl) {
-      setElapsed(0);
-      setPlaying(true);
-      return;
-    }
-    if (!audioRef.current) return;
-    audioRef.current.currentTime = 0;
-    setElapsed(0);
-    tunedSound.resume();
-    tunedSound.fadeIn(SOUND_FADE_IN_SECONDS);
-    audioRef.current
-      .play()
-      .then(() => {
-        setAudioError(false);
-        setPlaying(true);
-      })
-      .catch(() => setAudioError(true));
-  };
-
-  const toggleMute = () => {
-    haptic("tap");
-    setMuted(!muted);
-  };
-
-  // Switch the library sound live, carrying on without stopping the Pause.
-  // The choice also becomes the default for the next Pause.
-  const chooseSound = (id: BuiltInSoundId) => {
-    haptic("tap");
-    setBuiltInSoundId(id);
-    // Picking a sound means you want to hear it: with Ambient sound
-    // switched off in Settings, the pick used to change nothing at all.
-    setAmbientOn(true);
-    updatePreferences({ defaultSound: id, soundAmbientEnabled: true });
-    const audio = audioRef.current;
-    const nextUrl = soundUrlFor(findBuiltInSound(id), pauseHz);
-    // Also while letting it out, when the sound is already playing before
-    // the Pause begins: you choose by ear, so the change is heard at once.
-    if (!audio || (phase !== "playing" && audio.paused)) return;
-    switchingRef.current = true;
-    if (!nextUrl) {
-      audio.pause();
-      audio.removeAttribute("src");
-      window.setTimeout(() => {
-        switchingRef.current = false;
-      }, 0);
-      return;
-    }
-    audio.src = nextUrl;
-    audio.loop = true;
-    if (!playing) {
-      switchingRef.current = false;
-      return;
-    }
-    tunedSound.resume();
-    tunedSound.fadeIn(SOUND_RESUME_FADE_SECONDS);
-    audio
-      .play()
-      .catch(() => setAudioError(true))
-      .finally(() => {
-        switchingRef.current = false;
-      });
-  };
-
-  // The Sound sheet's Tone: Off, or how present the frequency is. One
-  // setting with You → Preferences → Frequency, so the two never disagree.
-  const chooseTone = (tone: ToneSetting) => {
-    haptic("tap");
-    if (tone === "off") {
-      setFrequencyOn(false);
-      updatePreferences({ soundToneLayerEnabled: false });
-      return;
-    }
-    setFrequencyOn(true);
-    setUndertone(tone);
-    updatePreferences({ soundToneLayerEnabled: true, undertone: tone });
+    session.begin();
   };
 
   // Leaving shrinks the player back into what opened it, with the page
@@ -493,9 +96,16 @@ ${text}` : text });
     router.push(destination);
   };
 
+  // Minimise: back to where you were, the Pause carries on.
+  const minimise = () => {
+    haptic("tap");
+    leaveTo(session.backTo);
+  };
+
   const finalizeAndLeave = (message: string, destination = "/") => {
     setAcknowledgedText(message);
     setCheckinStage("acknowledged");
+    session.finish();
     window.setTimeout(() => leaveTo(destination), 1400);
   };
 
@@ -504,19 +114,17 @@ ${text}` : text });
     haptic("success");
     saveNote();
     completePauseRecord(record.id, feedback);
-    // A Pause inside a flow (a Practice day or skill session) always returns
-    // to that flow, whatever the answer — the flow carries the next step.
+    // A Pause inside a flow (a Practice day) always returns to that flow,
+    // whatever the answer: the flow carries the next step.
     if (record.returnTo && record.pauseType === "practice") {
       finalizeAndLeave(feedback === "better" ? "Glad that helped." : "Thank you for noticing.", record.returnTo);
       return;
     }
     if (feedback === "better") {
-      // Practice sessions resume at the Activity step after a helpful Pause
-      // (lib/practice-engine.ts's `returnTo`); every other Pause type keeps
-      // going Home exactly as before, since `returnTo` is undefined for them.
       finalizeAndLeave("Glad that helped.", record.returnTo ?? "/");
       return;
     }
+    session.finish();
     if (feedback === "same") {
       setCheckinStage("same-options");
       return;
@@ -535,21 +143,11 @@ ${text}` : text });
     if (!record) return;
     saveNote();
     completePauseRecord(record.id, undefined);
+    session.finish();
     leaveTo(record.returnTo ?? "/");
   };
 
-  if (record === undefined) {
-    return (
-      <PlayerFrame from={from}>
-        <div className="grid flex-1 place-items-center">
-          <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(44vw,12rem)] opacity-70" />
-          <p className="sr-only">Preparing your Pause</p>
-        </div>
-      </PlayerFrame>
-    );
-  }
-
-  if (record === null) {
+  if (missing) {
     return (
       <PlayerFrame from={from}>
         <div className="grid flex-1 place-items-center text-center">
@@ -557,6 +155,17 @@ ${text}` : text });
             <p className="text-base" style={{ color: "var(--ds-on-navy)" }}>We couldn&rsquo;t find that Pause.</p>
             <NavyButton onClick={() => leaveTo("/")}>Back to Home</NavyButton>
           </div>
+        </div>
+      </PlayerFrame>
+    );
+  }
+
+  if (!record) {
+    return (
+      <PlayerFrame from={from}>
+        <div className="grid flex-1 place-items-center">
+          <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(44vw,12rem)] opacity-70" />
+          <p className="sr-only">Preparing your Pause</p>
         </div>
       </PlayerFrame>
     );
@@ -578,7 +187,7 @@ ${text}` : text });
       <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2">
         <button
           type="button"
-          onClick={phase === "checkin" ? handleSkip : finishToCheckin}
+          onClick={phase === "checkin" ? handleSkip : session.endEarly}
           aria-label={phase === "checkin" ? "Close" : "End Pause"}
           className="ds-tap grid h-11 w-11 place-items-center rounded-full"
           style={{ color: "var(--ds-on-navy-muted)" }}
@@ -595,7 +204,19 @@ ${text}` : text });
             </p>
           ) : null}
         </div>
-        <span className="h-11 w-11" aria-hidden="true" />
+        {phase === "playing" || (phase === "transition" && playing) ? (
+          <button
+            type="button"
+            onClick={minimise}
+            aria-label="Keep playing and go back"
+            className="ds-tap grid h-11 w-11 place-items-center rounded-full"
+            style={{ color: "var(--ds-on-navy-muted)" }}
+          >
+            <IconChevronDown className="h-5 w-5" />
+          </button>
+        ) : (
+          <span className="h-11 w-11" aria-hidden="true" />
+        )}
       </header>
 
       {phase === "transition" ? (
@@ -629,7 +250,7 @@ ${text}` : text });
             </div>
             )}
             {record.requiresArrive && !offerLetOut ? (
-              <NavyButton onClick={handleReady} className="mt-8 px-8">
+              <NavyButton onClick={session.begin} className="mt-8 px-8">
                 I&rsquo;m ready
               </NavyButton>
             ) : null}
@@ -677,7 +298,7 @@ ${text}` : text });
           <div className="flex items-center justify-center gap-5">
             <button
               type="button"
-              onClick={handleRestart}
+              onClick={session.restart}
               aria-label="Start this Pause again"
               className="ds-tap grid h-12 w-12 place-items-center rounded-full"
               style={{ background: "rgba(248,250,252,0.1)", color: "var(--ds-on-navy)" }}
@@ -687,7 +308,7 @@ ${text}` : text });
 
             <button
               type="button"
-              onClick={togglePlayback}
+              onClick={session.togglePlayback}
               aria-label={playing ? "Pause" : audioError ? "Try playing again" : "Play"}
               className="ds-tap grid h-[4.5rem] w-[4.5rem] place-items-center rounded-full"
               style={{ background: "var(--ds-on-navy)", color: "var(--ds-navy)", boxShadow: "0 10px 30px rgba(0,0,0,0.28)" }}
@@ -713,7 +334,7 @@ ${text}` : text });
             ) : (
               <button
                 type="button"
-                onClick={toggleMute}
+                onClick={session.toggleMute}
                 aria-label={muted ? "Turn sound on" : "Mute"}
                 aria-pressed={muted}
                 className="ds-tap grid h-12 w-12 place-items-center rounded-full"
@@ -749,13 +370,13 @@ ${text}` : text });
 
           {process.env.NODE_ENV === "development" ? (
             <DevFrequencyTester
-              pauseHz={pauseHz}
-              currentHz={targetHz}
-              tuningSound={Boolean(originalUrl)}
-              rendered={Boolean(renderedUrl)}
-              onChange={setDevToneHz}
-              tuningOff={devTuningOff}
-              onToggleTuning={() => setDevTuningOff((current) => !current)}
+              pauseHz={session.pauseHz}
+              currentHz={session.targetHz}
+              tuningSound={session.hasSoundFile}
+              rendered={session.renderedFile}
+              onChange={session.setDevToneHz}
+              tuningOff={session.devTuningOff}
+              onToggleTuning={session.toggleDevTuning}
             />
           ) : null}
         </div>
@@ -869,29 +490,17 @@ ${text}` : text });
 
       {soundSheetOpen && builtIn ? (
         <SoundSheet
-          currentId={builtInSoundId ?? record.builtInSoundId!}
+          currentId={session.builtInSoundId ?? record.builtInSoundId!}
           tone={frequencyOn ? undertone : "off"}
           frequencyLabel={record.frequencyLabel ?? null}
           muted={muted}
-          onChoose={chooseSound}
-          onTone={chooseTone}
-          onToggleMute={toggleMute}
+          onChoose={session.chooseSound}
+          onTone={session.chooseTone}
+          onToggleMute={session.toggleMute}
           onClose={() => setSoundSheetOpen(false)}
         />
       ) : null}
 
-      {/* crossOrigin keeps the tuning graph working if sounds are served
-          from a separate API origin (NEXT_PUBLIC_API_URL); same-origin is unaffected. */}
-      <audio
-        ref={audioRef}
-        preload="auto"
-        crossOrigin="anonymous"
-        onPlay={() => setPlaying(true)}
-        onPause={() => {
-          if (!switchingRef.current) setPlaying(false);
-        }}
-        onError={handleAudioError}
-      />
     </PlayerFrame>
   );
 }
@@ -983,13 +592,6 @@ function DevFrequencyTester({
       </div>
     </section>
   );
-}
-
-// Copy rule (DESIGN_SYSTEM.md §14): no em/en dashes in user-facing copy.
-// Some stored titles predate the rule ("Difficult conversation — Stay
-// steady"); render them with the centered-dot separator instead.
-function plainTitle(title: string) {
-  return title.replace(/\s+[—–-]\s+/g, " · ");
 }
 
 function NavyButton({ children, onClick, className = "" }: { children: ReactNode; onClick: () => void; className?: string }) {

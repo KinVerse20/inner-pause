@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, ViewTransition, type ComponentType, type ReactNode } from "react";
 
 import { NavHomeIcon, NavMomentsIcon, NavPracticeIcon, NavYouIcon } from "@/components/nav-icons";
+import { MiniPlayer } from "@/components/mini-player";
+import { sessionIsActive, usePauseSession } from "@/components/pause-session";
 import { haptic } from "@/lib/haptics";
 import { composeGroundPause } from "@/lib/pause-engine";
 import { createPauseRecord } from "@/lib/pause-storage";
@@ -25,6 +27,8 @@ const destinations: Array<{ href: string; label: string; Icon: TabIcon }> = [
 // Every tab opens onto a soft wash of brand color at the top (a glow, not
 // a fill); Home gets the warmer "sunrise" version. Purely decorative.
 export function PauseShell({ children, glow = "soft" }: { children: ReactNode; glow?: "soft" | "sunrise" }) {
+  // Room for the mini player too, so it never covers the end of a page.
+  const miniPlayer = sessionIsActive(usePauseSession());
   return (
     <div
       className="relative min-h-dvh overflow-x-hidden"
@@ -33,7 +37,7 @@ export function PauseShell({ children, glow = "soft" }: { children: ReactNode; g
       <div className={`app-glow app-glow--${glow}`} aria-hidden="true" />
       <main
         className="relative mx-auto min-h-dvh w-full max-w-[30rem] px-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 md:max-w-[40rem]"
-        style={{ paddingBottom: "calc(7.5rem + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: `calc(${miniPlayer ? "13rem" : "7.5rem"} + env(safe-area-inset-bottom))` }}
       >
         {/* Slides forward or back when a You row or back link says so
             (markPageTransition in lib/view-transition.ts). */}
@@ -48,6 +52,8 @@ function PauseBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [starting, setStarting] = useState(false);
+  const session = usePauseSession();
+  const running = sessionIsActive(session) ? session.record : null;
 
   // Have the player ready before anyone taps: it only grows out of a tile
   // or this button if it can render in the same moment (no loading step).
@@ -59,6 +65,11 @@ function PauseBottomNav() {
     if (starting) return;
     setStarting(true);
     haptic("moment");
+    // A Pause is already going: open it rather than starting another.
+    if (running) {
+      router.push(`/pause/player?session=${running.id}`);
+      return;
+    }
     const record = createPauseRecord(composeGroundPause());
     markPageTransition("hold");
     router.push(`/pause/player?session=${record.id}&from=pause-action`, { transitionTypes: EXPAND });
@@ -67,6 +78,7 @@ function PauseBottomNav() {
   // Named so the tab bar holds still while page content slides beneath it.
   return (
     <nav className="ds-nav fixed inset-x-0 bottom-0 z-40" style={{ viewTransitionName: "ip-bottom-nav" }}>
+      <MiniPlayer />
       <div className="mx-auto grid max-w-[30rem] grid-cols-5 items-end px-1 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 md:max-w-[40rem]">
         {destinations.slice(0, 2).map((item) => (
           <NavDestination key={item.href} item={item} active={isActive(pathname, item.href)} />

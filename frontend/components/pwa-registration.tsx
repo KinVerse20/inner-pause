@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-import { usePlayer } from "@/components/player-provider";
+import { usePauseSession } from "@/components/pause-session";
 
 export function PwaRegistration() {
   const pathname = usePathname();
-  const { isPlaying } = usePlayer();
+  const isPlaying = usePauseSession().playing;
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
 
@@ -84,7 +84,7 @@ export function PwaRegistration() {
         <div>
           <p className="font-medium text-white">New version available</p>
           <p className="mt-1 text-xs leading-5 text-slate-300">
-            {isPlaying ? "Finish or pause your music before refreshing." : "Refresh when ready to update the app."}
+            {isPlaying ? "Pause the sound first, then refresh." : "Refresh when ready to update the app."}
           </p>
         </div>
         <button
