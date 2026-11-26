@@ -162,6 +162,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
     haptic("success");
     setBusy(false);
     setStage("dashboard");
+    window.scrollTo({ top: 0 });
   };
 
   const saveCheckIn = () => {

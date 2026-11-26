@@ -1040,9 +1040,6 @@ body {
   color: var(--ds-text);
   font-family: var(--ds-font-sans);
   min-height: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
 }
 
 .mvp-bg {
@@ -1240,11 +1237,17 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Clip, not hidden: hidden would make body a scroll box of its own, and the
+   wheel would stop there instead of scrolling the page. */
 html,
 body {
   max-width: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow-x: clip;
+}
+
+/* No pull-to-refresh. */
+html {
+  overscroll-behavior-y: contain;
 }
 
 @supports (padding: env(safe-area-inset-top)) {
