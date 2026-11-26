@@ -241,7 +241,7 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
       const preferences = getPreferences();
       setFrequencyOn(preferences.soundToneLayerEnabled);
       setAmbientOn(preferences.soundAmbientEnabled);
-      setUndertone(preferences.undertone);
+      setUndertone(found?.undertone ?? preferences.undertone);
       setBuiltInSoundId(found?.builtInSoundId ?? null);
       setRecord(found);
       live.current = { ...live.current, record: found, phase: "transition", playing: false, finished: false, elapsed: resumeAt };

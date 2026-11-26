@@ -4,7 +4,7 @@ import { chakraMap } from "@/data/chakras";
 import { getCard, getCardSound } from "@/lib/content-store";
 import type { PauseCategoryId } from "@/lib/pause-categories";
 import { getPreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, soundUrlFor, type BuiltInSound, type BuiltInSoundId } from "@/lib/sound-library";
+import { findBuiltInSound, soundUrlFor, type BuiltInSound, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 import {
   GENERIC_GUIDANCE_LINES,
   buildGroundPlaybackCues,
@@ -88,6 +88,8 @@ export interface PauseDefinition {
    * layers the frequency beneath it as an undertone.
    */
   builtInSoundId?: BuiltInSoundId;
+  /** How present the frequency is beneath the sound, when the Pause sets it (a Practice day). */
+  undertone?: UndertoneLevel;
   /**
    * A Pause for several feelings: its centres, played one after another,
    * sharing its length (shared/src/session-plan.ts). Missing on single

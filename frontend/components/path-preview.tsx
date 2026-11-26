@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { IconChevronRight } from "@/components/pause-icons";
 import type { Programme, ProgrammeDay } from "@/lib/programme-data";
+import { findBuiltInSound } from "@/lib/sound-library";
 
 // The two pieces of a path's preview (practice-path-screen.tsx, before you
 // start): the day you've tapped on the trail, and what one day is made of.
@@ -81,5 +84,89 @@ export function DayAnatomy({ path, tone }: { path: Programme; tone: string }) {
         ))}
       </ol>
     </section>
+  );
+}
+
+const TONE_LABEL: Record<ProgrammeDay["preset"], string> = { soft: "Soft", balanced: "Balanced", clear: "Clear" };
+const TONE_DEPTH: Record<ProgrammeDay["preset"], number> = { soft: 0.38, balanced: 0.62, clear: 0.92 };
+
+// How the path is built, at a glance: the two weeks as a row of days
+// (taller is longer, deeper is a clearer tone), how the sound grows, what
+// you'll hear, and the centre it's inspired by. All read from the path.
+export function PathBuild({
+  path,
+  tone,
+  centre,
+  titled = true,
+}: {
+  path: Programme;
+  tone: string;
+  centre?: { id: string; name: string; color: string; theme: string };
+  /** False under a disclosure that already names it. */
+  titled?: boolean;
+}) {
+  const color = `var(--ds-outcome-${tone})`;
+  const longest = Math.max(...path.days.map((day) => day.minutes));
+  const minutes = [...new Set(path.days.map((day) => day.minutes))];
+  const tones = [...new Set(path.days.map((day) => day.preset))];
+  const sounds = [...new Set(path.days.map((day) => day.sound))].map((id) => findBuiltInSound(id)).filter((sound) => sound !== undefined);
+  const arrow = (items: string[]) => items.join(" → ");
+
+  return (
+    <section aria-label="How this path is built" className="ds-card px-5 py-5">
+      {titled ? <h2 className="ds-h3">How this path is built</h2> : null}
+
+      <figure className={titled ? "mt-4" : ""} aria-label={`${path.days.length} days. ${arrow(minutes.map((value) => `${value} min`))}, ${arrow(tones.map((value) => TONE_LABEL[value]))} tone.`}>
+        <div className="flex h-16 items-end gap-1" aria-hidden="true">
+          {path.days.map((day) => (
+            <span
+              key={day.day}
+              className="flex-1 rounded-t-[0.3rem]"
+              style={{
+                height: `${(day.minutes / longest) * 100}%`,
+                background: `color-mix(in srgb, ${color} ${Math.round(TONE_DEPTH[day.preset] * 100)}%, transparent)`,
+                marginRight: day.day === 7 ? "0.35rem" : undefined,
+              }}
+            />
+          ))}
+        </div>
+        <figcaption className="ds-caption mt-1.5 grid grid-cols-2">
+          <span>Week 1 · Notice</span>
+          <span className="pl-2">Week 2 · Practise</span>
+        </figcaption>
+      </figure>
+
+      <dl className="mt-4 space-y-3">
+        <BuildRow label="The sound grows with you">
+          {minutes.length > 1 ? `${arrow(minutes.map((value) => `${value} min`))} · ` : `${minutes[0]} min each day · `}
+          {arrow(tones.map((value) => TONE_LABEL[value]))} tone
+        </BuildRow>
+        <BuildRow label="What you’ll hear">
+          {sounds.map((sound) => (sound.headphoneOnly ? `${sound.label}, with headphones` : sound.label)).join(" · ")}
+        </BuildRow>
+        {centre ? (
+          <BuildRow label="Why this centre">
+            <Link href={`/chakras/${centre.id}`} className="ds-tap inline-flex items-center gap-1.5 rounded-full">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: centre.color }} aria-hidden="true" />
+              <span>
+                {centre.name} · {path.frequencyHz} Hz. {centre.theme}
+              </span>
+              <IconChevronRight className="h-3.5 w-3.5 shrink-0" />
+            </Link>
+          </BuildRow>
+        ) : null}
+      </dl>
+    </section>
+  );
+}
+
+function BuildRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-[0.95rem] font-semibold">{label}</dt>
+      <dd className="text-[0.88rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+        {children}
+      </dd>
+    </div>
   );
 }

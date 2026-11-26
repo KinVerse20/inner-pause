@@ -6,12 +6,13 @@ import { useEffect, useRef, useState } from "react";
 
 import { IconCheck, IconChevronRight, IconPencil } from "@/components/pause-icons";
 import { PathScene } from "@/components/path-scene";
-import { DayAnatomy, DayPeek } from "@/components/path-preview";
+import { DayAnatomy, DayPeek, PathBuild } from "@/components/path-preview";
 import { PathTrail } from "@/components/path-trail";
 import { chakraIdFromName, findChakra } from "@/lib/chakra-guide";
 import { PauseShell } from "@/components/pause-shell";
 import { haptic } from "@/lib/haptics";
 import { composeRightNowPause } from "@/lib/pause-engine";
+import { findBuiltInSound, soundUrlFor } from "@/lib/sound-library";
 import { nextDayOpensTomorrow, resumeAt } from "@/lib/listening";
 import { createPauseRecord, getPauseRecord, subscribePauseRecords } from "@/lib/pause-storage";
 import { PATH_LENGTH_DAYS, PATH_PRESENTATION } from "@/lib/practice-path-presentation";
@@ -129,6 +130,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   if (!path) return null;
   const { tone, Icon, category } = PATH_PRESENTATION[path.id];
   const chakraId = chakraIdFromName(path.chakra);
+  const centre = chakraId ? findChakra(chakraId) : undefined;
   const enrollment = latestEnrollment(state, path.id);
   const dayNumber = enrollment ? currentProgrammeDay(enrollment) : 1;
   const day = path.days[dayNumber - 1];
@@ -256,8 +258,22 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
       return;
     }
     const base = composeRightNowPause(category);
+    // The day's own sound and tone, as the path was written: it grows
+    // from soft to clear over the two weeks.
+    const daySound = findBuiltInSound(day.sound);
     const record = createPauseRecord({
       ...base,
+      ...(daySound
+        ? {
+            builtInSoundId: daySound.id,
+            ambientSoundUrl: soundUrlFor(daySound, null) ?? undefined,
+            ambientTunedUrl: undefined,
+            ambientPlainUrl: undefined,
+            ambientGainDb: undefined,
+            ambientVolume: undefined,
+          }
+        : {}),
+      undertone: day.preset,
       pauseType: "practice",
       title: `${path.title} · Day ${dayNumber}`,
       intentLabel: day.intention,
@@ -366,6 +382,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
             </section>
 
             <DayAnatomy path={path} tone={tone} />
+            <PathBuild path={path} tone={tone} centre={centre} />
             <section className="ds-card px-5 py-4">
               <label htmlFor="reminder-time" className="ds-h3 block">
                 A daily time for your Practice
@@ -499,6 +516,16 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
               Daily reminder ·{" "}
               {enrollment.reminderEnabled ? `on at ${enrollment.reminderTime}` : `${enrollment.reminderTime}, reminders are off`}
             </p>
+            {/* Behind a tap once you've started: the path at a glance. */}
+            <details className="path-build group">
+              <summary className="ds-tap flex min-h-11 cursor-pointer list-none items-center justify-between rounded-[var(--ds-radius-md)] px-1 text-[0.95rem] font-semibold [&::-webkit-details-marker]:hidden">
+                How this path is built
+                <IconChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" style={{ color: "var(--ds-text-muted)" }} />
+              </summary>
+              <div className="mt-2">
+                <PathBuild path={path} tone={tone} centre={centre} titled={false} />
+              </div>
+            </details>
           </>
         ) : null}
 
