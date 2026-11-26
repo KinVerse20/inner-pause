@@ -1,5 +1,7 @@
 # Build plan: everything open, 2026-11-26
 
+**Status 2026-11-26: items 1 to 12 built** (one commit each on `feature/our-ui-unification`; see HANDOFF "Built 2026-11-26" for the calls made). Items 13 to 17 still need the founder.
+
 For whoever builds next (Kinverse and his Claude Code). Branch: `feature/our-ui-unification`.
 Every item below was diagnosed in the running app. Each says what's **decided** (build as written),
 **proposed** (build as written unless the founder says otherwise), or **needs the founder** (ask first).

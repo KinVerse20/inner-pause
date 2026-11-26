@@ -1,6 +1,19 @@
 # Session handoff — Inner Pause UI unification
 
-Last updated: 2026-11-25. Read this first in a new session, then continue from "Next up".
+Last updated: 2026-11-26. Read this first in a new session, then continue from "Next up".
+
+## Built 2026-11-26: the whole build plan (docs/BUILD_PLAN.md items 1 to 12)
+
+All twelve buildable items are in, one commit each, checked at 390 × 844 in light and dark, sound measured at the speakers. Items 13 to 17 still need the founder. Calls made while building, for the founder to see:
+
+- **Practice centres:** Uncertainty plays Root 396 Hz and Emotional Regulation Heart 639 Hz (their sound categories were swapped; the labels were right).
+- **Several frequencies (item 8):** each feeling's centre comes from Sahil's emotion catalog (`shared/src/session-plan.ts` `FEELING_CENTRES`), not `EMOTION_WEIGHTS`, which put most feelings on Heart. So one feeling alone can now play a different centre than before (Anxiety alone: Reset, Root; it was Calm, Heart).
+- **Item 11:** the founder picked Not yet keeps the task, the reminder quotes the task, kind catch up and the day 14 keepsake; not the rating trend.
+- **Item 9:** a Practice day now plays the sound and tone its day gives (they were in the data but unused).
+- **Item 7:** Hindi is done on the device (`frontend/lib/hinglish.ts`), no server fallback. Not yet tried on a real phone's Hindi recognizer.
+- **Contrast (item 12):** muted text is `#57667B` (was `#64748B`, 4.45:1) and the dark accent is `#A594F9` with navy text on buttons (was `#7C6AED`, 3.9:1). BRAND_IDENTITY §4.2 updated.
+
+Where the new pieces live: the running Pause `frontend/components/pause-session.tsx` (root provider) and `mini-player.tsx`; time listened and Practice day rules `frontend/lib/listening.ts`; tasks `frontend/lib/practice-tasks.ts`; Moments let it out `components/let-it-out.tsx`; the UI test `frontend/scripts/mobile-usability-test.mjs` (`npm run test:ui`, see README).
 
 ## Where things are
 
@@ -33,7 +46,7 @@ Last updated: 2026-11-25. Read this first in a new session, then continue from "
 
 - Should the Inner Pause Pass gate Practice? Today all 5 paths are free; Pass copy only promises deeper Journey insight. (Option: first path or first 3 days free.)
 
-## Founder requests 2026-11-26 (diagnosed, NOT built: proposals await sign-off)
+## Founder requests 2026-11-26 (all built 2026-11-26, see above; kept for the reasoning)
 
 **Kinverse builds these.** Full ordered plan with done-when checks for everything open: [docs/BUILD_PLAN.md](BUILD_PLAN.md).
 
