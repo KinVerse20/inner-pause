@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { toHinglish } from "@/lib/hinglish";
+import { speechLanguage as preferredSpeechLanguage, updatePreferences, type SpeechLanguage } from "@/lib/preferences-store";
+
 // Voice → transcription, behind a swappable seam
 // (docs/TECHNICAL_ARCHITECTURE.md §11): the remote transcription provider
 // is intentionally not locked yet, so this uses the browser's own
@@ -44,6 +47,15 @@ export function useVoiceTranscription() {
   const [error, setError] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const baseRef = useRef("");
+  // English or Hindi (shown in English letters), remembered.
+  const [language, setLanguageState] = useState<SpeechLanguage>("en");
+  const languageRef = useRef<SpeechLanguage>("en");
+  useEffect(() => {
+    const preferred = preferredSpeechLanguage();
+    languageRef.current = preferred;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLanguageState(preferred);
+  }, []);
 
   const SpeechRecognitionCtor = useMemo<SpeechRecognitionConstructor | null>(() => {
     if (typeof window === "undefined") return null;
@@ -75,14 +87,17 @@ export function useVoiceTranscription() {
     const recognition = new SpeechRecognitionCtor();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = "en-US";
+    // Indian English; Hindi is heard in Devanagari and shown in English letters.
+    const hindi = languageRef.current === "hi";
+    recognition.lang = hindi ? "hi-IN" : "en-IN";
     let finalTranscript = "";
     baseRef.current = transcript.trim();
 
     recognition.onresult = (event) => {
       let interim = "";
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const chunk = event.results[index][0]?.transcript ?? "";
+        const heard = event.results[index][0]?.transcript ?? "";
+        const chunk = hindi ? toHinglish(heard) : heard;
         if (event.results[index].isFinal) finalTranscript += chunk;
         else interim += chunk;
       }
@@ -138,5 +153,19 @@ export function useVoiceTranscription() {
     setError("");
   };
 
-  return { supported, status, transcript, error, setTranscript, start, stop, cancel };
+  // Switching language while listening carries on in the new one, keeping
+  // what was already said.
+  const setLanguage = (next: SpeechLanguage) => {
+    if (next === languageRef.current) return;
+    languageRef.current = next;
+    setLanguageState(next);
+    updatePreferences({ speechLanguage: next });
+    if (recognitionRef.current || status === "listening") {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      window.setTimeout(start, 0);
+    }
+  };
+
+  return { supported, status, transcript, error, setTranscript, start, stop, cancel, language, setLanguage };
 }

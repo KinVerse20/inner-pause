@@ -6,6 +6,7 @@ import { IconClose, IconMic, IconPencil } from "@/components/pause-icons";
 import { dismissReturnToMe, getActiveReturnToMe, markReturnToMeSurfaced, respondToReturnToMe } from "@/lib/return-to-me";
 import { createTellEntry, linkTellEntryToMoment, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
 import { useVoiceTranscription } from "@/lib/use-voice-transcription";
+import { SpeechLanguageToggle } from "@/components/speech-language-toggle";
 import type { MomentRecord } from "@/lib/moment-storage";
 
 // Return to Me (docs/PRODUCT_FLOW.md §15): a contextual in-app surface, not
@@ -103,6 +104,7 @@ export function ReturnToMeBanner() {
         </div>
       ) : (
         <div className="space-y-2.5">
+          {composeMode === "speak" ? <SpeechLanguageToggle language={voice.language} onChange={voice.setLanguage} /> : null}
           <textarea
             value={currentText}
             onChange={(event) => (composeMode === "speak" ? voice.setTranscript(event.target.value) : setWriteText(event.target.value))}

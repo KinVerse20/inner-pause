@@ -7,35 +7,43 @@ const MOMENT_MODE_BOOST: Record<BigMomentMode, PauseCategoryId> = {
   after: "release",
 };
 
+// Everyday Hinglish too, spelled the way Speak writes Hindi in English
+// letters (frontend/lib/hinglish.ts) and the way people type it.
 const PHRASE_WEIGHTS: Record<PauseCategoryId, Array<[string, number]>> = {
   sleep: [
     ["can't sleep", 3], ["cant sleep", 3], ["can't fall asleep", 3], ["insomnia", 3],
     ["trouble sleeping", 3], ["wide awake", 2], ["bedtime", 2], ["restless at night", 2],
     ["sleep", 1], ["tired", 1], ["exhausted", 1], ["awake at night", 2],
+    ["neend nahi", 3], ["neend nahin", 3], ["so nahi pa", 3], ["so nahi paa", 3], ["raat bhar", 2], ["neend", 1], ["thak gaya", 1], ["thak gayi", 1], ["thaka hua", 1],
   ],
   reset: [
     ["need a reset", 3], ["too much going on", 2], ["everything at once", 2],
     ["burnt out", 2], ["burned out", 2], ["chaotic", 2], ["need a break", 2],
     ["start over", 2], ["reset", 1], ["overwhelmed", 1],
+    ["sab kuch ek saath", 3], ["sab ek saath", 2], ["bahut zyada ho gaya", 2], ["bahut kaam", 2], ["dimag kharab", 2],
   ],
   focus: [
     ["can't focus", 3], ["cant focus", 3], ["can't concentrate", 3], ["cant concentrate", 3],
     ["can't think straight", 2], ["distracted", 2], ["procrastinating", 2], ["deadline", 2],
     ["so much to do", 1], ["focus", 1], ["concentrate", 1],
+    ["dhyan nahi", 3], ["dhyaan nahi", 3], ["focus nahi", 3], ["man nahi lag", 3], ["mann nahi lag", 3], ["padhai", 2], ["padhne mein", 2],
   ],
   confidence: [
     ["presentation", 3], ["interview", 3], ["public speaking", 3], ["self-doubt", 2],
     ["not good enough", 2], ["mess up", 2], ["big decision", 2], ["nervous about", 2],
     ["confidence", 1], ["nervous", 1],
+    ["himmat nahi", 3], ["bharosa nahi", 3], ["nahi kar paunga", 3], ["nahi kar paungi", 3], ["kar paunga", 2], ["kar paungi", 2], ["bol nahi pa", 2],
   ],
   calm: [
     ["panicking", 3], ["panic", 3], ["racing thoughts", 3], ["can't calm down", 3],
     ["cant calm down", 3], ["can't relax", 2], ["on edge", 2], ["worried", 1],
     ["stressed", 1], ["anxious", 1], ["restless", 1],
+    ["ghabrahat", 3], ["ghabraahat", 3], ["tension ho rahi", 3], ["tension", 2], ["dar lag", 3], ["darr lag", 3], ["bechain", 2], ["pareshan", 2], ["chinta", 2], ["akela", 2], ["akeli", 2],
   ],
   release: [
     ["let go", 3], ["holding onto", 3], ["resentment", 2], ["grief", 2],
     ["crying", 2], ["mad at", 2], ["frustrated", 1], ["angry", 1], ["hurt", 1], ["sad", 1], ["upset", 1],
+    ["rona aa", 3], ["dil toot", 3], ["gussa", 2], ["dukhi", 2], ["bura lag", 2], ["naraz", 2], ["naaraz", 2], ["udaas", 2], ["udas", 2], ["chhod", 1],
   ],
 };
 

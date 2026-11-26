@@ -8,6 +8,9 @@ import { DEFAULT_BUILT_IN_SOUND, type BuiltInSoundId, type UndertoneLevel } from
 // calls for.
 export type ThemePreference = "system" | "light" | "dark";
 
+/** The language Speak listens for. Hindi is shown in English letters (lib/hinglish.ts). */
+export type SpeechLanguage = "en" | "hi";
+
 // Reuses the exact option vocabulary already shown to users in Practice's
 // "adaptation" check-in tier (lib/practice-content.ts) so the global
 // default and the in-flow question speak the same language.
@@ -39,6 +42,14 @@ export interface PreferencesState {
   undertone: UndertoneLevel;
   practicePreferredSupport: PracticeSupportPreference | null;
   offlineEnabled: boolean;
+  /** Missing until chosen: then it follows the device's language. */
+  speechLanguage?: SpeechLanguage;
+}
+
+/** The language Speak listens for: the one you chose, or Hindi if the device is set to it. */
+export function speechLanguage(preferences: PreferencesState = getPreferences()): SpeechLanguage {
+  if (preferences.speechLanguage) return preferences.speechLanguage;
+  return typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("hi") ? "hi" : "en";
 }
 
 export const DEFAULT_PREFERENCES: PreferencesState = {

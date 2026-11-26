@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { IconChevronRight, IconMic, IconPencil } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
@@ -14,6 +14,7 @@ import { haptic } from "@/lib/haptics";
 import { interpretTellInput, tellChips } from "@/lib/tell-interpreter";
 import { createTellEntry } from "@/lib/tell-storage";
 import { useVoiceTranscription } from "@/lib/use-voice-transcription";
+import { SpeechLanguageToggle } from "@/components/speech-language-toggle";
 
 type Mode = "write" | "speak";
 
@@ -50,11 +51,10 @@ export function TellComposeScreen() {
   // rather than requiring a second tap — start() call happens inside the
   // effect, but the resulting setState calls live inside the hook's own
   // async callbacks, not synchronously in this effect body.
-  const autoStartedRef = useRef(false);
+  // No "started already" guard: React's development remount stops the
+  // first recognition, so starting again is what keeps it listening.
   useEffect(() => {
-    if (initialMode !== "speak" || autoStartedRef.current) return;
-    autoStartedRef.current = true;
-    voice.start();
+    if (initialMode === "speak") voice.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMode]);
 
@@ -157,6 +157,7 @@ export function TellComposeScreen() {
               <p className="text-sm font-medium">
                 {voice.status === "listening" ? "Listening…" : "Tap to speak"}
               </p>
+              <SpeechLanguageToggle language={voice.language} onChange={voice.setLanguage} />
               {voice.status === "listening" ? (
                 <button
                   type="button"

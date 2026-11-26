@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 
 import { IconMic, IconPencil } from "@/components/pause-icons";
 import { haptic } from "@/lib/haptics";
+import { SpeechLanguageToggle } from "@/components/speech-language-toggle";
 import { useVoiceTranscription } from "@/lib/use-voice-transcription";
 
 // Letting it out, inside a Moment's Pause (pause-player-screen.tsx). The
@@ -127,6 +128,7 @@ export function LetItOutPanel({
               {listening ? <span className="ds-breathe absolute -inset-3 rounded-full" style={{ background: "rgba(196,181,253,0.18)" }} aria-hidden="true" /> : null}
               <IconMic className="relative h-7 w-7" />
             </button>
+            <SpeechLanguageToggle language={voice.language} onChange={voice.setLanguage} dark />
             <p className="ds-caption" style={{ color: "var(--ds-on-navy-muted)" }}>
               {listening ? "Listening. Take your time." : voice.status === "unsupported" ? "Speaking isn't available here. You can write instead." : "Tap to speak"}
             </p>
