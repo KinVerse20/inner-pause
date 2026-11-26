@@ -145,7 +145,7 @@ export const programmes: Programme[] = [
   {
     id: 'sleep', title: 'Rest', subtitle: 'Help your mind and body let go into sleep',
     description: 'Build a repeatable evening rhythm, reduce mental stimulation and relate more gently to wakeful nights.',
-    icon: '☾', color: '#6656c9', frequencyHz: 852, chakra: 'Third eye',
+    icon: '☾', color: '#6656c9', frequencyHz: 963, chakra: 'Crown',
     days: days('How did sleep difficulty affect you last night?', { emotionIds: ['overthinking'], sound: 'rain', preset: 'soft', minutes: 10 }, [
       { title: 'Observe the night', intention: 'Understand your sleep pattern without judging it.', exercise: 'Note bedtime, wake time and the main thing that kept you awake.', action: 'Choose one consistent wake-up time for tomorrow.', reflection: 'What pattern did you notice?' },
       { title: 'Create a closing cue', intention: 'Give the day a clear ending.', exercise: 'Choose a simple cue: dim lights, wash your face or change into sleep clothes.', action: 'Use the same cue thirty minutes before bed.', reflection: 'Did your body notice the transition?' },
