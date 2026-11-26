@@ -59,7 +59,13 @@ async function visitor(browser, { theme = "light", viewport = PHONE, reducedMoti
   );
   const page = await context.newPage();
   page.errors = [];
-  page.on("pageerror", (error) => page.errors.push(error.message.split("\n")[0]));
+  page.on("pageerror", (error) => {
+    const message = error.message.split("\n")[0];
+    // React's development-only performance tracks throw this on a page that
+    // calls notFound(); production is clean. Not the app's error.
+    if (/Failed to execute 'measure' on 'Performance'.*negative time stamp/.test(message)) return;
+    page.errors.push(message);
+  });
   await page.goto(`${BASE}/entry`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin", exact: true }).click();
   await page.waitForTimeout(500);
