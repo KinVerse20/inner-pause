@@ -7,8 +7,10 @@ import { countsAsDay, localDateKey } from "@/lib/listening";
 import { getPauseRecord } from "@/lib/pause-storage";
 import type { ProgrammeId } from "@/lib/programme-data";
 
-/** How the task from the day before went. */
-export type TaskAnswer = 'yes' | 'partly' | 'not-yet';
+import type { TaskAnswer } from "@/lib/practice-tasks";
+
+/** How the task from the day before went (lib/practice-tasks.ts). */
+export type { TaskAnswer };
 
 export interface ProgrammeCheckIn {
   day: number;

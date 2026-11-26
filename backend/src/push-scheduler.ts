@@ -27,7 +27,7 @@ export async function sendDueReminders(now = new Date()) {
     try {
       await sendNotification(
         { endpoint: subscription.endpoint, keys: subscription.keys },
-        JSON.stringify(reminderMessage(subscription.pathId, localDate)),
+        JSON.stringify(reminderMessage(subscription.pathId, localDate, subscription.task)),
         { TTL: 60 * 60, urgency: "normal" },
       );
       sent += 1;

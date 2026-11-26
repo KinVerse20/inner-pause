@@ -1,5 +1,6 @@
 import { listMomentRecords, type MomentRecord, type ReturnToMeState } from "@/lib/moment-storage";
 import { getPauseRecord, type PauseFeedback } from "@/lib/pause-storage";
+import { tasksThatWorked } from "@/lib/practice-tasks";
 import { findProgramme } from "@/lib/programme-data";
 import { readProgrammeState, type ProgrammeCheckIn, type ProgrammeEnrollment } from "@/lib/programme-storage";
 import { listTellEntries, type TellEntry } from "@/lib/tell-storage";
@@ -25,6 +26,8 @@ export interface Highlight {
   createdAt: string;
   linkedPauseRecordId?: string;
   expression?: string;
+  /** A finished path's keepsake: the tasks that worked for you. */
+  worked?: string[];
   feedback?: PauseFeedback;
   returnToMe?: ReturnToMeState;
 }
@@ -78,9 +81,30 @@ function highlightFromCheckIn(enrollment: ProgrammeEnrollment, checkIn: Programm
   };
 }
 
+// A finished path's keepsake: the tasks you said you did, kept in Journey.
+function highlightFromFinishedPath(enrollment: ProgrammeEnrollment): Highlight | null {
+  if (enrollment.status !== "completed") return null;
+  const path = findProgramme(enrollment.issueId);
+  if (!path) return null;
+  const worked = tasksThatWorked(path.days.map((day) => day.action), enrollment.checkIns);
+  if (worked.length === 0) return null;
+  const sourceId = `${enrollment.id}~keepsake`;
+  return {
+    id: `practice:${sourceId}`,
+    sourceType: "practice",
+    sourceId,
+    title: `${path.title} · Your 14 days, what worked`,
+    timingLabel: "Practice",
+    createdAt: enrollment.completions.map((item) => item.completedAt).sort().at(-1) ?? enrollment.startedAt,
+    worked,
+  };
+}
+
 function practiceHighlights(): Highlight[] {
   return readProgrammeState().enrollments.flatMap((enrollment) =>
-    enrollment.checkIns.map((checkIn) => highlightFromCheckIn(enrollment, checkIn)).filter((item): item is Highlight => item !== null),
+    [...enrollment.checkIns.map((checkIn) => highlightFromCheckIn(enrollment, checkIn)), highlightFromFinishedPath(enrollment)].filter(
+      (item): item is Highlight => item !== null,
+    ),
   );
 }
 

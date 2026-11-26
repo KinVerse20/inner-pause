@@ -601,6 +601,21 @@ export function MomentOpened({
         </div>
       )}
 
+      {highlight.worked?.length ? (
+        <div className="journal-paper relative rounded-[var(--ds-radius-lg)] px-5 pb-4 pt-6">
+          <span className="journal-tape" aria-hidden="true" />
+          <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>What worked for you</p>
+          <ul className="mt-2 space-y-2">
+            {highlight.worked.map((task) => (
+              <li key={task} className="flex gap-2.5 text-[1rem] leading-7">
+                <IconCheck className="mt-1.5 h-4 w-4 shrink-0" style={{ color: "var(--ds-success)" }} />
+                {task}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {highlight.expression ? (
         <div className="journal-paper relative rounded-[var(--ds-radius-lg)] px-5 pb-4 pt-6">
           <span className="journal-tape" aria-hidden="true" />

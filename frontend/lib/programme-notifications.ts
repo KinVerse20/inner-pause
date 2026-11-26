@@ -32,6 +32,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 interface ReminderRequest {
   pathId: string;
   reminderTime: string;
+  /** The task your last day gave you: the reminder asks about it. */
+  task?: string;
 }
 
 function urlBase64ToUint8Array(value: string) {
@@ -72,6 +74,7 @@ async function sendSubscription(subscription: PushSubscription, request: Reminde
       pathId: request.pathId,
       reminderTime: request.reminderTime,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ...(request.task ? { task: request.task } : {}),
     }),
   });
   if (response.status === 401) return 'signed-out';
@@ -122,6 +125,21 @@ export async function connectPendingReminder() {
     if (subscription && (await sendSubscription(subscription, request)) === 'ok') window.localStorage.removeItem(PENDING_KEY);
   } catch {
     // Tried again at the next sign-in.
+  }
+}
+
+/**
+ * A day done: the reminder now asks about the task it gave. Only updates a
+ * reminder this device already has; never asks for permission.
+ */
+export async function updateReminderTask(request: ReminderRequest) {
+  if (!notificationSupport() || Notification.permission !== 'granted') return;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+    const subscription = await registration?.pushManager.getSubscription();
+    if (subscription) await sendSubscription(subscription, request);
+  } catch {
+    // The reminder still comes, with its usual words.
   }
 }
 

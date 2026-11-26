@@ -4,7 +4,7 @@ import { getVerifiedSession } from "../auth/session";
 import { invalidBody, readJsonObject } from "../http";
 import { removeSubscription, saveSubscription } from "../push-store";
 import { vapidConfig } from "../push-scheduler";
-import { isPracticePathId, isValidTimeZone, parseReminderTime } from "../reminders";
+import { isPracticePathId, isValidTimeZone, MAX_TASK_LENGTH, parseReminderTime } from "../reminders";
 
 // Practice reminders (ported from Kinverse's /practices/push-subscriptions,
 // on our cookie sessions). The app subscribes the device when you start a
@@ -34,6 +34,8 @@ export function parseSubscriptionBody(body: Record<string, unknown>) {
   if (!isPracticePathId(body.pathId)) return { error: "Unknown Practice path." } as const;
   if (parseReminderTime(body.reminderTime) === null) return { error: "Reminder time must look like 20:00." } as const;
   if (!isValidTimeZone(body.timezone)) return { error: "Unknown time zone." } as const;
+  // Optional: the task the reminder asks about. Missing clears it.
+  const task = typeof body.task === "string" ? body.task.trim().slice(0, MAX_TASK_LENGTH) : "";
   return {
     value: {
       endpoint,
@@ -41,6 +43,7 @@ export function parseSubscriptionBody(body: Record<string, unknown>) {
       pathId: body.pathId,
       reminderTime: body.reminderTime as string,
       timezone: body.timezone,
+      task: task || undefined,
     },
   } as const;
 }

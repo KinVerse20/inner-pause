@@ -16,7 +16,8 @@ import { nextDayOpensTomorrow, resumeAt } from "@/lib/listening";
 import { createPauseRecord, getPauseRecord, subscribePauseRecords } from "@/lib/pause-storage";
 import { PATH_LENGTH_DAYS, PATH_PRESENTATION } from "@/lib/practice-path-presentation";
 import { findProgramme, type Programme, type ProgrammeId } from "@/lib/programme-data";
-import { disableProgrammeReminder, enableProgrammeReminder, notificationSupport } from "@/lib/programme-notifications";
+import { daysAway, taskFor, tasksThatWorked } from "@/lib/practice-tasks";
+import { disableProgrammeReminder, enableProgrammeReminder, notificationSupport, updateReminderTask } from "@/lib/programme-notifications";
 import {
   currentProgrammeDay,
   longestProgrammeStreak,
@@ -98,8 +99,14 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
       if (enrollment?.completions.some((item) => item.celebrated === false)) {
         next = markCelebrated(next, enrollment.id);
         writeProgrammeState(next);
-        // The last day: nothing left to remind you of.
+        // The last day: nothing left to remind you of. Otherwise the
+        // reminder now asks about the task this day gave you.
         if (enrollment.status === "completed") void disableProgrammeReminder();
+        else if (enrollment.reminderEnabled) {
+          const done = Math.max(...enrollment.completions.map((item) => item.day));
+          const actions = path.days.map((item) => item.action);
+          void updateReminderTask({ pathId: path.id, reminderTime: enrollment.reminderTime, task: taskFor(actions, enrollment.checkIns, done).task });
+        }
         justCompletedRef.current = true;
         haptic("success");
         setStage("complete");
@@ -126,11 +133,22 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   const dayNumber = enrollment ? currentProgrammeDay(enrollment) : 1;
   const day = path.days[dayNumber - 1];
   const savedCheckIn = enrollment?.checkIns.find((item) => item.day === dayNumber);
+  // The tasks the days give you (lib/practice-tasks.ts): a "Not yet" keeps one a day longer.
+  const actions = path.days.map((item) => item.action);
+  const checkIns = enrollment?.checkIns ?? [];
   // The task the last day gave you, quoted back in today's check in (none on Day 1).
-  const lastTask = dayNumber > 1 ? path.days[dayNumber - 2]?.action : undefined;
+  const lastTask = dayNumber > 1 ? taskFor(actions, checkIns, dayNumber - 1).task : undefined;
+  // The day just completed, and the task it gave.
+  const lastDone = enrollment?.completions.length ? Math.max(...enrollment.completions.map((item) => item.day)) : 0;
+  const given = lastDone ? taskFor(actions, checkIns, lastDone) : null;
+  // Back after a day or more away: a kind word, never a broken streak.
+  const lastActivity = enrollment ? (enrollment.completions.map((item) => item.completedAt).sort().at(-1) ?? enrollment.startedAt) : null;
+  const away = lastActivity && enrollment?.status === "active" ? daysAway(lastActivity) : 0;
+  // Day 14: the tasks you said you did, kept.
+  const keepsake = enrollment ? tasksThatWorked(actions, checkIns) : [];
   // One day a day: done for today, the next opens tomorrow.
   const opensTomorrow = enrollment ? enrollment.status === "active" && nextDayOpensTomorrow(enrollment.completions, PATH_LENGTH_DAYS) : false;
-  const doneToday = opensTomorrow ? path.days[dayNumber - 2] : undefined;
+
   // Stopped part way: pick up where you left off.
   const pendingRecord = enrollment?.pendingPause?.day === dayNumber ? getPauseRecord(enrollment.pendingPause.pauseRecordId) : undefined;
   const pickUpAt = pendingRecord ? resumeAt(pendingRecord) : 0;
@@ -381,9 +399,10 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                 Small actions, repeated gently.
               </p>
             </div>
-            <dl className="ds-card grid grid-cols-3 divide-x py-4 text-center">
+            {/* Back after time away: no rhythm count to make it feel broken. */}
+            <dl className={`ds-card grid ${away > 0 ? "grid-cols-2" : "grid-cols-3"} divide-x py-4 text-center`}>
               <Stat value={enrollment.completions.length} label={`of ${PATH_LENGTH_DAYS} days`} />
-              <Stat value={programmeStreak(enrollment)} label="day rhythm" />
+              {away > 0 ? null : <Stat value={programmeStreak(enrollment)} label="day rhythm" />}
               <Stat value={longestProgrammeStreak(enrollment)} label="longest" />
             </dl>
             {enrollment.status === "completed" ? (
@@ -406,9 +425,9 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                 <p className="mt-1 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
                   Carry today&rsquo;s task with you.
                 </p>
-                {doneToday ? (
+                {given ? (
                   <p className="mt-3 rounded-[var(--ds-radius-md)] px-4 py-3 text-[0.95rem] leading-6" style={{ background: "var(--ds-surface)" }}>
-                    {doneToday.action}
+                    {given.task}
                   </p>
                 ) : null}
               </section>
@@ -423,6 +442,22 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                 </p>
                 <button type="button" onClick={pickUp} disabled={busy} className="ds-filled mt-4 w-full">
                   Pick up where you left off
+                </button>
+              </section>
+            ) : day && away > 0 ? (
+              <section className="rounded-[var(--ds-radius-lg)] px-5 py-5" style={{ background: tint }}>
+                <p className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
+                  Welcome back
+                </p>
+                <h2 className="ds-h2 mt-2">Pick up at Day {dayNumber}?</h2>
+                <p className="mt-1 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                  Your path waited for you. {day.title}.
+                </p>
+                <p className="ds-caption ds-num mt-3">
+                  {day.minutes} min · {path.frequencyHz} Hz
+                </p>
+                <button type="button" onClick={beginToday} className="ds-filled mt-4 w-full">
+                  Pick up at Day {dayNumber}
                 </button>
               </section>
             ) : day ? (
@@ -600,17 +635,44 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                 {enrollment.status === "completed" ? "You completed this path." : "You showed up."}
               </h1>
               <p className="mx-auto mt-2 max-w-[20rem] text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                A small practice still counts. Let the action carry into the rest of your day.
+                {enrollment.status === "completed"
+                  ? "Fourteen small days. What helped is yours to keep."
+                  : given?.carried
+                    ? "A small practice still counts, whatever happened with the task."
+                    : "A small practice still counts. Let the task carry into the rest of your day."}
               </p>
             </div>
-            <section className="ds-card w-full px-5 py-4 text-left">
-              <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-                Carry this with you
-              </p>
-              <p className="mt-1 text-[0.95rem] leading-6">
-                {path.days[Math.max(0, enrollment.completions.length - 1)]?.action}
-              </p>
-            </section>
+            {enrollment.status === "completed" ? (
+              keepsake.length > 0 ? (
+                <section className="journal-paper relative w-full rounded-[var(--ds-radius-lg)] px-5 pb-4 pt-6 text-left">
+                  <span className="journal-tape" aria-hidden="true" />
+                  <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+                    What worked for you
+                  </p>
+                  <ul className="mt-2 space-y-2">
+                    {keepsake.map((task) => (
+                      <li key={task} className="flex gap-2.5 text-[0.95rem] leading-6">
+                        <IconCheck className="mt-1 h-4 w-4 shrink-0" style={{ color: "var(--ds-success)" }} />
+                        {task}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="ds-caption mt-3">Saved to your Journey</p>
+                </section>
+              ) : null
+            ) : given ? (
+              <section className="ds-card w-full px-5 py-4 text-left">
+                <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+                  Carry this with you
+                </p>
+                {given.carried ? (
+                  <p className="mt-1 text-[0.85rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                    The same one, one more day. No rush.
+                  </p>
+                ) : null}
+                <p className="mt-1 text-[0.95rem] leading-6">{given.task}</p>
+              </section>
+            ) : null}
             <button type="button" onClick={() => go("dashboard")} className="ds-filled w-full">
               Back to your path
             </button>

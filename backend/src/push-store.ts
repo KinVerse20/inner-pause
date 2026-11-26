@@ -13,6 +13,8 @@ export interface PushSubscriptionDocument {
   pathId: string;
   reminderTime: string;
   timezone: string;
+  /** The task the last Practice day gave, quoted by the reminder. */
+  task?: string;
   active: boolean;
   /** The listener's local date of the last reminder sent: at most one a day. */
   lastSentLocalDate?: string;

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { CATCH_UP_MINUTES, dueLocalDate, localClock, reminderMessage } from "../src/reminders.ts";
+import { CATCH_UP_MINUTES, dueLocalDate, localClock, reminderMessage, taskQuestion } from "../src/reminders.ts";
 import { parseSubscriptionBody } from "../src/routes/practice.ts";
 import { createApp } from "../src/app.ts";
 
@@ -37,6 +37,20 @@ test("the reminder names the path and opens it", () => {
   assert.equal(message.url, "/practice/anxiety");
   assert.equal(message.tag, "practice-anxiety-2026-11-25");
   assert.ok(!/[—–]/.test(message.title + message.body), "our voice: no dashes");
+});
+
+test("a reminder asks about the task your last day gave you", () => {
+  const message = reminderMessage("confidence", "2026-11-25", "Pause and label one doubtful thought.");
+  assert.equal(message.body, "Did you get to: pause and label one doubtful thought?");
+  assert.equal(taskQuestion("Pause and label one doubtful thought: “This is doubt, not certainty.”"), "Did you get to: pause and label one doubtful thought: “This is doubt, not certainty”?");
+  assert.equal(taskQuestion("I will rest."), "Did you get to: I will rest?");
+  assert.ok(!/[—–]/.test(message.body), "our voice: no dashes");
+});
+
+test("a subscription can carry the task, trimmed and capped", () => {
+  assert.equal(parseSubscriptionBody({ ...valid, task: "  Delay asking it for thirty minutes.  " }).value.task, "Delay asking it for thirty minutes.");
+  assert.equal(parseSubscriptionBody({ ...valid, task: "x".repeat(500) }).value.task.length, 200);
+  assert.equal(parseSubscriptionBody(valid).value.task, undefined);
 });
 
 const valid = {

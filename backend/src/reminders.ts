@@ -70,12 +70,29 @@ export function dueLocalDate(schedule: ReminderSchedule, now: Date): string | nu
   return minutes >= target && minutes < target + CATCH_UP_MINUTES ? date : null;
 }
 
-/** What the notification says (service worker: frontend/public/sw.js). */
-export function reminderMessage(pathId: string, localDate: string) {
+/** The longest task a reminder carries (they're one sentence). */
+export const MAX_TASK_LENGTH = 200;
+
+/** "Did you get to: label one doubtful thought?", from a task as written. */
+export function taskQuestion(task: string) {
+  let text = task.trim().replace(/\.(["”’]?)$/, "$1");
+  if (/^[A-Z][a-z]/.test(text)) text = text[0].toLowerCase() + text.slice(1);
+  return `Did you get to: ${text}?`;
+}
+
+/**
+ * What the notification says (service worker: frontend/public/sw.js). With
+ * the task your last day gave you, it asks about that.
+ */
+export function reminderMessage(pathId: string, localDate: string, task?: string) {
   const name = PRACTICE_PATH_NAMES[pathId];
   return {
     title: "Your Practice is ready",
-    body: name ? `A few minutes for your ${name} path. Small steps count.` : "A few minutes for your Practice. Small steps count.",
+    body: task
+      ? taskQuestion(task)
+      : name
+        ? `A few minutes for your ${name} path. Small steps count.`
+        : "A few minutes for your Practice. Small steps count.",
     tag: `practice-${pathId}-${localDate}`,
     url: `/practice/${pathId}`,
   };
