@@ -243,7 +243,7 @@ export function MomentsScreen() {
                   onClick={() => startPause(mode.id, null)}
                   className="ds-outlined w-full"
                 >
-                  {startingKey === `${mode.id}:none` ? "Starting your Pause" : "Just start a Pause"}
+                  {startingKey === `${mode.id}:none` ? "Starting your Pause" : "Begin my Pause"}
                 </button>
               </div>
             );

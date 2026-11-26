@@ -265,7 +265,7 @@ function ConfidentPause({
       />
 
       <button type="button" disabled={starting} onClick={onStart} className="ds-filled w-full">
-        {starting ? "Starting your Pause" : "Start Pause"}
+        {starting ? "Starting your Pause" : "Begin my Pause"}
       </button>
     </section>
   );

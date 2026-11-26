@@ -1,4 +1,4 @@
-import { formatFrequencyLabel, isBuiltInCardId, planFeelingStops, PAUSE_CATEGORY_IDS, type PauseStop, type PublicCard } from "@inner-pause/shared";
+import { formatFrequencyLabel, isBuiltInCardId, planFeelingStops, PAUSE_CATEGORY_IDS, type BigMomentMode, type PauseStop, type PublicCard } from "@inner-pause/shared";
 
 import { chakraMap } from "@/data/chakras";
 import { getCard, getCardSound } from "@/lib/content-store";
@@ -88,6 +88,8 @@ export interface PauseDefinition {
    * layers the frequency beneath it as an undertone.
    */
   builtInSoundId?: BuiltInSoundId;
+  /** A Moment's Pause: which kind (letting it out is offered in Coming up and Just happened). */
+  momentMode?: BigMomentMode;
   /** How present the frequency is beneath the sound, when the Pause sets it (a Practice day). */
   undertone?: UndertoneLevel;
   /**

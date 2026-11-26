@@ -92,12 +92,14 @@ const MODE_DURATION_SECONDS: Record<BigMomentMode, number> = {
   after: 4 * 60,
 };
 
-// docs/PRODUCT_FLOW.md §13: "During skips Arrive by rule." Before/After use
-// Arrive like Right Now.
+// docs/PRODUCT_FLOW.md §13: "During skips Arrive by rule." Now every Moment
+// starts at once: the sound and clock run from the first tap.
+// Coming up and Just happened offer letting it out inside the running
+// Pause (components/let-it-out.tsx), never as a step before it.
 const MODE_REQUIRES_ARRIVE: Record<BigMomentMode, boolean> = {
-  before: true,
+  before: false,
   during: false,
-  after: true,
+  after: false,
 };
 
 const MODE_TITLE: Record<BigMomentMode, string> = {
@@ -128,14 +130,14 @@ export function composeBigMomentPause(
   return {
     ...base,
     pauseType: "big-moment",
+    momentMode: mode,
     outcomeId: undefined,
     title,
     durationSeconds: MODE_DURATION_SECONDS[mode],
     requiresArrive,
-    // During has no Arrive and no transition copy at all — an empty array
-    // makes the player's transition phase advance immediately rather than
-    // waiting out the Ground Pause's brief "Get comfortable" window, since
-    // §13 calls for near-zero friction, not just "no I'm ready."
+    // No Arrive and no transition copy: an empty array makes the player's
+    // transition advance immediately rather than waiting out the Ground
+    // Pause's brief "Get comfortable" (§13: near-zero friction).
     arrivalGuidance: requiresArrive ? base.arrivalGuidance : [],
     // Mode-toned playback content (docs/PRODUCT_FLOW.md §7), not the
     // underlying Right Now category's cues — Before/During/After each have

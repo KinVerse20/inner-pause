@@ -79,8 +79,6 @@ export interface PauseSession {
   backTo: string;
   /** Load a Pause record into the session (no-op if it's already the one), its clock at `resumeAt`. */
   load: (id: string, options?: { resumeAt?: number }) => void;
-  /** The sound starts before the Pause does (letting it out first). */
-  playAhead: () => void;
   begin: () => void;
   togglePlayback: () => void;
   restart: () => void;
@@ -269,15 +267,6 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [phase, record, finished]);
 
-  const playAhead = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || !soundUrl || !audio.paused) return;
-    audio.src = soundUrl;
-    audio.loop = true;
-    tunedSound.resume();
-    tunedSound.fadeIn(SOUND_FADE_IN_SECONDS);
-    audio.play().catch(() => undefined);
-  }, [soundUrl, tunedSound]);
 
   // Start playback on entering the playing phase.
   useEffect(() => {
@@ -634,7 +623,6 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     devTuningOff,
     backTo,
     load,
-    playAhead,
     begin,
     togglePlayback,
     restart,

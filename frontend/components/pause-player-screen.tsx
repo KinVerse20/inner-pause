@@ -7,7 +7,7 @@ import { stopAt } from "@inner-pause/shared";
 
 import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
-import { LetItOut } from "@/components/let-it-out";
+import { LetItOutOffer, LetItOutPanel, type LetOutMode } from "@/components/let-it-out";
 import { IconCheck, IconChevronDown, IconClose, IconPauseGlyph, IconPencil, IconPlayGlyph, IconRestart, IconSliders, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
 import { CENTRE_NAME, formatTime, plainTitle, usePauseSession } from "@/components/pause-session";
 import { chakraMap } from "@/data/chakras";
@@ -15,7 +15,8 @@ import { SoundSheet } from "@/components/sound-sheet";
 import { WhyThisPausePanel } from "@/components/why-this-pause-panel";
 import { haptic } from "@/lib/haptics";
 import { createTellEntry, linkTellEntryToMoment, linkTellEntryToPause, NOT_ROUTED_INTERPRETATION } from "@/lib/tell-storage";
-import { listMomentRecords, updateMomentRecord, type MomentRecord } from "@/lib/moment-storage";
+import { createMomentRecord, listMomentRecords, updateMomentRecord, type MomentRecord } from "@/lib/moment-storage";
+import { computeInitialReturnToMeState } from "@/lib/return-to-me";
 import { resumeAt } from "@/lib/listening";
 import { completePauseRecord, getPauseRecord, getPreviousCompletedPauseRecord, type PauseFeedback } from "@/lib/pause-storage";
 import { findBuiltInSound, UNDERTONE_LEVELS } from "@/lib/sound-library";
@@ -78,28 +79,40 @@ export function PausePlayerScreen() {
   const { phase, elapsed, playing, muted, audioError, frequencyOn, undertone, builtIn } = session;
   const builtInSound = builtIn ? findBuiltInSound(session.builtInSoundId ?? record?.builtInSoundId) : undefined;
 
-  // A Moment (coming up, just happened) offers letting it out first, with
-  // its sound already playing. Happening now starts at once, so it doesn't.
-  const offerLetOut = phase === "transition" && Boolean(record?.requiresArrive) && Boolean(moment) && moment?.mode !== "during";
-  const { playAhead } = session;
-  useEffect(() => {
-    if (offerLetOut) playAhead();
-    // Starts once per offer; later sound changes go through chooseSound.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offerLetOut]);
+  // A Moment (coming up, just happened) offers letting it out, inside the
+  // Pause that's already running. Happening now doesn't: it's for the moment itself.
+  const [letOut, setLetOut] = useState<LetOutMode | null>(null);
+  const [letOutDone, setLetOutDone] = useState(false);
+  const momentMode = moment?.mode ?? record?.momentMode;
+  const offerLetOut = phase === "playing" && (momentMode === "before" || momentMode === "after") && !letOutDone;
 
   // What was let out stays with the Moment: in the journal, and as the
   // words on its polaroid in Journey. Nothing is analysed.
-  const beginAfterLettingOut = (text: string, source: "write" | "speak") => {
-    if (text && record && moment) {
-      const entry = createTellEntry({ text, source, chips: [], interpretation: NOT_ROUTED_INTERPRETATION, momentMode: moment.mode });
-      linkTellEntryToMoment(entry.id, moment.id);
-      linkTellEntryToPause(entry.id, record.id);
-      updateMomentRecord(moment.id, { expression: moment.expression ? `${moment.expression}
+  const keepWhatWasLetOut = (text: string, source: LetOutMode) => {
+    setLetOut(null);
+    if (!text || !record || !momentMode) return;
+    const entry = createTellEntry({ text, source, chips: [], interpretation: NOT_ROUTED_INTERPRETATION, momentMode });
+    linkTellEntryToPause(entry.id, record.id);
+    if (moment) {
+      const current = listMomentRecords().find((item) => item.id === moment.id) ?? moment;
+      updateMomentRecord(moment.id, { expression: current.expression ? `${current.expression}
 
 ${text}` : text });
+      linkTellEntryToMoment(entry.id, moment.id);
+    } else {
+      // Begun without naming the moment: what you let out makes it one.
+      const created = createMomentRecord({
+        mode: momentMode,
+        situationId: null,
+        situationLabel: null,
+        linkedPauseRecordId: record.id,
+        expression: text,
+        returnToMe: computeInitialReturnToMeState(momentMode, true),
+      });
+      linkTellEntryToMoment(entry.id, created.id);
+      setMoment(created);
     }
-    session.begin();
+    setLetOutDone(true);
   };
 
   // Leaving shrinks the player back into what opened it, with the page
@@ -249,20 +262,8 @@ ${text}` : text });
         <div className="grid flex-1 place-items-center text-center">
           <div className="grid justify-items-center">
             <div className="harmony-breath harmony-breath--rest">
-              <HarmonyFormVisual playing={offerLetOut} dark className={`ds-breathe ${offerLetOut ? "w-[min(40vw,10rem)]" : "w-[min(56vw,16rem)]"}`} />
+              <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(56vw,16rem)]" />
             </div>
-            {offerLetOut && moment ? (
-              <div className="mt-6 w-full">
-                <LetItOut
-                  prompt={
-                    moment.mode === "before"
-                      ? "Speak or write whatever's on your mind about it. Nobody else will read this."
-                      : "Get it off your chest, however it comes. Nobody else will read this."
-                  }
-                  onBegin={beginAfterLettingOut}
-                />
-              </div>
-            ) : (
             <div className="mt-8 max-w-[18rem] space-y-1.5">
               {record.arrivalGuidance.map((line, index) => (
                 <p
@@ -274,8 +275,7 @@ ${text}` : text });
                 </p>
               ))}
             </div>
-            )}
-            {record.requiresArrive && !offerLetOut ? (
+            {record.requiresArrive ? (
               <NavyButton onClick={session.begin} className="mt-8 px-8">
                 I&rsquo;m ready
               </NavyButton>
@@ -390,6 +390,8 @@ ${text}` : text });
               {builtInSound.headphoneOnly ? " · best with headphones" : ""}
             </p>
           ) : null}
+
+          {offerLetOut ? <LetItOutOffer onOpen={setLetOut} /> : null}
 
           <ThoughtCard journey={journey} elapsed={elapsed} playing={playing} />
 
@@ -522,6 +524,18 @@ ${text}` : text });
             </div>
           )}
         </div>
+      ) : null}
+
+      {letOut && momentMode ? (
+        <LetItOutPanel
+          mode={letOut}
+          prompt={
+            momentMode === "before"
+              ? "Speak or write whatever's on your mind about it. Nobody else will read this."
+              : "Get it off your chest, however it comes. Nobody else will read this."
+          }
+          onClose={keepWhatWasLetOut}
+        />
       ) : null}
 
       {soundSheetOpen && builtIn ? (

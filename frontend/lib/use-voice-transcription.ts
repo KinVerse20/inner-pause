@@ -91,7 +91,11 @@ export function useVoiceTranscription() {
       setTranscript(combined ? `${base ? `${base} ` : ""}${combined}` : base);
     };
 
+    // A recognition that has since been replaced (stopped, or React's
+    // development remount) must not touch the one listening now.
+    const current = () => recognitionRef.current === recognition;
     recognition.onerror = (event) => {
+      if (!current()) return;
       setStatus("error");
       setError(
         event.error === "not-allowed"
@@ -102,6 +106,7 @@ export function useVoiceTranscription() {
     };
 
     recognition.onend = () => {
+      if (!current()) return;
       recognitionRef.current = null;
       setStatus((current) => (current === "listening" ? "idle" : current));
     };
