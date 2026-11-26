@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { IconCheck, IconChevronRight } from "@/components/pause-icons";
+import { IconCheck, IconChevronRight, IconPencil } from "@/components/pause-icons";
 import { PathScene } from "@/components/path-scene";
 import { DayAnatomy, DayPeek } from "@/components/path-preview";
 import { PathTrail } from "@/components/path-trail";
@@ -26,13 +26,25 @@ import {
   writeProgrammeState,
   type ProgrammeEnrollment,
   type ProgrammeState,
+  type TaskAnswer,
 } from "@/lib/programme-storage";
 
 // One Practice path (Kinverse's 14-day programme, our design system).
-// The working is Kinverse's: start with a daily reminder time, then each
-// day check in → exercise → one real-world action → a sound Pause →
-// completion. Rhythm (streak) is shown gently and never as a failure.
-type Stage = "overview" | "dashboard" | "checkin" | "day" | "complete";
+// Start with a daily reminder time, then each day: a quick check in (how
+// the last task went, how you are, no typing needed), the sound Pause with
+// the day's exercise as its gentle thought, and a small task to carry into
+// your day, which the next check in asks about. Rhythm (streak) is shown
+// gently and never as a failure.
+type Stage = "overview" | "dashboard" | "checkin" | "complete";
+
+// How you are today: a few plain words, one tap.
+const FEELINGS = ["Steady", "Okay", "Tense", "Low", "Tired"];
+
+const TASK_ANSWERS: Array<{ id: TaskAnswer; label: string }> = [
+  { id: "yes", label: "Yes" },
+  { id: "partly", label: "Partly" },
+  { id: "not-yet", label: "Not yet" },
+];
 
 function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `p-${Date.now()}`;
@@ -65,8 +77,10 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   const [previewDay, setPreviewDay] = useState(1);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  const [checkIn, setCheckIn] = useState("");
-  const [exercise, setExercise] = useState("");
+  const [note, setNote] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [taskAnswer, setTaskAnswer] = useState<TaskAnswer | undefined>(undefined);
+  const [feeling, setFeeling] = useState<string | undefined>(undefined);
   const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(3);
 
   // Read local state after mount. A day counts once half its session has
@@ -112,6 +126,8 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   const dayNumber = enrollment ? currentProgrammeDay(enrollment) : 1;
   const day = path.days[dayNumber - 1];
   const savedCheckIn = enrollment?.checkIns.find((item) => item.day === dayNumber);
+  // The task the last day gave you, quoted back in today's check in (none on Day 1).
+  const lastTask = dayNumber > 1 ? path.days[dayNumber - 2]?.action : undefined;
   // One day a day: done for today, the next opens tomorrow.
   const opensTomorrow = enrollment ? enrollment.status === "active" && nextDayOpensTomorrow(enrollment.completions, PATH_LENGTH_DAYS) : false;
   const doneToday = opensTomorrow ? path.days[dayNumber - 2] : undefined;
@@ -128,8 +144,10 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
 
   // Today's card and today's stop on the trail both begin here.
   const beginToday = () => {
-    setCheckIn(savedCheckIn?.text ?? "");
-    setExercise(savedCheckIn?.exerciseResponse ?? "");
+    setNote(savedCheckIn?.text ?? "");
+    setNoteOpen(Boolean(savedCheckIn?.text));
+    setTaskAnswer(savedCheckIn?.taskAnswer);
+    setFeeling(savedCheckIn?.feeling);
     setRating(savedCheckIn?.rating ?? 3);
     go("checkin");
   };
@@ -174,10 +192,10 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
     window.scrollTo({ top: 0 });
   };
 
-  const saveCheckIn = () => {
-    if (!enrollment) return;
-    haptic("success");
-    save({
+  // Saves the check in and starts the day's Pause, in one tap.
+  const checkInAndBegin = () => {
+    if (!enrollment || busy) return;
+    const checked: ProgrammeState = {
       ...state,
       enrollments: state.enrollments.map((item) =>
         item.id === enrollment.id
@@ -185,13 +203,21 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
               ...item,
               checkIns: [
                 ...item.checkIns.filter((entry) => entry.day !== dayNumber),
-                { day: dayNumber, text: checkIn.trim(), exerciseResponse: exercise.trim(), rating, createdAt: new Date().toISOString() },
+                {
+                  day: dayNumber,
+                  text: note.trim(),
+                  rating,
+                  ...(lastTask && taskAnswer ? { taskAnswer } : {}),
+                  ...(feeling ? { feeling } : {}),
+                  createdAt: new Date().toISOString(),
+                },
               ],
             }
           : item,
       ),
-    });
-    go("day");
+    };
+    save(checked);
+    startDayPause(checked);
   };
 
   const pickUp = () => {
@@ -201,7 +227,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
     router.push(`/pause/player?session=${partway.id}&resume=1`);
   };
 
-  const startDayPause = () => {
+  const startDayPause = (current: ProgrammeState = state) => {
     if (!enrollment || !day || busy) return;
     haptic("moment");
     setBusy(true);
@@ -220,12 +246,14 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
       durationSeconds: day.minutes * 60,
       requiresArrive: true,
       arrivalGuidance: [day.title, "Let your body settle. Then begin."],
+      // The day's exercise is the first gentle thought of the Pause.
+      playbackCues: [{ kind: "guidance", lines: [day.exercise] }, ...base.playbackCues],
       returnTo: `/practice/${path.id}`,
     });
     save({
-      ...state,
+      ...current,
       activeEnrollmentId: enrollment.id,
-      enrollments: state.enrollments.map((item) =>
+      enrollments: current.enrollments.map((item) =>
         item.id === enrollment.id ? { ...item, pendingPause: { day: dayNumber, pauseRecordId: record.id } } : item,
       ),
     });
@@ -239,7 +267,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
   };
 
   const tint = `color-mix(in srgb, var(--ds-outcome-${tone}) 13%, var(--ds-surface))`;
-  const back = stage === "checkin" ? () => go("dashboard") : stage === "day" ? () => go("checkin") : null;
+  const back = stage === "checkin" ? () => go("dashboard") : null;
 
   return (
     <PauseShell>
@@ -445,18 +473,62 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
               <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
                 Day {dayNumber} · Before today&rsquo;s sound
               </p>
-              <h1 className="ds-display mt-2 text-[1.6rem]">{day.checkInPrompt}</h1>
+              <h1 className="ds-display mt-2 text-[1.6rem]">{day.title}</h1>
             </div>
-            <textarea
-              aria-label="About yesterday"
-              value={checkIn}
-              onChange={(event) => setCheckIn(event.target.value)}
-              placeholder="A few words about yesterday"
-              rows={3}
-              className="ds-field resize-none leading-6"
-            />
+
+            {lastTask ? (
+              <fieldset className="rounded-[var(--ds-radius-lg)] px-5 py-4" style={{ background: tint }}>
+                <legend className="sr-only">Did you get to the task from last time?</legend>
+                <p className="text-[0.9rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                  Last time you planned to:
+                </p>
+                <p className="mt-1 text-[1rem] italic leading-6">{lastTask}</p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {TASK_ANSWERS.map((answer) => (
+                    <button
+                      key={answer.id}
+                      type="button"
+                      aria-pressed={taskAnswer === answer.id}
+                      onClick={() => {
+                        haptic("tap");
+                        setTaskAnswer(taskAnswer === answer.id ? undefined : answer.id);
+                      }}
+                      className="ds-chip justify-center"
+                    >
+                      {answer.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            ) : null}
+
             <fieldset>
-              <legend className="ds-h3">How strongly did it affect you?</legend>
+              <legend className="ds-h3">How are you today?</legend>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {FEELINGS.map((word) => (
+                  <button
+                    key={word}
+                    type="button"
+                    aria-pressed={feeling === word}
+                    onClick={() => {
+                      haptic("tap");
+                      setFeeling(feeling === word ? undefined : word);
+                    }}
+                    className="ds-chip"
+                  >
+                    {word}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>
+                <span className="block text-[0.9rem]" style={{ color: "var(--ds-text-secondary)" }}>
+                  {day.checkInPrompt}
+                </span>
+                <span className="ds-h3 block">How strongly did it affect you?</span>
+              </legend>
               <div className="mt-3 grid grid-cols-5 gap-2">
                 {([1, 2, 3, 4, 5] as const).map((value) => (
                   <button
@@ -478,59 +550,36 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
                 <span>A lot</span>
               </div>
             </fieldset>
-            <section className="space-y-3">
-              <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-                Today&rsquo;s exercise
-              </p>
-              <h2 className="ds-h2">{day.exercise}</h2>
-              <textarea
-                aria-label="Your response to today's exercise"
-                value={exercise}
-                onChange={(event) => setExercise(event.target.value)}
-                placeholder="Write your response, or what you noticed"
-                rows={4}
-                className="ds-field resize-none leading-6"
-              />
-            </section>
-            <button type="button" onClick={saveCheckIn} className="ds-filled w-full">
-              Continue to action and sound
-            </button>
-          </>
-        ) : null}
 
-        {loaded && stage === "day" && day ? (
-          <>
-            <div>
-              <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-                Day {dayNumber} of {PATH_LENGTH_DAYS}
-              </p>
-              <h1 className="ds-display mt-2 text-[1.75rem]">{day.title}</h1>
-              <p className="mt-2 text-[0.95rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-                {day.intention}
-              </p>
-            </div>
-            {savedCheckIn?.exerciseResponse ? (
-              <section className="ds-card px-5 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
-                    What you wrote
-                  </p>
-                  <button type="button" onClick={() => go("checkin")} className="ds-tap min-h-11 rounded-full px-3 text-sm font-semibold" style={{ color: "var(--ds-accent)" }}>
-                    Edit
-                  </button>
-                </div>
-                <p className="mt-1 text-[0.92rem] leading-6">{savedCheckIn.exerciseResponse}</p>
-              </section>
-            ) : null}
-            <section className="rounded-[var(--ds-radius-lg)] px-5 py-5" style={{ background: tint }}>
-              <p className="ds-label uppercase" style={{ color: "var(--ds-text-secondary)" }}>
-                In real life
-              </p>
-              <h2 className="ds-h2 mt-2">Your small action</h2>
-              <p className="mt-1 text-[0.95rem] leading-6">{day.action}</p>
-            </section>
-            <button type="button" onClick={startDayPause} disabled={busy} className="ds-filled w-full">
-              {busy ? "Starting your Pause" : `Start your ${day.minutes} minute Pause`}
+            {noteOpen ? (
+              <label className="ds-settle block">
+                <span className="ds-caption">Saved privately to your journal</span>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="A few words, if you like"
+                  rows={3}
+                  autoFocus
+                  className="ds-field mt-1.5 resize-none leading-6"
+                />
+              </label>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  haptic("tap");
+                  setNoteOpen(true);
+                }}
+                className="ds-tap -my-2 inline-flex min-h-11 items-center gap-1.5 rounded-full text-sm font-semibold"
+                style={{ color: "var(--ds-accent)" }}
+              >
+                <IconPencil className="h-4 w-4" />
+                Add a note
+              </button>
+            )}
+
+            <button type="button" onClick={checkInAndBegin} disabled={busy} className="ds-filled w-full">
+              {busy ? "Starting your Pause" : "Begin my Pause"}
             </button>
           </>
         ) : null}

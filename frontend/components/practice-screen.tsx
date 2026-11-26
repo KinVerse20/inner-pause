@@ -118,7 +118,7 @@ export function PracticeScreen() {
           <section className="rounded-[var(--ds-radius-lg)] px-5 py-4" style={{ background: "var(--ds-accent-soft)" }}>
             <h2 className="ds-h3">How a path works</h2>
             <ol className="mt-3 grid gap-2 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-              {["Check in about yesterday", "Listen and practise", "Use one small action in real life", "Reflect and build your rhythm"].map(
+              {["Check in on yesterday's task", "Listen and breathe", "Carry one small task into your day", "Come back tomorrow for the next day"].map(
                 (step, index) => (
                   <li key={step} className="flex gap-3">
                     <span className="ds-num w-4 shrink-0" style={{ color: "var(--ds-accent)" }}>

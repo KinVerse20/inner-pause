@@ -7,11 +7,20 @@ import { countsAsDay, localDateKey } from "@/lib/listening";
 import { getPauseRecord } from "@/lib/pause-storage";
 import type { ProgrammeId } from "@/lib/programme-data";
 
+/** How the task from the day before went. */
+export type TaskAnswer = 'yes' | 'partly' | 'not-yet';
+
 export interface ProgrammeCheckIn {
   day: number;
+  /** An optional note. Older check-ins: the "about yesterday" text. */
   text: string;
+  /** Older check-ins only: the written exercise, which now lives in the Pause. */
   exerciseResponse?: string;
   rating: 1 | 2 | 3 | 4 | 5;
+  /** The task from the day before: Yes, Partly or Not yet. Missing on Day 1 and older check-ins. */
+  taskAnswer?: TaskAnswer;
+  /** How you are today, in one word. */
+  feeling?: string;
   createdAt: string;
 }
 

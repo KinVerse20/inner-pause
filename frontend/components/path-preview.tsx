@@ -38,15 +38,14 @@ export function DayAnatomy({ path, tone }: { path: Programme; tone: string }) {
   const first = path.days[0];
   const color = `var(--ds-outcome-${tone})`;
   const steps: Array<{ title: string; detail: string; meta: string; icon: ReactNode }> = [
-    { title: "Check in", detail: first.checkInPrompt, meta: "1 min", icon: <path d="M5 19h4l10-10-4-4L5 15v4ZM13 7l4 4" /> },
+    { title: "Check in", detail: "How your last task went, and how you are. A few taps.", meta: "under 1 min", icon: <path d="M5 19h4l10-10-4-4L5 15v4ZM13 7l4 4" /> },
     {
       title: "Listen and breathe",
       detail: "A guided Pause with your sound, tuned for this path.",
       meta: `${first.minutes} min · ${path.frequencyHz} Hz`,
       icon: <path d="M3 12c1.5 0 1.5-4 3-4s1.5 8 3 8 1.5-10 3-10 1.5 12 3 12 1.5-8 3-8 1.5 4 3 4" />,
     },
-    { title: "One small action", detail: first.action, meta: "in your day", icon: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M12 12l3-3" /> },
-    { title: "Reflect", detail: first.reflection, meta: "1 min", icon: <path d="M12 21c4.5-3 7-6.5 7-10a7 7 0 0 0-14 0c0 3.5 2.5 7 7 10Zm0-12v4" /> },
+    { title: "One small task", detail: first.action, meta: "for your day", icon: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M12 12l3-3" /> },
   ];
   return (
     <section aria-labelledby="anatomy-title" className="ds-card px-5 py-5">
