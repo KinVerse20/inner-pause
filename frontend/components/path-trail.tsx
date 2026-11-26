@@ -13,11 +13,12 @@ import type { ProgrammeEnrollment } from "@/lib/programme-storage";
 // day 14 the flag. Opens with today (or the day you picked) in the middle.
 // Before starting it's a preview: tap any stop to see that day.
 
-const STEP = 88;
-const PAD = 48;
+const STEP = 112;
+// Past the scroller's 1.5rem edge fade, so the first and last names stay crisp.
+const PAD = 76;
 const BASE_Y = 66;
 const WAVE = 14;
-const HEIGHT = 156;
+const HEIGHT = 184;
 
 export function PathTrail({
   path,
@@ -77,11 +78,11 @@ export function PathTrail({
       <ol className="relative" style={{ width, height: HEIGHT }}>
         <svg className="absolute inset-0" width={width} height={HEIGHT} aria-hidden="true">
           {/* The two weeks, and where one becomes the other. */}
-          <line x1={point(6).x + STEP / 2} x2={point(6).x + STEP / 2} y1="10" y2={HEIGHT - 10} stroke="color-mix(in srgb, var(--ds-text) 10%, transparent)" strokeDasharray="2 4" />
-          <text x={PAD - 14} y="14" className="ds-label" fill="var(--ds-text-muted)" style={{ fontSize: 11, letterSpacing: "0.08em" }}>
+          <line x1={point(6).x + STEP / 2} x2={point(6).x + STEP / 2} y1="10" y2={HEIGHT - 4} stroke="color-mix(in srgb, var(--ds-text) 10%, transparent)" strokeDasharray="2 4" />
+          <text x={PAD - 14} y={HEIGHT - 6} className="ds-label" fill="var(--ds-text-muted)" style={{ fontSize: 11, letterSpacing: "0.08em" }}>
             WEEK 1
           </text>
-          <text x={point(7).x - 14} y="14" className="ds-label" fill="var(--ds-text-muted)" style={{ fontSize: 11, letterSpacing: "0.08em" }}>
+          <text x={point(7).x - 14} y={HEIGHT - 6} className="ds-label" fill="var(--ds-text-muted)" style={{ fontSize: 11, letterSpacing: "0.08em" }}>
             WEEK 2
           </text>
           <path d={segment(0, days.length - 1)} fill="none" stroke="color-mix(in srgb, var(--ds-text) 16%, transparent)" strokeWidth="2.5" strokeDasharray="1 7" strokeLinecap="round" />
@@ -166,7 +167,7 @@ export function PathTrail({
                 </span>
               )}
               <span
-                className={`pointer-events-none absolute top-full mt-1.5 line-clamp-2 w-[5rem] text-center text-[0.72rem] leading-[0.95rem] ${isToday || selected ? "font-semibold" : "font-medium"}`}
+                className={`pointer-events-none absolute top-full mt-1.5 w-[6.5rem] text-center text-[0.72rem] leading-[0.95rem] ${isToday || selected ? "font-semibold" : "font-medium"}`}
                 style={{ color: done || isToday || selected ? "var(--ds-text)" : "var(--ds-text-muted)" }}
                 aria-hidden="true"
               >
