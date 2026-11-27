@@ -31,7 +31,7 @@ const SECTIONS: Array<{ id: string; title: string; body: string[] }> = [
     title: "How it works",
     body: [
       "Pick what you're feeling, or tell Pause in your own words. A short sound experience meets you where you are.",
-      "Afterward, you can say what helped. Over time, Journey remembers the pattern, never the other way around.",
+      "Afterward, you can say what helped. Over time, Journey keeps your story: what you felt and what helped.",
     ],
   },
   {

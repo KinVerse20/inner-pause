@@ -2,70 +2,35 @@
 
 import { startTransition, useEffect, useState, ViewTransition } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 
-import { IconCheck, IconFeather } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { YouHeader } from "@/components/you-avatar";
 import { JournalComposer, JourneySummary, MomentOpened, StoryTimeline, buildStory } from "@/components/journey-story";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
-import { useAppAccess } from "@/lib/trial";
-import { PassGateCard } from "@/components/pass-gate-card";
-import { computeGrowthStatements, type GrowthStatement } from "@/lib/growth-model";
 import { getLinkedJournalEntries, listHighlights, type Highlight } from "@/lib/journey-highlights";
 import { listMomentRecords } from "@/lib/moment-storage";
 import { listPauseRecords, type PauseRecord } from "@/lib/pause-storage";
 import { viewTransitionsSupported, vtName } from "@/lib/view-transition";
-import {
-  generatePatternCandidates,
-  resolvePatternHighlights,
-} from "@/lib/pattern-engine";
-import {
-  listPatterns,
-  markPatternsGenerated,
-  setPatternStatus,
-  shouldRegeneratePatterns,
-  upsertGeneratedPattern,
-  type PatternRecord,
-} from "@/lib/pattern-storage";
 import { deleteTellEntry, listTellEntries, type TellEntry } from "@/lib/tell-storage";
-import { getPatternAnalysisConsent } from "@/lib/privacy-controls";
 
-type Tab = "story" | "patterns" | "growth";
-
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "story", label: "Your story" },
-  { id: "patterns", label: "Patterns" },
-  { id: "growth", label: "Growth" },
-];
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
+// Patterns and Growth are off for now (founder, 27 Nov): Journey is your
+// story and journal. Their code stays in lib/pattern-*.ts and
+// lib/growth-model.ts for when they come back.
 
 export function JourneyScreen() {
-  const [tab, setTab] = useState<Tab>("story");
   const [pauses, setPauses] = useState<PauseRecord[]>([]);
   const [momentCount, setMomentCount] = useState(0);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [journalEntries, setJournalEntries] = useState<TellEntry[]>([]);
-  const [patterns, setPatterns] = useState<PatternRecord[]>([]);
-  const [growthStatements, setGrowthStatements] = useState<GrowthStatement[]>([]);
-  // Patterns and Growth sit behind the Pass (open during the trial), and
-  // when open they look across the whole story.
-  const access = useAppAccess();
-  const insightsOpen = access === "ok";
 
   const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<TellEntry | null>(null);
   const [entryOrigin, setEntryOrigin] = useState<"list" | "highlight">("list");
-  const [expandedPatternId, setExpandedPatternId] = useState<string | null>(null);
 
   const refresh = () => {
     setHighlights(listHighlights());
     setJournalEntries(listTellEntries());
-    setPatterns(listPatterns());
     setPauses(listPauseRecords());
     setMomentCount(listMomentRecords().length);
   };
@@ -74,29 +39,6 @@ export function JourneyScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, []);
-
-  useEffect(() => {
-    if (tab !== "patterns" || !insightsOpen) return;
-    const scope = "pass";
-    // You -> Data & Privacy's "used for deeper pattern analysis" control
-    // (docs/PRODUCT_FLOW.md §35): declining only stops *new* generation —
-    // already-generated patterns stay visible and correctable, same as any
-    // other earned history.
-    if (getPatternAnalysisConsent() && shouldRegeneratePatterns()) {
-      for (const candidate of generatePatternCandidates(scope)) {
-        upsertGeneratedPattern({ ...candidate, scope });
-      }
-      markPatternsGenerated();
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPatterns(listPatterns());
-  }, [tab, insightsOpen]);
-
-  useEffect(() => {
-    if (tab !== "growth" || !insightsOpen) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGrowthStatements(computeGrowthStatements("pass"));
-  }, [tab, insightsOpen]);
 
   const story = buildStory(journalEntries, highlights, pauses);
 
@@ -144,33 +86,8 @@ export function JourneyScreen() {
         </StaggerItem>
 
         <StaggerItem className="space-y-5">
-          <div role="tablist" aria-label="Journey" className="grid grid-cols-3 gap-1 rounded-full p-1" style={{ background: "var(--ds-accent-soft)" }}>
-            {TABS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={tab === item.id}
-                onClick={() => {
-                  haptic("tap");
-                  setTab(item.id);
-                  setSelectedHighlight(null);
-                  setSelectedEntry(null);
-                }}
-                className="ds-tap min-h-11 rounded-full px-2 text-[0.85rem] font-semibold"
-                style={{
-                  background: tab === item.id ? "var(--ds-surface-raised)" : "transparent",
-                  color: tab === item.id ? "var(--ds-text)" : "var(--ds-text-secondary)",
-                  boxShadow: tab === item.id ? "var(--ds-elevation-1)" : undefined,
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
 
-          {tab === "story" ? (
-            selectedHighlight ? (
+          {selectedHighlight ? (
               <MomentOpened highlight={selectedHighlight} linkedEntries={getLinkedJournalEntries(selectedHighlight)} onBack={closeHighlight} onOpenEntry={openEntryFromHighlight} />
             ) : (
               <StoryTimeline
@@ -179,27 +96,8 @@ export function JourneyScreen() {
                 onOpenEntry={openEntryFromList}
                 onOpenHighlight={openHighlight}
               />
-            )
-          ) : null}
+            )}
 
-          {(tab === "patterns" || tab === "growth") && access && access !== "ok" ? (
-            <PassGateCard need={access} redirectTo="/journey" what={tab === "patterns" ? "see your patterns" : "see how you're growing"} />
-          ) : null}
-
-          {tab === "patterns" && insightsOpen ? (
-            <PatternsList
-              patterns={patterns}
-              expandedId={expandedPatternId}
-              onToggleExpand={(id) => setExpandedPatternId((current) => (current === id ? null : id))}
-              onRespond={(id, status) => {
-                haptic("success");
-                setPatternStatus(id, status);
-                refresh();
-              }}
-            />
-          ) : null}
-
-          {tab === "growth" && insightsOpen ? <GrowthList statements={growthStatements} /> : null}
 
         {selectedEntry ? (
           <JournalEntryDetailOverlay entry={selectedEntry} fromCard={entryOrigin === "list"} onClose={closeEntry} onDelete={deleteEntry} />
@@ -309,126 +207,5 @@ function JournalEntryDetailOverlay({
       )}
     </div>,
     document.body,
-  );
-}
-
-function PatternsList({
-  patterns,
-  expandedId,
-  onToggleExpand,
-  onRespond,
-}: {
-  patterns: PatternRecord[];
-  expandedId: string | null;
-  onToggleExpand: (id: string) => void;
-  onRespond: (id: string, status: "relevant" | "not-relevant") => void;
-}) {
-  const router = useRouter();
-  const visible = patterns.filter((p) => p.status !== "not-relevant");
-
-  return (
-    <div className="space-y-3">
-      {visible.length === 0 ? (
-        <EmptyNote title="No patterns yet" body="As your story grows, Inner Pause will notice what keeps coming up and ask if it rings true." />
-      ) : (
-        visible.map((pattern) => {
-          const expanded = expandedId === pattern.id;
-          const supporting = resolvePatternHighlights(pattern.supportingHighlightIds);
-          return (
-            <article key={pattern.id} className="ds-card space-y-3 px-5 py-5">
-              <p className="ds-label uppercase" style={{ color: "var(--ds-accent-secondary)" }}>
-                Something we noticed
-              </p>
-              <p className="text-[1.02rem] font-medium leading-7">{pattern.text}</p>
-
-              {pattern.supportingHighlightIds.length > 0 || pattern.supportingJournalEntryIds.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => onToggleExpand(pattern.id)}
-                  aria-expanded={expanded}
-                  className="ds-tap inline-flex min-h-11 items-center gap-1 rounded-full text-sm font-medium"
-                  style={{ color: "var(--ds-accent)" }}
-                >
-                  {expanded ? "Hide where this comes from" : "Where this comes from"}
-                </button>
-              ) : null}
-
-              {expanded ? (
-                <ul className="space-y-1 border-l-2 pl-3 text-[0.85rem] leading-6" style={{ borderColor: "var(--ds-accent-soft)", color: "var(--ds-text-secondary)" }}>
-                  {supporting.map((item) => (
-                    <li key={item.id}>
-                      {item.title} · {formatDate(item.createdAt)}
-                    </li>
-                  ))}
-                  {pattern.supportingJournalEntryIds.length > 0 ? <li>{pattern.supportingJournalEntryIds.length} journal entries</li> : null}
-                </ul>
-              ) : null}
-
-              {pattern.status === "candidate" ? (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <button type="button" onClick={() => onRespond(pattern.id, "relevant")} className="ds-chip">
-                    That&rsquo;s true
-                  </button>
-                  <button type="button" onClick={() => onRespond(pattern.id, "not-relevant")} className="ds-chip">
-                    Not really
-                  </button>
-                  <button type="button" onClick={() => router.push("/tell")} className="ds-chip" style={{ color: "var(--ds-accent)", borderColor: "var(--ds-accent)" }}>
-                    Tell me more
-                  </button>
-                </div>
-              ) : (
-                <p className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--ds-success)" }}>
-                  <IconCheck className="h-4 w-4" />
-                  You said this rings true
-                </p>
-              )}
-            </article>
-          );
-        })
-      )}
-    </div>
-  );
-}
-
-function GrowthList({ statements }: { statements: GrowthStatement[] }) {
-  return (
-    <div className="space-y-3">
-      {statements.length === 0 ? (
-        <EmptyNote title="Growth takes a little time" body="Keep pausing and writing. When something gets easier for you, it will show up here." />
-      ) : (
-        statements.map((statement) => (
-          <article key={statement.id} className="ds-card flex gap-3.5 px-5 py-5">
-            <span className="ds-outcome-icon grid h-10 w-10 shrink-0 place-items-center rounded-full" style={{ ["--ds-outcome-color" as string]: "var(--ds-outcome-release)" }} aria-hidden="true">
-              <IconFeather className="h-[1.1rem] w-[1.1rem]" />
-            </span>
-            <p className="text-[1rem] leading-7">{statement.text}</p>
-          </article>
-        ))
-      )}
-    </div>
-  );
-}
-
-function EmptyNote({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="ds-card grid justify-items-center gap-2 px-6 py-8 text-center">
-      {/* A quiet mark of what will grow here: a few points, not yet joined. */}
-      <svg viewBox="0 0 96 48" className="mb-1 h-12 w-24" aria-hidden="true">
-        <path d="M8 36 C24 30 30 14 46 18 S70 34 88 12" fill="none" stroke="var(--ds-accent-secondary)" strokeWidth="1.6" strokeDasharray="1 5" strokeLinecap="round" opacity="0.6" />
-        {[
-          [8, 36, 3],
-          [30, 22, 4],
-          [52, 21, 3.2],
-          [70, 30, 4.5],
-          [88, 12, 3.6],
-        ].map(([cx, cy, r]) => (
-          <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="var(--ds-accent-secondary)" opacity="0.75" />
-        ))}
-      </svg>
-      <p className="ds-h3">{title}</p>
-      <p className="max-w-[18rem] text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-        {body}
-      </p>
-    </div>
   );
 }

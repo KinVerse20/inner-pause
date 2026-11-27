@@ -18,7 +18,7 @@ import { formatPassDate, getPassSummary, rupees, type PassSummary } from "@/lib/
 const PASS_INCLUDES = [
   "Every Pause: Right Now, Ground and Moments",
   "All five Practice paths, every day of them",
-  "Patterns and Growth across your whole story",
+  "Your journal, Tell and Moments, with nothing held back",
   "Every feature we add to the Pass, yours too",
 ];
 

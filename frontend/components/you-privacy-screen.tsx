@@ -7,7 +7,6 @@ import { JournalBackupSetting } from "@/components/journal-backup-setting";
 import { IconShield } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { SettingsSectionTitle, YouScreenHeader } from "@/components/settings-row";
-import { ToggleSwitch } from "@/components/toggle-switch";
 import { haptic } from "@/lib/haptics";
 import {
   deleteAllLocalData,
@@ -15,8 +14,6 @@ import {
   deleteJourneyData,
   exportAllDataAsFile,
   getDataSummary,
-  getPatternAnalysisConsent,
-  setPatternAnalysisConsent,
   type DataSummary,
 } from "@/lib/privacy-controls";
 import { getAccount } from "@/lib/account-store";
@@ -25,18 +22,16 @@ import { listTellEntries, type TellEntry } from "@/lib/tell-storage";
 
 // You -> Data & Privacy (docs/PRODUCT_FLOW.md §35): "Your Inner Pause
 // belongs to you." Plain language, real deletion for the stores this
-// project has actually implemented, real export, and an AI/pattern
-// consent control that genuinely gates future pattern generation
+// project has actually implemented and real export (the pattern analysis
+// switch went with Patterns, off for now).
 // (components/journey-screen.tsx).
 export function YouPrivacyScreen() {
   const router = useRouter();
   const [summary, setSummary] = useState<DataSummary | null>(null);
-  const [consent, setConsent] = useState(true);
   const [recentEntries, setRecentEntries] = useState<TellEntry[]>([]);
 
   const refresh = () => {
     setSummary(getDataSummary());
-    setConsent(getPatternAnalysisConsent());
     setRecentEntries(listTellEntries().slice(0, 5));
   };
 
@@ -99,32 +94,9 @@ export function YouPrivacyScreen() {
           <ul className="space-y-1.5 rounded-[var(--ds-radius-md)] px-4 py-3.5 text-[0.85rem]" style={{ background: "var(--ds-surface)", color: "var(--ds-text-secondary)" }}>
             <li>{count(summary?.journalEntryCount, "journal entry", "journal entries")}</li>
             <li>{count(summary?.momentCount, "Moment", "Moments")}</li>
-            <li>{count(summary?.patternCount, "Pattern", "Patterns")}</li>
             <li>{count(summary?.practiceSessionCount, "Practice day", "Practice days")}</li>
             <li>{count(summary?.pauseCount, "Pause taken", "Pauses taken")}</li>
           </ul>
-        </section>
-
-        <section className="space-y-2">
-          <SettingsSectionTitle>Deeper analysis</SettingsSectionTitle>
-          <div className="rounded-[var(--ds-radius-md)] px-4 py-3.5" style={{ background: "var(--ds-surface)" }}>
-            <div className="flex items-center gap-3">
-              <span className="min-w-0 flex-1">
-                <span className="block text-[0.9rem] font-medium">Use my entries for deeper pattern analysis</span>
-                <span className="block text-[0.76rem]" style={{ color: "var(--ds-text-secondary)" }}>
-                  Turning this off only stops new Patterns. Nothing already found is deleted.
-                </span>
-              </span>
-              <ToggleSwitch
-                checked={consent}
-                onChange={(value) => {
-                  setPatternAnalysisConsent(value);
-                  setConsent(value);
-                }}
-                label="Use my entries for deeper pattern analysis"
-              />
-            </div>
-          </div>
         </section>
 
         <JournalBackupSetting />
@@ -181,14 +153,14 @@ export function YouPrivacyScreen() {
             </button>
             {confirming === "journey" ? (
               <ConfirmRow
-                question="Delete every journal entry, Moment and Pattern? This can't be undone."
+                question="Delete every journal entry and Moment? This can't be undone."
                 action="Delete Journey data"
                 onKeep={() => setConfirming(null)}
                 onConfirm={handleDeleteJourneyData}
               />
             ) : null}
             <p className="text-[0.76rem]" style={{ color: "var(--ds-text-secondary)" }}>
-              Removes every Journal entry, Moment, and Pattern. Practice history isn&apos;t affected.
+              Removes every Journal entry and Moment. Practice history isn&apos;t affected.
             </p>
             <div className="h-px" style={{ background: "var(--ds-border)" }} />
             <button
