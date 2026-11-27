@@ -439,6 +439,23 @@ async function flows(browser, theme) {
     await page.getByText("Ready to keep going?").first().waitFor({ timeout: 8000 }).catch(() => {});
     await expect(page, "Ready to keep going?", "trial used gate");
     await checkScreen(page, `${theme} trial used gate`);
+    // Everything else waits for the Pass too: Tell, and writing in the journal.
+    await page.goto(`${BASE}/tell`, { waitUntil: "networkidle" });
+    await settle(page);
+    await expect(page, "Ready to keep going?", "Tell closed after the trial");
+    await checkScreen(page, `${theme} Tell after the trial`);
+    await page.goto(`${BASE}/journey`, { waitUntil: "networkidle" });
+    await settle(page);
+    await page.getByRole("button", { name: /Write in your journal/ }).click();
+    await expect(page, "Ready to keep going?", "journal closed after the trial");
+    await checkScreen(page, `${theme} journal after the trial`);
+    await page.getByRole("button", { name: "Not now" }).click();
+    await expect(page, "Write in your journal", "journal gate closes");
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start a Pause" }).click();
+    await page.waitForURL(/pause\/player/);
+    await settle(page);
+    await page.getByText("Ready to keep going?").first().waitFor({ timeout: 8000 }).catch(() => {});
     await page.getByRole("button", { name: "See the Pass" }).click();
     await page.waitForURL(/profile\/pass/);
     await settle(page);

@@ -47,6 +47,7 @@ Never taken away, as before: Journal, Highlights, history and saved Pauses stay 
 - **What counts (founder, 26 Nov):** any Pause (Right Now, Ground, Moments, Practice) counts once it has played for **2 minutes** of listened time (the counter from BUILD_PLAN item 6). A Pause stopped before 2 minutes doesn't use up the trial. A Pause shorter than 2 minutes counts when it finishes.
 - Without an active Pass and after 2 Pauses: browsing, Journal and history stay open; pressing play on any Pause opens the Pass page (C3) instead. Never cut off a Pause that is already playing.
 - Show the count plainly before it runs out, for example "1 of 2 trial Pauses left".
+- **Everything is behind the Pass except the trial (founder, 27 Nov).** Every Pause, Practice session and sound plays through the player, which holds the gate. Outside the player, the same rule (`appAccess()` in `frontend/lib/trial.ts`): Tell closes once the trial is used (signed out may still type; the Pause asks them to sign in), writing in the journal needs sign in and then the trial or the Pass, and the Return to Me check in stays hidden. Browsing and reading what you saved stay open.
 - Replace the old free/Pass gates (Practice two-session sample, `FREE_WINDOW_ENTRIES` in `frontend/lib/pattern-engine.ts`) with this one rule: active Pass or trial left.
 - **Done when:** a new account plays 2 Pauses, the third play opens the Pass page, a new browser on the same account still shows 0 left, and buying the Pass unlocks play at once.
 

@@ -15,6 +15,8 @@ import { interpretTellInput, tellChips } from "@/lib/tell-interpreter";
 import { createTellEntry } from "@/lib/tell-storage";
 import { useVoiceTranscription } from "@/lib/use-voice-transcription";
 import { SpeechLanguageToggle } from "@/components/speech-language-toggle";
+import { PassGateCard } from "@/components/pass-gate-card";
+import { useAppAccess } from "@/lib/trial";
 
 type Mode = "write" | "speak";
 
@@ -44,6 +46,11 @@ export function TellComposeScreen() {
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const voice = useVoiceTranscription();
+  // Signed out may still say what's on their mind: the Pause it leads to
+  // asks them to sign in (and keeps what they said). Only a used trial
+  // without the Pass closes Tell, before anything is typed.
+  const access = useAppAccess();
+  const closed = access === "pass";
 
   const currentText = mode === "speak" ? voice.transcript : writeText;
 
@@ -54,9 +61,9 @@ export function TellComposeScreen() {
   // No "started already" guard: React's development remount stops the
   // first recognition, so starting again is what keeps it listening.
   useEffect(() => {
-    if (initialMode === "speak") voice.start();
+    if (initialMode === "speak" && access !== null && !closed) voice.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialMode]);
+  }, [initialMode, access]);
 
   // Explicit, event-driven carry-over between modes — not an effect — so
   // switching Write <-> Speak keeps whatever was already said/typed intact.
@@ -118,146 +125,153 @@ export function TellComposeScreen() {
           ) : null}
         </header>
 
-        <div className="inline-flex rounded-full p-1" style={{ background: "var(--ds-accent-soft)" }}>
-          {(["write", "speak"] as Mode[]).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => switchMode(item)}
-              aria-pressed={mode === item}
-              className="ds-tap inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-              style={{
-                background: mode === item ? "var(--ds-accent)" : "transparent",
-                color: mode === item ? "var(--ds-accent-on)" : "var(--ds-text-secondary)",
-              }}
-            >
-              {item === "write" ? <IconPencil className="h-4 w-4" /> : <IconMic className="h-4 w-4" />}
-              {item === "write" ? "Write" : "Speak"}
-            </button>
-          ))}
-        </div>
+        {closed ? <PassGateCard need="pass" redirectTo="/tell" what="tell Inner Pause what's on your mind" /> : null}
 
-        {mode === "speak" ? (
-          <section aria-label="Speak" className="ds-card space-y-3 px-4 py-4">
-            <div className="grid place-items-center gap-2 py-2 text-center">
+        {closed ? null : (
+          <>
+
+          <div className="inline-flex rounded-full p-1" style={{ background: "var(--ds-accent-soft)" }}>
+            {(["write", "speak"] as Mode[]).map((item) => (
               <button
+                key={item}
                 type="button"
-                onClick={voice.status === "listening" ? voice.stop : voice.start}
-                aria-pressed={voice.status === "listening"}
-                aria-label={voice.status === "listening" ? "Stop listening" : "Start speaking"}
-                className="ds-tap relative grid h-16 w-16 place-items-center rounded-full border focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--ds-accent)]"
+                onClick={() => switchMode(item)}
+                aria-pressed={mode === item}
+                className="ds-tap inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
                 style={{
-                  borderColor: voice.status === "listening" ? "var(--ds-accent)" : "var(--ds-border)",
-                  background: voice.status === "listening" ? "var(--ds-accent-soft)" : "var(--ds-bg)",
-                  color: "var(--ds-accent)",
+                  background: mode === item ? "var(--ds-accent)" : "transparent",
+                  color: mode === item ? "var(--ds-accent-on)" : "var(--ds-text-secondary)",
                 }}
               >
-                <IconMic className="h-6 w-6" />
+                {item === "write" ? <IconPencil className="h-4 w-4" /> : <IconMic className="h-4 w-4" />}
+                {item === "write" ? "Write" : "Speak"}
               </button>
-              <p className="text-sm font-medium">
-                {voice.status === "listening" ? "Listening…" : "Tap to speak"}
-              </p>
-              <SpeechLanguageToggle language={voice.language} onChange={voice.setLanguage} />
-              {voice.status === "listening" ? (
+            ))}
+          </div>
+
+          {mode === "speak" ? (
+            <section aria-label="Speak" className="ds-card space-y-3 px-4 py-4">
+              <div className="grid place-items-center gap-2 py-2 text-center">
                 <button
                   type="button"
-                  onClick={voice.cancel}
-                  className="text-xs font-medium underline decoration-dotted underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-                  style={{ color: "var(--ds-text-secondary)" }}
+                  onClick={voice.status === "listening" ? voice.stop : voice.start}
+                  aria-pressed={voice.status === "listening"}
+                  aria-label={voice.status === "listening" ? "Stop listening" : "Start speaking"}
+                  className="ds-tap relative grid h-16 w-16 place-items-center rounded-full border focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--ds-accent)]"
+                  style={{
+                    borderColor: voice.status === "listening" ? "var(--ds-accent)" : "var(--ds-border)",
+                    background: voice.status === "listening" ? "var(--ds-accent-soft)" : "var(--ds-bg)",
+                    color: "var(--ds-accent)",
+                  }}
                 >
-                  Cancel
+                  <IconMic className="h-6 w-6" />
                 </button>
+                <p className="text-sm font-medium">
+                  {voice.status === "listening" ? "Listening…" : "Tap to speak"}
+                </p>
+                <SpeechLanguageToggle language={voice.language} onChange={voice.setLanguage} />
+                {voice.status === "listening" ? (
+                  <button
+                    type="button"
+                    onClick={voice.cancel}
+                    className="text-xs font-medium underline decoration-dotted underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                    style={{ color: "var(--ds-text-secondary)" }}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+              </div>
+
+              {voice.error ? (
+                <p className="text-xs" style={{ color: "var(--ds-error)" }}>
+                  {voice.error}
+                </p>
               ) : null}
-            </div>
 
-            {voice.error ? (
-              <p className="text-xs" style={{ color: "var(--ds-error)" }}>
-                {voice.error}
-              </p>
-            ) : null}
-
+              <textarea
+                value={voice.transcript}
+                onChange={(event) => voice.setTranscript(event.target.value)}
+                placeholder="Your words will appear here. Edit them before continuing."
+                rows={4}
+                className="w-full resize-none rounded-[var(--ds-radius-sm)] border bg-transparent p-3 text-sm leading-6 outline-none placeholder:text-[var(--ds-text-muted)]"
+                style={{ borderColor: "var(--ds-border)", color: "var(--ds-text)" }}
+              />
+            </section>
+          ) : (
             <textarea
-              value={voice.transcript}
-              onChange={(event) => voice.setTranscript(event.target.value)}
-              placeholder="Your words will appear here. Edit them before continuing."
-              rows={4}
-              className="w-full resize-none rounded-[var(--ds-radius-sm)] border bg-transparent p-3 text-sm leading-6 outline-none placeholder:text-[var(--ds-text-muted)]"
-              style={{ borderColor: "var(--ds-border)", color: "var(--ds-text)" }}
+              value={writeText}
+              onChange={(event) => setWriteText(event.target.value)}
+              placeholder="What's happening? What's on your mind?"
+              rows={6}
+              autoFocus
+              className="ds-field min-h-[10rem] resize-none text-base leading-6"
             />
-          </section>
-        ) : (
-          <textarea
-            value={writeText}
-            onChange={(event) => setWriteText(event.target.value)}
-            placeholder="What's happening? What's on your mind?"
-            rows={6}
-            autoFocus
-            className="ds-field min-h-[10rem] resize-none text-base leading-6"
-          />
+          )}
+
+          {currentText.trim() ? (
+            <section aria-label="Optional context">
+              <p className="text-xs font-medium" style={{ color: "var(--ds-text-secondary)" }}>
+                Anything else? (optional)
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {tellChips.map((chip) => {
+                  const active = selectedChips.includes(chip);
+                  return (
+                    <button
+                      key={chip}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => toggleChip(chip)}
+                      className="ds-chip ds-tap focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
+                    >
+                      {chip}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {!currentText.trim() || selectedEmotions.length > 0 ? (
+            <section aria-labelledby="tell-emotions-title">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 id="tell-emotions-title" className="ds-h3">
+                  {currentText.trim() ? "How you feel" : "Or choose how you feel"}
+                </h2>
+                <span className="ds-caption ds-num">
+                  {selectedEmotions.length} of {MAX_TELL_EMOTIONS}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {tellEmotions.map((emotion) => {
+                  const active = selectedEmotions.includes(emotion);
+                  return (
+                    <button
+                      key={emotion}
+                      type="button"
+                      aria-pressed={active}
+                      disabled={!active && selectedEmotions.length >= MAX_TELL_EMOTIONS}
+                      onClick={() => toggleEmotion(emotion)}
+                      className="ds-chip"
+                    >
+                      {emotion}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          <button
+            type="button"
+            disabled={(!currentText.trim() && selectedEmotions.length === 0) || submitting}
+            onClick={handleSubmit}
+            className="ds-filled ds-tap w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55"
+          >
+            {submitting ? "Finding the right Pause" : "Continue"}
+          </button>
+          </>
         )}
-
-        {currentText.trim() ? (
-          <section aria-label="Optional context">
-            <p className="text-xs font-medium" style={{ color: "var(--ds-text-secondary)" }}>
-              Anything else? (optional)
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {tellChips.map((chip) => {
-                const active = selectedChips.includes(chip);
-                return (
-                  <button
-                    key={chip}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => toggleChip(chip)}
-                    className="ds-chip ds-tap focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)]"
-                  >
-                    {chip}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
-        {!currentText.trim() || selectedEmotions.length > 0 ? (
-          <section aria-labelledby="tell-emotions-title">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 id="tell-emotions-title" className="ds-h3">
-                {currentText.trim() ? "How you feel" : "Or choose how you feel"}
-              </h2>
-              <span className="ds-caption ds-num">
-                {selectedEmotions.length} of {MAX_TELL_EMOTIONS}
-              </span>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {tellEmotions.map((emotion) => {
-                const active = selectedEmotions.includes(emotion);
-                return (
-                  <button
-                    key={emotion}
-                    type="button"
-                    aria-pressed={active}
-                    disabled={!active && selectedEmotions.length >= MAX_TELL_EMOTIONS}
-                    onClick={() => toggleEmotion(emotion)}
-                    className="ds-chip"
-                  >
-                    {emotion}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
-        <button
-          type="button"
-          disabled={(!currentText.trim() && selectedEmotions.length === 0) || submitting}
-          onClick={handleSubmit}
-          className="ds-filled ds-tap w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55"
-        >
-          {submitting ? "Finding the right Pause" : "Continue"}
-        </button>
       </Reveal>
     </PauseShell>
   );

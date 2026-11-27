@@ -8,6 +8,7 @@ import { createTellEntry, linkTellEntryToMoment, NOT_ROUTED_INTERPRETATION } fro
 import { useVoiceTranscription } from "@/lib/use-voice-transcription";
 import { SpeechLanguageToggle } from "@/components/speech-language-toggle";
 import type { MomentRecord } from "@/lib/moment-storage";
+import { useAppAccess } from "@/lib/trial";
 
 // Return to Me (docs/PRODUCT_FLOW.md §15): a contextual in-app surface, not
 // a tab, not a permanent Home card — mounted on the Moments screen only
@@ -20,17 +21,20 @@ export function ReturnToMeBanner() {
   const [writeText, setWriteText] = useState("");
   const [saving, setSaving] = useState(false);
   const voice = useVoiceTranscription();
+  // A check in is something new to write, so it waits for the trial or the Pass.
+  const access = useAppAccess();
 
   // One-time read from an external system (localStorage) on mount — no
   // async boundary to defer into, since the read itself is synchronous.
   useEffect(() => {
+    if (access !== "ok") return;
     const active = getActiveReturnToMe();
     if (active) markReturnToMeSurfaced(active.id);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMoment(active);
-  }, []);
+  }, [access]);
 
-  if (!moment) return null;
+  if (!moment || access !== "ok") return null;
 
   const currentText = composeMode === "speak" ? voice.transcript : writeText;
 

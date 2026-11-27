@@ -18,6 +18,8 @@ import { listenedSeconds, minutesLabel } from "@/lib/listening";
 import { createPauseRecord, type PauseRecord } from "@/lib/pause-storage";
 import { createTellEntry, NOT_ROUTED_INTERPRETATION, type TellEntry } from "@/lib/tell-storage";
 import { viewTransitionsSupported, vtName } from "@/lib/view-transition";
+import { useAppAccess } from "@/lib/trial";
+import { PassGateCard } from "@/components/pass-gate-card";
 
 // Journey as a journal (the product's core idea): one story, newest first,
 // grouped by day. Your own words are keepsake cards, Moments are polaroids,
@@ -252,6 +254,9 @@ function MonthTrail({ days }: { days: Array<{ key: string; day: number; pauses: 
 
 export function JournalComposer({ onSaved }: { onSaved: () => void }) {
   const [open, setOpen] = useState(false);
+  const [gated, setGated] = useState(false);
+  // Writing needs the trial or the Pass; reading what's saved never does.
+  const access = useAppAccess();
   const [text, setText] = useState("");
   const [saved, setSaved] = useState(false);
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
@@ -268,6 +273,10 @@ export function JournalComposer({ onSaved }: { onSaved: () => void }) {
     onSaved();
   };
 
+  if (gated && access && access !== "ok") {
+    return <PassGateCard need={access} redirectTo="/journey" what="write in your journal" onClose={() => setGated(false)} />;
+  }
+
   if (!open) {
     return (
       <div className="space-y-2">
@@ -275,7 +284,8 @@ export function JournalComposer({ onSaved }: { onSaved: () => void }) {
           type="button"
           onClick={() => {
             haptic("tap");
-            setOpen(true);
+            if (access !== "ok") setGated(true);
+            else setOpen(true);
           }}
           className="ds-tap ds-card flex w-full items-center gap-3.5 px-4 py-4 text-left"
         >

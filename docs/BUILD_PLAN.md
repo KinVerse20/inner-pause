@@ -167,7 +167,7 @@ Today, after picking a moment, the player waits on "Want to let it out first?" w
 ---
 
 ## Ask the founder before building
-13. **Should the Inner Pause Pass gate Practice?** All 5 paths are free today; one option is the first path, or the first 3 days, free.
+13. ~~**Should the Inner Pause Pass gate Practice?**~~ **Decided 27 Nov: yes, everything is behind the Pass except the trial of 2 Pauses.** Every Practice session plays through the player, so the trial gate covers it; Tell, journal writing and the Return to Me check in close too once the trial is used (see COMMERCIAL_PLAN C2).
 14. **Raise the library recordings by about 8 dB?** They're quiet: RMS -24 to -32 dB.
 15. **Safety card on writing screens** (Home Tell, Moments let it out, Journey journal): a calm helpline card (Tele-MANAS 14416) on crisis words. Parked by the founder. Letting it out now invites venting, and the only crisis check in the code is in the unused `/api/analyze`.
 16. **Unused files kept for a decision:** `install-pwa-prompt`, `help-tooltip`, `chakra-inspiration-tag` + `lib/practice-paths.ts`, `chakra-visual/symbol/path-ui`, `lotus-visual`, `waveform-face`, `lib/providers/*`, `ai-schemas`, `insights`, `use-app-preferences`, `use-mvp-state`, `use-progress-store`, `POST /api/analyze`; `/auth/reset-password` is still the old gold design.
