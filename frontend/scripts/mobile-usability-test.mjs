@@ -24,6 +24,7 @@ const ROUTES = [
   "/journey", "/profile", "/profile/account", "/profile/calendar", "/profile/help", "/profile/notifications", "/profile/pass",
   "/profile/preferences", "/profile/privacy", "/about", "/chakras", "/chakras/heart", "/chakras/root", "/tell", "/tell?mode=speak",
   "/entry", "/offline", "/privacy-policy", "/terms", "/refund-policy", "/auth", "/auth/reset-password", "/pause/calm",
+  "/install", "/profile/report-bug", "/admin",
   // Empty, missing and not found.
   "/no-such-page", "/pause/player?session=missing", "/tell/recommended?entry=missing", "/chakras/not-a-centre",
 ];
@@ -47,7 +48,9 @@ async function launch() {
 }
 
 // A fresh visitor: past the Entry gate, signed in if asked. Page errors are failures.
-async function visitor(browser, { theme = "light", viewport = PHONE, reducedMotion = "no-preference" } = {}) {
+// They hold a Pass (as the server would report it), so Pauses play; the trial
+// gate has its own flow with `pass: false` (docs/COMMERCIAL_PLAN.md C2).
+async function visitor(browser, { theme = "light", viewport = PHONE, reducedMotion = "no-preference", pass = true } = {}) {
   const context = await browser.newContext({ viewport, colorScheme: theme, reducedMotion, deviceScaleFactor: 2 });
   // The Next.js dev badge sits over the tab bar; it isn't part of the app.
   await context.addInitScript(() =>
@@ -69,12 +72,22 @@ async function visitor(browser, { theme = "light", viewport = PHONE, reducedMoti
   await page.goto(`${BASE}/entry`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin", exact: true }).click();
   await page.waitForTimeout(500);
+  if (pass && !SIGN_IN) await signedInAs(page, { status: "active", lifetime: true, expiresAt: null, trial: { used: 0, limit: 2, pauseIds: [] } });
   if (SIGN_IN) {
     await page.goto(`${BASE}/local-test-sign-in`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /Enter as test listener/ }).click();
     await page.waitForTimeout(1200);
   }
   return { context, page };
+}
+
+// The app asks the server who is signed in on every load (auth-session-sync).
+// Answer for it: a signed-in listener whose account holds `pass`.
+async function signedInAs(page, pass) {
+  await page.unroute("**/api/auth/me").catch(() => {});
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({ json: { user: { id: "walk-through", email: "walk@test.local", fullName: "Walk Through", phone: "", pass } } }),
+  );
 }
 
 async function settle(page, ms = 450) {
@@ -272,8 +285,8 @@ async function narrowAndWide(browser) {
 
 // The flows, end to end.
 async function flows(browser, theme) {
-  const step = async (name, run) => {
-    const { context, page } = await visitor(browser, { theme });
+  const step = async (name, run, options = {}) => {
+    const { context, page } = await visitor(browser, { theme, ...options });
     try {
       await run(page);
       check(page.errors.length === 0, `${theme} ${name}: page errors: ${[...new Set(page.errors)].join(" | ")}`);
@@ -409,6 +422,29 @@ async function flows(browser, theme) {
     await shot(page, `${theme}-flow-journey-stamp`);
   });
 
+  await step("trial gate: a Pause needs an account, then the Pass", async (page) => {
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start a Pause" }).click();
+    await page.waitForURL(/pause\/player/);
+    await settle(page);
+    await page.getByText("Sign in to begin").first().waitFor({ timeout: 8000 }).catch(() => {});
+    await expect(page, "Sign in to begin", "signed out trial gate");
+    await checkScreen(page, `${theme} trial gate signed out`);
+    // Signed in with the trial used up, as the server would report it.
+    await signedInAs(page, { status: "none", lifetime: false, expiresAt: null, trial: { used: 2, limit: 2, pauseIds: ["a", "b"] } });
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start a Pause" }).click();
+    await page.waitForURL(/pause\/player/);
+    await settle(page);
+    await page.getByText("Ready to keep going?").first().waitFor({ timeout: 8000 }).catch(() => {});
+    await expect(page, "Ready to keep going?", "trial used gate");
+    await checkScreen(page, `${theme} trial used gate`);
+    await page.getByRole("button", { name: "See the Pass" }).click();
+    await page.waitForURL(/profile\/pass/);
+    await settle(page);
+    await expect(page, "Launch offer", "Pass page offer");
+  }, { pass: false });
+
   await step("empty journey", async (page) => {
     await page.goto(`${BASE}/journey`, { waitUntil: "networkidle" });
     await settle(page);
@@ -473,4 +509,4 @@ if (failures.length) {
   for (const failure of failures) console.log(`  ✖ ${failure}`);
   process.exit(1);
 }
-console.log(`All ${checks} checks passed (${seconds} s): ${ROUTES.length} screens and 7 flows, light and dark, at 390 × 844, 320 and 768 wide, and with reduced motion.`);
+console.log(`All ${checks} checks passed (${seconds} s): ${ROUTES.length} screens and 8 flows, light and dark, at 390 × 844, 320 and 768 wide, and with reduced motion.`);
