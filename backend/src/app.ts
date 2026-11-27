@@ -7,6 +7,7 @@ import { analyzeRoutes } from "./routes/analyze";
 import { authRoutes } from "./routes/auth";
 import { contentRoutes } from "./routes/content";
 import { journalRoutes } from "./routes/journal";
+import { bugRoutes } from "./routes/bugs";
 import { passRoutes } from "./routes/pass";
 import { practiceRoutes } from "./routes/practice";
 import { profileRoutes } from "./routes/profile";
@@ -48,6 +49,7 @@ export function createApp() {
   app.route("/api/pass", passRoutes);
   app.route("/api/practice", practiceRoutes);
   app.route("/api/journal", journalRoutes);
+  app.route("/api/bugs", bugRoutes);
 
   return app;
 }

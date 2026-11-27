@@ -313,6 +313,17 @@ export function IconInfo(props: IconProps) {
   );
 }
 
+export function IconBug(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="7.5" y="8" width="9" height="11.5" rx="4.5" />
+      <path d="M9.5 8.5a2.5 2.5 0 0 1 5 0" />
+      <path d="M12 12v7.5" />
+      <path d="M7.5 12.5H4.5M19.5 12.5h-3M7.8 16.5l-2.6 1.5M16.2 16.5l2.6 1.5M8 9.5 5.5 7.5M16 9.5l2.5-2" />
+    </Icon>
+  );
+}
+
 export function IconSun(props: IconProps) {
   return (
     <Icon {...props}>

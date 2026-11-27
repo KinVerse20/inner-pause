@@ -19,6 +19,7 @@ import {
 import { invalidBody, readJsonObject, stringField } from "../http";
 import { mailerConfigured, sendPasswordResetEmail } from "../mailer";
 import type { UserDocument } from "../mongo";
+import { detachBugReportsFromUser } from "../bug-store";
 import { detachOrdersFromUser, passStateOf, type PassFields } from "../pass-store";
 import { deleteAllEntries } from "../journal-store";
 import { removeSubscriptionsForUser } from "../push-store";
@@ -171,6 +172,7 @@ authRoutes.post("/delete-account", async (c) => {
   if (!verified) return c.json({ error: "Authentication required." }, 401);
   const userId = verified.record._id.toString();
   await detachOrdersFromUser(userId);
+  await detachBugReportsFromUser(userId);
   await removeSubscriptionsForUser(userId);
   await deleteAllEntries(userId);
   await deleteUser(userId);

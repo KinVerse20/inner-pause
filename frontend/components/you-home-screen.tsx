@@ -9,6 +9,7 @@ import {
   IconBell,
   IconCalendar,
   IconChevronRight,
+  IconBug,
   IconInfo,
   IconPerson,
   IconShield,
@@ -143,6 +144,7 @@ export function YouHomeScreen() {
             <SettingsRow href="/profile/calendar" label="Calendar" description="Google Calendar connection" Icon={IconCalendar} tone="var(--ds-outcome-calm)" flush />
             <SettingsRow href="/profile/privacy" label="Data & Privacy" description="What Pause remembers, export, delete" Icon={IconShield} tone="var(--ds-outcome-reset)" flush />
             <SettingsRow href="/profile/help" label="Help / About" description="Why Inner Pause · Sound & Traditions" Icon={IconInfo} tone="var(--ds-accent-secondary)" flush />
+            <SettingsRow href="/profile/report-bug" label="Report a bug" description="Real bug found? A month of Pass, on us" Icon={IconBug} tone="var(--ds-outcome-release)" flush />
           </section>
         </StaggerItem>
       </Stagger>

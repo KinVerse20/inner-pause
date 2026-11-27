@@ -164,6 +164,7 @@ export function YouHelpScreen() {
         <section className="space-y-2">
           <SettingsSectionTitle>Contact and legal</SettingsSectionTitle>
           <div className="rounded-[var(--ds-radius-md)] px-4 py-1" style={{ background: "var(--ds-surface)" }}>
+            <SettingsRow href="/profile/report-bug" label="Report a bug" description="If it's real, a month of Pass is on us" />
             <SettingsRow href={`mailto:${SUPPORT_EMAIL}`} label="Contact us" description={SUPPORT_EMAIL} />
             <SettingsRow href="/terms" label="Terms of Service" />
             <SettingsRow href="/privacy-policy" label="Privacy Policy" />

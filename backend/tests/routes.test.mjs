@@ -72,6 +72,7 @@ test("the ends soon emails are due 7 days and 1 day before", async () => {
   assert.equal(reminderDue(inDays(-1), now), null);
 });
 
-test("counting a trial Pause needs a session", async () => {
+test("trial and bug reports refuse without a session", async () => {
   assert.equal((await app.request("/api/pass/trial", { method: "POST" })).status, 401);
+  assert.equal((await app.request("/api/bugs", { method: "POST" })).status, 401);
 });
