@@ -8,7 +8,13 @@ import { createServer } from "node:http";
 // then the webhook for the same payment, which must not add a second year.
 // Also the trial, bug report and admin routes with a real session.
 //   TEST_MONGODB_URI=mongodb://127.0.0.1:27018/ip-pay-test npm test
-const MONGO = process.env.TEST_MONGODB_URI;
+// Its own database next to the one given: test files run at the same time.
+const MONGO = process.env.TEST_MONGODB_URI && withDatabaseSuffix(process.env.TEST_MONGODB_URI, "payments");
+function withDatabaseSuffix(uri, suffix) {
+  const url = new URL(uri);
+  url.pathname = `${url.pathname.replace(/^\//, "") || "test"}-${suffix}`;
+  return url.toString();
+}
 const skip = MONGO ? false : "set TEST_MONGODB_URI to a throwaway database";
 const DAY = 24 * 60 * 60 * 1000;
 const sign = (secret, data) => createHmac("sha256", secret).update(data).digest("hex");
@@ -46,7 +52,7 @@ async function setup() {
   const { createSessionToken } = await import("../src/auth/session.ts");
   const { createApp } = await import("../src/app.ts");
   const db = await getDb();
-  for (const name of ["users", "pass_orders", "bug_reports", "pass_grants"]) await db.collection(name).deleteMany({});
+  for (const name of ["users", "pass_orders", "bug_reports", "pass_grants", "admin_changes"]) await db.collection(name).deleteMany({});
   const users = await usersCollection();
   const make = async (email) => {
     const { insertedId } = await users.insertOne({ email, passwordHash: "x", fullName: email.split("@")[0], phone: "", createdAt: new Date(), updatedAt: new Date() });
@@ -191,6 +197,59 @@ test("a bug report with a screenshot, and Valid gives a month once", { skip }, a
     // Leave no test screenshot behind.
     const { fileStore } = await import("../src/file-store.ts");
     for (const report of await db.collection("bug_reports").find({ screenshotKey: { $exists: true } }).toArray()) await fileStore().remove(report.screenshotKey);
+  } finally {
+    await done();
+  }
+});
+
+test("admin opens an account and changes it, and each change is logged", { skip }, async () => {
+  const { app, db, users, make, done } = await setup();
+  try {
+    const user = await make("meera@example.com");
+    const founder = await make("founder@example.com");
+    const patch = (cookie, body) => app.request(`/api/admin/users/${user.id}`, { ...json(cookie, body), method: "PATCH" });
+
+    // Not an admin: the route doesn't exist.
+    assert.equal((await app.request(`/api/admin/users/${user.id}`, { headers: { Cookie: user.cookie } })).status, 404);
+    assert.equal((await patch(user.cookie, { fullName: "Me" })).status, 404);
+
+    const opened = await (await app.request(`/api/admin/users/${user.id}`, { headers: { Cookie: founder.cookie } })).json();
+    assert.equal(opened.user.email, "meera@example.com");
+
+    // The newest accounts show with no search.
+    const list = await (await app.request("/api/admin/users", { headers: { Cookie: founder.cookie } })).json();
+    assert.equal(list.users.length, 2);
+
+    // Details, an email someone else has, then a free one.
+    assert.equal((await patch(founder.cookie, { email: "founder@example.com" })).status, 409);
+    const details = await (await patch(founder.cookie, { fullName: "Meera S", phone: "98765 43210", email: "Meera.S@Example.com" })).json();
+    assert.deepEqual(details.changed.sort(), ["email", "fullName", "phone"]);
+    assert.equal(details.user.email, "meera.s@example.com");
+
+    // The Pass: an end date, then for life, then off again.
+    const end = "2027-01-31T23:59:59+05:30";
+    const dated = await (await patch(founder.cookie, { passExpiresAt: end })).json();
+    assert.equal(dated.user.passExpiresAt, new Date(end).toISOString());
+    assert.equal((await (await patch(founder.cookie, { passLifetime: true })).json()).user.pass.lifetime, true);
+    const removed = await (await patch(founder.cookie, { passLifetime: false, passExpiresAt: null })).json();
+    assert.equal(removed.user.pass.status, "none");
+
+    // The trial starts again.
+    await users.updateOne({ _id: user.id }, { $set: { trialPauseIds: ["a", "b"] } });
+    assert.equal((await (await patch(founder.cookie, { resetTrial: true })).json()).user.pass.trial.used, 0);
+
+    // A new password: their old session stops working, the new password signs in.
+    assert.equal((await patch(founder.cookie, { newPassword: "abc" })).status, 400);
+    assert.equal((await patch(founder.cookie, { newPassword: "Fresh-pass-1" })).status, 200);
+    assert.equal((await (await app.request("/api/auth/me", { headers: { Cookie: user.cookie } })).json()).user, null);
+    const login = await app.request("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "meera.s@example.com", password: "Fresh-pass-1" }) });
+    assert.equal(login.status, 200);
+
+    // Every change logged with who made it, and never the password itself.
+    const log = await db.collection("admin_changes").find({ userId: user.id }).toArray();
+    assert.ok(log.length >= 6);
+    assert.ok(log.every((entry) => entry.by === "founder@example.com"));
+    assert.ok(!JSON.stringify(log).includes("Fresh-pass-1"));
   } finally {
     await done();
   }

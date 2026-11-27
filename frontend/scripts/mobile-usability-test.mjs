@@ -451,6 +451,9 @@ async function flows(browser, theme) {
     await checkScreen(page, `${theme} journal after the trial`);
     await page.getByRole("button", { name: "Not now" }).click();
     await expect(page, "Write in your journal", "journal gate closes");
+    await page.getByRole("tab", { name: "Patterns" }).click();
+    await settle(page);
+    await expect(page, "Ready to keep going?", "Patterns closed after the trial");
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Start a Pause" }).click();
     await page.waitForURL(/pause\/player/);

@@ -59,8 +59,10 @@ available yet and to email the support address.
    `.env`, restart the API, and make one real ₹1,000 payment with your own
    account. Refund it from the Dashboard if you like (the Pass stays on that
    account).
-6. Set `ADMIN_EMAILS` to the founder's account email, so /admin works and
-   bug reports arrive by email.
+6. Set `ADMIN_EMAILS` to the founder's account email (comma separated for
+   more than one), so /admin works and bug reports arrive by email. The
+   account itself is an ordinary sign up with that email; restart the API
+   after changing the list.
 
 The prices are in `shared/src/brand.ts`: `PASS_PRICE_INR` (charged, ₹1,000
 during the launch offer) and `PASS_LIST_PRICE_INR` (₹2,000, shown struck out).

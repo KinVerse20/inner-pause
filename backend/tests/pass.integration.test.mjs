@@ -4,7 +4,13 @@ import assert from "node:assert/strict";
 // The yearly Pass, the 2 Pause trial and the "ends soon" emails, against a
 // real MongoDB. Skips unless TEST_MONGODB_URI points at a throwaway database:
 //   TEST_MONGODB_URI=mongodb://127.0.0.1:27018/ip-pass-test npm test
-const MONGO = process.env.TEST_MONGODB_URI;
+// Its own database next to the one given: test files run at the same time.
+const MONGO = process.env.TEST_MONGODB_URI && withDatabaseSuffix(process.env.TEST_MONGODB_URI, "pass");
+function withDatabaseSuffix(uri, suffix) {
+  const url = new URL(uri);
+  url.pathname = `${url.pathname.replace(/^\//, "") || "test"}-${suffix}`;
+  return url.toString();
+}
 const skip = MONGO ? false : "set TEST_MONGODB_URI to a throwaway database";
 const DAY = 24 * 60 * 60 * 1000;
 

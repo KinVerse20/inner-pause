@@ -7,10 +7,11 @@ import type { PassState } from "@inner-pause/shared";
 
 import { apiFetch, apiUrl } from "@/lib/api";
 import { formatPassDate } from "@/lib/pass-summary";
+import { AdminUserAccount } from "@/components/admin-user-account";
 
 // /admin (docs/COMMERCIAL_PLAN.md C7): the founder's tools. Bug reports
 // (mark Valid to give the user a month of Pass, once per report), and
-// finding a user to give them time by hand. Only accounts in ADMIN_EMAILS;
+// users: give time by hand, or open an account to see and change it. Only accounts in ADMIN_EMAILS;
 // to anyone else the API answers "not found" and so does this page.
 
 type BugStatus = "new" | "valid" | "not-a-bug" | "duplicate";
@@ -246,12 +247,31 @@ function Users() {
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  const search = async (event: React.FormEvent) => {
+  const load = useCallback(async (text: string) => {
+    const response = await apiFetch(`/api/admin/users?q=${encodeURIComponent(text.trim())}`, { cache: "no-store" }).catch(() => null);
+    setUsers(response?.ok ? ((await response.json()) as { users: AdminUser[] }).users : []);
+  }, []);
+
+  // The newest accounts, before any search.
+  useEffect(() => {
+    let live = true;
+    apiFetch("/api/admin/users", { cache: "no-store" })
+      .then(async (response) => (response.ok ? ((await response.json()) as { users: AdminUser[] }).users : []))
+      .catch(() => [])
+      .then((found) => {
+        if (live) setUsers(found);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const search = (event: React.FormEvent) => {
     event.preventDefault();
     setNotice(null);
-    const response = await apiFetch(`/api/admin/users?q=${encodeURIComponent(query.trim())}`, { cache: "no-store" }).catch(() => null);
-    setUsers(response?.ok ? ((await response.json()) as { users: AdminUser[] }).users : []);
+    void load(query);
   };
 
   const extend = async (user: AdminUser) => {
@@ -274,13 +294,25 @@ function Users() {
     }
   };
 
+  if (openId) {
+    return (
+      <AdminUserAccount
+        userId={openId}
+        onBack={() => {
+          setOpenId(null);
+          void load(query);
+        }}
+      />
+    );
+  }
+
   return (
     <section className="space-y-4" aria-label="Users">
-      <form onSubmit={(event) => void search(event)} className="flex gap-2">
+      <form onSubmit={search} className="flex gap-2">
         <label htmlFor="admin-user-search" className="sr-only">
           Email or name
         </label>
-        <input id="admin-user-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Email or name" className="ds-field min-w-0 flex-1" />
+        <input id="admin-user-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Email, name or phone" className="ds-field min-w-0 flex-1" />
         <button type="submit" className="ds-filled ds-tap min-h-11 px-5 text-[0.9rem]">
           Find
         </button>
@@ -304,11 +336,16 @@ function Users() {
                   {user.email} · {passLine(user.pass)}
                 </p>
               </div>
-              {user.pass.lifetime ? null : (
-                <button type="button" disabled={busyId === user.id} onClick={() => void extend(user)} className="ds-tap min-h-11 rounded-full border px-4 text-[0.85rem] font-semibold disabled:opacity-55" style={{ borderColor: "var(--ds-border)", color: "var(--ds-accent)" }}>
-                  Give 1 month
+              <div className="flex flex-wrap gap-2">
+                {user.pass.lifetime ? null : (
+                  <button type="button" disabled={busyId === user.id} onClick={() => void extend(user)} className="ds-tap min-h-11 rounded-full border px-4 text-[0.85rem] font-semibold disabled:opacity-55" style={{ borderColor: "var(--ds-border)", color: "var(--ds-accent)" }}>
+                    Give 1 month
+                  </button>
+                )}
+                <button type="button" onClick={() => setOpenId(user.id)} className="ds-filled ds-tap min-h-11 px-4 text-[0.85rem]">
+                  Open account
                 </button>
-              )}
+              </div>
             </li>
           ))}
         </ul>

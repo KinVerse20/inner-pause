@@ -3,7 +3,8 @@ import { Hono } from "hono";
 import { ObjectId } from "mongodb";
 
 import { getAdmin } from "../admin/admins";
-import { normalizeEmail } from "../auth/users";
+import { hashPassword } from "../auth/password";
+import { normalizeEmail, updateUserPassword } from "../auth/users";
 import {
   BUG_REWARD_DAYS,
   BUG_STATUSES,
@@ -18,7 +19,7 @@ import {
 } from "../bug-store";
 import { readJsonObject, stringField } from "../http";
 import { mailerConfigured, sendMail } from "../mailer";
-import { getDb, usersCollection } from "../mongo";
+import { getDb, usersCollection, type UserDocument } from "../mongo";
 import { extendPass, passStateOf } from "../pass-store";
 import { streamFile } from "./sounds";
 
@@ -110,16 +111,17 @@ adminRoutes.post("/bugs/:id/status", async (c) => {
   return c.json({ report: report ? publicReport(report) : null, rewarded });
 });
 
-// Find a user by email (exact) or by part of their email or name.
+// Find a user by email (exact) or by part of their email or name. With no
+// search, the newest 20 accounts.
 adminRoutes.get("/users", async (c) => {
   const query = (c.req.query("q") ?? "").trim();
-  if (query.length < 2) return c.json({ users: [] });
   const users = await usersCollection();
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const found = await users
-    .find({ $or: [{ email: normalizeEmail(query) }, { email: { $regex: escaped, $options: "i" } }, { fullName: { $regex: escaped, $options: "i" } }, { phone: query }] })
-    .limit(20)
-    .toArray();
+  const filter =
+    query.length < 2
+      ? {}
+      : { $or: [{ email: normalizeEmail(query) }, { email: { $regex: escaped, $options: "i" } }, { fullName: { $regex: escaped, $options: "i" } }, { phone: query }] };
+  const found = await users.find(filter).sort({ createdAt: -1 }).limit(20).toArray();
   return c.json({
     users: found.map((user) => ({
       id: user._id.toString(),
@@ -147,4 +149,135 @@ adminRoutes.post("/users/:id/extend", async (c) => {
   const user = await (await usersCollection()).findOne({ _id: userId });
   if (user && body.notify === true) await emailReward(user.email, until, days, "");
   return c.json({ pass: user ? passStateOf(user) : null, days });
+});
+
+// One account in full: what the server holds for it. (Pauses, the journal
+// and Moments live on the person's phone; only an encrypted journal backup,
+// if they turned it on, is here, and it stays unreadable to us.)
+adminRoutes.get("/users/:id", async (c) => {
+  const id = c.req.param("id");
+  if (!ObjectId.isValid(id)) return c.json(notFound, 404);
+  const user = await (await usersCollection()).findOne({ _id: new ObjectId(id) });
+  if (!user) return c.json(notFound, 404);
+  return c.json({ user: await accountView(user) });
+});
+
+async function accountView(user: UserDocument & { _id: ObjectId }) {
+  const db = await getDb();
+  const id = user._id.toString();
+  const [orders, grants, bugs, journalBackups, reminders, changes] = await Promise.all([
+    db.collection("pass_orders").find({ userId: id }).sort({ createdAt: -1 }).limit(50).toArray(),
+    db.collection("pass_grants").find({ userId: user._id }).sort({ createdAt: -1 }).limit(50).toArray(),
+    db.collection("bug_reports").find({ userId: id }).sort({ createdAt: -1 }).limit(50).toArray(),
+    db.collection("journal_entries").countDocuments({ userId: id }),
+    db.collection("push_subscriptions").countDocuments({ userId: id }),
+    db.collection("admin_changes").find({ userId: user._id }).sort({ createdAt: -1 }).limit(50).toArray(),
+  ]);
+  const iso = (value: unknown) => (value instanceof Date ? value.toISOString() : null);
+  return {
+    id,
+    email: user.email,
+    fullName: user.fullName,
+    phone: user.phone,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: iso(user.updatedAt),
+    signupSource: user.signupSource ?? null,
+    pass: passStateOf(user),
+    passExpiresAt: iso(user.passExpiresAt),
+    passLifetime: Boolean(user.passLifetime),
+    trialPauseIds: user.trialPauseIds ?? [],
+    journalBackups,
+    reminders,
+    orders: orders.map((order) => ({ id: String(order._id), amount: order.amount, status: order.status, paymentId: order.paymentId ?? null, createdAt: iso(order.createdAt), paidAt: iso(order.paidAt) })),
+    grants: grants.map((grant) => ({ days: grant.days, reason: grant.reason, by: grant.by, until: iso(grant.until), createdAt: iso(grant.createdAt) })),
+    bugReports: bugs.map((report) => ({ id: String(report._id), description: report.description, status: report.status, createdAt: iso(report.createdAt) })),
+    changes: changes.map((change) => ({ by: change.by, fields: change.fields, createdAt: iso(change.createdAt) })),
+  };
+}
+
+const MAX_NAME = 80;
+const MAX_PHONE = 30;
+const MAX_EMAIL = 254;
+const MAX_PASSWORD = 200;
+
+// Change an account: name, phone, email, the Pass (end date or lifetime),
+// the trial (start it again), a new password, or sign them out everywhere.
+// Each change is logged in admin_changes with who made it (never a password).
+adminRoutes.patch("/users/:id", async (c) => {
+  const id = c.req.param("id");
+  if (!ObjectId.isValid(id)) return c.json(notFound, 404);
+  const userId = new ObjectId(id);
+  const users = await usersCollection();
+  const before = await users.findOne({ _id: userId });
+  if (!before) return c.json(notFound, 404);
+  const body = await readJsonObject(c);
+  if (!body) return c.json({ error: "Nothing to change." }, 400);
+
+  const set: Partial<UserDocument> = {};
+  const unset: Record<string, ""> = {};
+  const fields: Record<string, { from: unknown; to: unknown }> = {};
+  const note = (field: string, from: unknown, to: unknown) => {
+    if (JSON.stringify(from ?? null) !== JSON.stringify(to ?? null)) fields[field] = { from: from ?? null, to: to ?? null };
+  };
+
+  if (typeof body.fullName === "string") {
+    const fullName = body.fullName.trim().slice(0, MAX_NAME);
+    note("fullName", before.fullName, fullName);
+    set.fullName = fullName;
+  }
+  if (typeof body.phone === "string") {
+    const phone = body.phone.trim().slice(0, MAX_PHONE);
+    note("phone", before.phone, phone);
+    set.phone = phone;
+  }
+  if (typeof body.email === "string") {
+    const email = normalizeEmail(body.email);
+    if (!email.includes("@") || email.length > MAX_EMAIL) return c.json({ error: "That email doesn't look right." }, 400);
+    if (email !== before.email) {
+      if (await users.findOne({ email, _id: { $ne: userId } })) return c.json({ error: "Another account already uses this email." }, 409);
+      note("email", before.email, email);
+      set.email = email;
+    }
+  }
+  if ("passExpiresAt" in body) {
+    if (body.passExpiresAt === null) {
+      note("passExpiresAt", before.passExpiresAt?.toISOString(), null);
+      unset.passExpiresAt = "";
+    } else {
+      const end = typeof body.passExpiresAt === "string" ? new Date(body.passExpiresAt) : null;
+      if (!end || Number.isNaN(end.getTime())) return c.json({ error: "The Pass end date isn't a date." }, 400);
+      note("passExpiresAt", before.passExpiresAt?.toISOString(), end.toISOString());
+      set.passExpiresAt = end;
+      if (!before.passActivatedAt) set.passActivatedAt = new Date();
+    }
+    // A new end date gets its own "ends soon" emails.
+    unset.passReminderSentFor = "";
+    unset.passReminderDays = "";
+  }
+  if (typeof body.passLifetime === "boolean") {
+    note("passLifetime", Boolean(before.passLifetime), body.passLifetime);
+    set.passLifetime = body.passLifetime;
+  }
+  if (body.resetTrial === true) {
+    note("trialPauseIds", before.trialPauseIds ?? [], []);
+    unset.trialPauseIds = "";
+  }
+  if (typeof body.newPassword === "string") {
+    if (body.newPassword.length < 6 || body.newPassword.length > MAX_PASSWORD) return c.json({ error: "A password needs at least 6 characters." }, 400);
+    fields.password = { from: "(hidden)", to: "(changed)" };
+  }
+  if (body.signOut === true) fields.signedOut = { from: null, to: true };
+
+  if (Object.keys(fields).length === 0) return c.json({ user: await accountView(before), changed: [] });
+
+  // Don't unset what is also being set.
+  for (const key of Object.keys(set)) delete unset[key];
+  await users.updateOne({ _id: userId }, { $set: { ...set, updatedAt: new Date() }, ...(Object.keys(unset).length ? { $unset: unset } : {}) });
+  // A new password signs them out everywhere (updateUserPassword); so does signOut.
+  if (typeof body.newPassword === "string") await updateUserPassword(id, await hashPassword(body.newPassword));
+  else if (body.signOut === true) await users.updateOne({ _id: userId }, { $set: { passwordChangedAt: new Date() } });
+
+  await (await getDb()).collection("admin_changes").insertOne({ userId, by: c.get("adminEmail"), fields, createdAt: new Date() });
+  const after = await users.findOne({ _id: userId });
+  return c.json({ user: after ? await accountView(after) : null, changed: Object.keys(fields) });
 });
