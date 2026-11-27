@@ -29,6 +29,9 @@ interface BugReport {
   createdAt: string;
   rewardedAt: string | null;
   rewardedUntil: string | null;
+  /** What the user sees with the report: the reason, or a thank you. */
+  adminNote: string | null;
+  reviewedAt: string | null;
 }
 
 interface AdminUser {
@@ -48,6 +51,13 @@ const FILTERS: Array<{ id: BugStatus | "all"; label: string }> = [
 ];
 
 const STATUS_LABEL: Record<BugStatus, string> = { new: "New", valid: "Valid", "not-a-bug": "Not a bug", duplicate: "Duplicate" };
+
+// What the reporter is shown for each decision, to help write the note.
+const NOTE_PROMPT: Partial<Record<BugStatus, string>> = {
+  valid: "A thank you for them (optional)",
+  "not-a-bug": "Why it isn't a bug (they'll see this)",
+  duplicate: "Which report it repeats, or a kind word (they'll see this)",
+};
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
@@ -118,6 +128,9 @@ function BugReports() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // The decision being written: its report, status and the note for the user.
+  const [deciding, setDeciding] = useState<{ id: string; status: BugStatus } | null>(null);
+  const [note, setNote] = useState("");
 
   const load = useCallback(async (which: BugStatus | "all") => {
     setError(null);
@@ -135,16 +148,31 @@ function BugReports() {
     void load(filter);
   }, [filter, load]);
 
-  const setStatus = async (report: BugReport, status: BugStatus) => {
+  const choose = (report: BugReport, status: BugStatus) => {
+    if (status === "new") {
+      void setStatus(report, status, "");
+      return;
+    }
+    setDeciding({ id: report.id, status });
+    setNote(report.status === status ? (report.adminNote ?? "") : "");
+  };
+
+  const setStatus = async (report: BugReport, status: BugStatus, message: string) => {
     setBusyId(report.id);
     setNotice(null);
     try {
       const response = await apiFetch(`/api/admin/bugs/${report.id}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, note: message.trim() }),
       });
-      if (!response.ok) throw new Error();
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+        setNotice(payload.error ?? "That didn't save. Try again.");
+        return;
+      }
+      setDeciding(null);
+      setNote("");
       const { report: updated, rewarded } = (await response.json()) as { report: BugReport; rewarded: boolean };
       if (rewarded && updated.rewardedUntil) {
         setNotice(`A month added for ${updated.userName || updated.userEmail}. Their Pass now runs until ${formatPassDate(new Date(updated.rewardedUntil))}.`);
@@ -213,9 +241,15 @@ function BugReports() {
                   Month given{report.rewardedUntil ? ` · Pass until ${formatPassDate(new Date(report.rewardedUntil))}` : ""}
                 </p>
               ) : null}
+              {report.adminNote ? (
+                <p className="rounded-[var(--ds-radius-sm)] px-3 py-2 text-[0.85rem] leading-6" style={{ background: "var(--ds-surface)" }}>
+                  <span className="font-semibold">They see: </span>
+                  {report.adminNote}
+                </p>
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 {report.status !== "valid" && !report.rewardedAt && report.userId ? (
-                  <button type="button" disabled={busyId === report.id} onClick={() => void setStatus(report, "valid")} className="ds-filled ds-tap min-h-11 px-4 text-[0.85rem] disabled:opacity-55">
+                  <button type="button" disabled={busyId === report.id} onClick={() => choose(report, "valid")} className="ds-filled ds-tap min-h-11 px-4 text-[0.85rem] disabled:opacity-55">
                     Valid · give 1 month
                   </button>
                 ) : null}
@@ -226,7 +260,7 @@ function BugReports() {
                       key={status}
                       type="button"
                       disabled={busyId === report.id}
-                      onClick={() => void setStatus(report, status)}
+                      onClick={() => choose(report, status)}
                       className="ds-tap min-h-11 rounded-full border px-4 text-[0.85rem] font-medium disabled:opacity-55"
                       style={{ borderColor: "var(--ds-border)" }}
                     >
@@ -234,6 +268,35 @@ function BugReports() {
                     </button>
                   ))}
               </div>
+              {deciding?.id === report.id ? (
+                <div className="space-y-2 rounded-[var(--ds-radius-md)] px-3 py-3" style={{ background: "var(--ds-accent-soft)" }}>
+                  <label htmlFor={`note-${report.id}`} className="block text-[0.85rem] font-semibold">
+                    {STATUS_LABEL[deciding.status]}: {NOTE_PROMPT[deciding.status]}
+                  </label>
+                  <textarea
+                    id={`note-${report.id}`}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    rows={3}
+                    maxLength={500}
+                    autoFocus
+                    className="ds-field w-full resize-none text-[0.9rem] leading-6"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busyId === report.id || (deciding.status !== "valid" && !note.trim())}
+                      onClick={() => void setStatus(report, deciding.status, note)}
+                      className="ds-filled ds-tap min-h-11 px-4 text-[0.85rem] disabled:opacity-55"
+                    >
+                      {deciding.status === "valid" ? "Give 1 month" : "Send to them"}
+                    </button>
+                    <button type="button" onClick={() => setDeciding(null)} className="ds-tap min-h-11 rounded-full px-3 text-[0.85rem] font-medium" style={{ color: "var(--ds-text-secondary)" }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

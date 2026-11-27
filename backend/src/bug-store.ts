@@ -37,7 +37,13 @@ export interface BugReportDocument {
   rewardedBy?: string;
   /** The user's Pass end date after the reward. */
   rewardedUntil?: Date;
+  /** The admin's words to the user: why it isn't a bug, or a thank you. Shown in their Report a bug list. */
+  adminNote?: string;
+  /** When an admin last set the status. */
+  reviewedAt?: Date;
 }
+
+export const MAX_ADMIN_NOTE_LENGTH = 500;
 
 export async function bugReportsCollection(): Promise<Collection<BugReportDocument>> {
   return (await getDb()).collection<BugReportDocument>("bug_reports");
@@ -106,10 +112,20 @@ export async function findBugReport(id: string) {
   return (await bugReportsCollection()).findOne({ _id: new ObjectId(id) });
 }
 
-/** Sets a report's status. Returns the report as it was before, or null if there's none. */
-export async function setBugStatus(id: string, status: BugStatus) {
+/**
+ * Sets a report's status and the note the user sees with it (none clears
+ * it). Returns the report as it was before, or null if there's none.
+ */
+export async function setBugStatus(id: string, status: BugStatus, note?: string) {
   if (!ObjectId.isValid(id)) return null;
-  return (await bugReportsCollection()).findOneAndUpdate({ _id: new ObjectId(id) }, { $set: { status, updatedAt: new Date() } });
+  const now = new Date();
+  const set = { status, updatedAt: now, ...(status === "new" ? {} : { reviewedAt: now }), ...(note ? { adminNote: note } : {}) };
+  return (await bugReportsCollection()).findOneAndUpdate({ _id: new ObjectId(id) }, { $set: set, ...(note ? {} : { $unset: { adminNote: "" } }) });
+}
+
+/** A user's own reports, newest first, for their Report a bug page. */
+export async function listBugReportsOf(userId: string) {
+  return (await bugReportsCollection()).find({ userId }).sort({ createdAt: -1 }).limit(50).toArray();
 }
 
 /**

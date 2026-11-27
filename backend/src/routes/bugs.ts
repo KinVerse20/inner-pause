@@ -3,7 +3,7 @@ import { Hono } from "hono";
 
 import { adminEmails } from "../admin/admins";
 import { getVerifiedSession } from "../auth/session";
-import { createBugReport, imageTypeOf, MAX_DESCRIPTION_LENGTH, MAX_SCREENSHOT_BYTES } from "../bug-store";
+import { createBugReport, imageTypeOf, listBugReportsOf, MAX_DESCRIPTION_LENGTH, MAX_SCREENSHOT_BYTES } from "../bug-store";
 import { mailerConfigured, sendMail } from "../mailer";
 import { countRecent, recordEvent } from "../rate-limit";
 
@@ -11,6 +11,26 @@ export const bugRoutes = new Hono();
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const REPORTS_PER_DAY = 10;
+
+// Your own reports and where each stands: under review, accepted (and the
+// month it gave), or turned down with the admin's reason.
+bugRoutes.get("/mine", async (c) => {
+  const verified = await getVerifiedSession(c);
+  if (!verified) return c.json({ error: "Sign in to see your reports." }, 401);
+  const reports = await listBugReportsOf(verified.record._id.toString());
+  return c.json({
+    reports: reports.map((report) => ({
+      id: report._id.toString(),
+      description: report.description,
+      hasScreenshot: Boolean(report.screenshotKey),
+      status: report.status,
+      note: report.adminNote ?? null,
+      createdAt: report.createdAt.toISOString(),
+      reviewedAt: report.reviewedAt?.toISOString() ?? null,
+      rewardedUntil: report.rewardedUntil?.toISOString() ?? null,
+    })),
+  });
+});
 
 // Report a bug (docs/COMMERCIAL_PLAN.md C6): multipart form with
 // `description`, optional `screenshot` (an image, up to 5 MB) and `page`.

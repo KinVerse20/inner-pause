@@ -8,10 +8,27 @@ import { YouScreenHeader } from "@/components/settings-row";
 import { getAccount, subscribeAccount, type LocalAccount } from "@/lib/account-store";
 import { apiFetch } from "@/lib/api";
 import { haptic } from "@/lib/haptics";
+import { formatPassDate } from "@/lib/pass-summary";
 
 // You -> Report a bug (docs/COMMERCIAL_PLAN.md C6): what happened, and a
 // screenshot if there is one. A report the founder finds is a real bug gives
 // a month of Pass (C7). The page it came from is sent along (?from=).
+
+interface MyReport {
+  id: string;
+  description: string;
+  status: "new" | "valid" | "not-a-bug" | "duplicate";
+  note: string | null;
+  createdAt: string;
+  rewardedUntil: string | null;
+}
+
+const STATUS: Record<MyReport["status"], { label: string; tone: string }> = {
+  new: { label: "Under review", tone: "var(--ds-text-secondary)" },
+  valid: { label: "Accepted · a month added", tone: "var(--ds-success)" },
+  "not-a-bug": { label: "Not a bug", tone: "var(--ds-text-secondary)" },
+  duplicate: { label: "Already reported", tone: "var(--ds-text-secondary)" },
+};
 
 const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024;
 const MAX_LENGTH = 4000;
@@ -26,6 +43,23 @@ export function YouReportBugScreen() {
   const [error, setError] = useState<string | null>(null);
   const [from, setFrom] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  // Your reports and where each stands (GET /api/bugs/mine).
+  const [mine, setMine] = useState<MyReport[] | null>(null);
+  const [mineVersion, setMineVersion] = useState(0);
+
+  useEffect(() => {
+    if (!account) return;
+    let live = true;
+    apiFetch("/api/bugs/mine", { cache: "no-store" })
+      .then(async (response) => (response.ok ? ((await response.json()) as { reports: MyReport[] }).reports : []))
+      .catch(() => [])
+      .then((reports) => {
+        if (live) setMine(reports);
+      });
+    return () => {
+      live = false;
+    };
+  }, [account, mineVersion]);
 
   useEffect(() => {
     const refresh = () => setAccount(getAccount());
@@ -84,6 +118,7 @@ export function YouReportBugScreen() {
       }
       haptic("success");
       setSent(true);
+      setMineVersion((value) => value + 1);
     } catch (caught) {
       setError(caught instanceof Error && caught.message !== "Failed to fetch" ? caught.message : "It didn't send. Check your connection and try again.");
     } finally {
@@ -107,7 +142,7 @@ export function YouReportBugScreen() {
           <section className="ds-card px-5 py-6 text-center" role="status">
             <p className="ds-h3">Thank you</p>
             <p className="mt-1.5 text-[0.9rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
-              We&rsquo;ll look into it. If it&rsquo;s a real bug, you&rsquo;ll get an email when your month is added.
+              We&rsquo;ll look into it. You&rsquo;ll see what we decide below, and we&rsquo;ll email you too.
             </p>
             <button
               type="button"
@@ -194,6 +229,40 @@ export function YouReportBugScreen() {
             </button>
           </form>
         )}
+
+        {account && mine && mine.length > 0 ? (
+          <section aria-labelledby="my-reports" className="space-y-2.5">
+            <h2 id="my-reports" className="ds-label uppercase" style={{ color: "var(--ds-text-muted)" }}>
+              Your reports
+            </h2>
+            <ul className="space-y-2.5">
+              {mine.map((report) => (
+                <li key={report.id} className="ds-card px-4 py-3.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[0.85rem] font-semibold" style={{ color: STATUS[report.status].tone }}>
+                      {STATUS[report.status].label}
+                    </span>
+                    <span className="shrink-0 text-[0.76rem]" style={{ color: "var(--ds-text-muted)" }}>
+                      {new Date(report.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-[0.88rem] leading-6" style={{ color: "var(--ds-text-secondary)" }}>
+                    {report.description}
+                  </p>
+                  {report.status === "valid" && report.rewardedUntil ? (
+                    <p className="mt-1.5 text-[0.85rem]">Thank you. Your Pass now runs until {formatPassDate(new Date(report.rewardedUntil))}.</p>
+                  ) : null}
+                  {report.note ? (
+                    <p className="mt-2 rounded-[var(--ds-radius-sm)] px-3 py-2 text-[0.85rem] leading-6" style={{ background: "var(--ds-accent-soft)" }}>
+                      <span className="font-semibold">From us: </span>
+                      {report.note}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
       </div>
     </PauseShell>
   );

@@ -187,6 +187,29 @@ test("a bug report with a screenshot, and Valid gives a month once", { skip }, a
     assert.equal((await users.findOne({ _id: user.id })).passExpiresAt.getTime(), end);
     assert.equal(await db.collection("pass_grants").countDocuments({ userId: user.id }), 1);
 
+    // The reporter sees it accepted, with the month it gave.
+    const mine = await (await app.request("/api/bugs/mine", { headers: { Cookie: user.cookie } })).json();
+    assert.equal(mine.reports[0].status, "valid");
+    assert.ok(mine.reports[0].rewardedUntil);
+    assert.equal((await app.request("/api/bugs/mine")).status, 401);
+
+    // A second report turned down: a reason is required, and the reporter sees it.
+    const second = new FormData();
+    second.set("description", "The button looks a bit pale to me");
+    const { id: secondId } = await (await app.request("/api/bugs", { method: "POST", headers: { Cookie: user.cookie }, body: second })).json();
+    const noReason = await app.request(`/api/admin/bugs/${secondId}/status`, json(founder.cookie, { status: "not-a-bug" }));
+    assert.equal(noReason.status, 400);
+    const withReason = await app.request(`/api/admin/bugs/${secondId}/status`, json(founder.cookie, { status: "not-a-bug", note: "That pale look is on purpose, for a calmer screen." }));
+    assert.equal(withReason.status, 200);
+    assert.equal((await withReason.json()).report.adminNote, "That pale look is on purpose, for a calmer screen.");
+    const after = await (await app.request("/api/bugs/mine", { headers: { Cookie: user.cookie } })).json();
+    const turnedDown = after.reports.find((report) => report.id === secondId);
+    assert.equal(turnedDown.status, "not-a-bug");
+    assert.equal(turnedDown.note, "That pale look is on purpose, for a calmer screen.");
+    // Someone else never sees it.
+    const other = await make("other@example.com");
+    assert.equal((await (await app.request("/api/bugs/mine", { headers: { Cookie: other.cookie } })).json()).reports.length, 0);
+
     // By hand, from the Users tab.
     const found = await (await app.request("/api/admin/users?q=reporter", { headers: { Cookie: founder.cookie } })).json();
     assert.equal(found.users[0].email, "reporter@example.com");

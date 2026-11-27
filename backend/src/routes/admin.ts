@@ -8,6 +8,7 @@ import { normalizeEmail, updateUserPassword } from "../auth/users";
 import {
   BUG_REWARD_DAYS,
   BUG_STATUSES,
+  MAX_ADMIN_NOTE_LENGTH,
   claimBugReward,
   findBugReport,
   listBugReports,
@@ -58,7 +59,20 @@ const publicReport = (report: BugReportDocument) => ({
   createdAt: report.createdAt.toISOString(),
   rewardedAt: report.rewardedAt?.toISOString() ?? null,
   rewardedUntil: report.rewardedUntil?.toISOString() ?? null,
+  adminNote: report.adminNote ?? null,
+  reviewedAt: report.reviewedAt?.toISOString() ?? null,
 });
+
+const REJECTED_LABEL: Partial<Record<BugStatus, string>> = { "not-a-bug": "isn't a bug", duplicate: "was already reported" };
+
+async function emailRejection(email: string, status: BugStatus, note: string) {
+  if (!mailerConfigured() || !email) return;
+  await sendMail({
+    to: email,
+    subject: `About the bug you reported to ${APP_NAME}`,
+    text: [`Thank you for taking the time to report it. We looked into it, and it ${REJECTED_LABEL[status] ?? "has been reviewed"}.`, "", note, "", "You can see all your reports in the app: You, then Report a bug."].join("\n"),
+  }).catch((error) => console.error("[admin] rejection email failed:", error instanceof Error ? error.message : error));
+}
 
 // Every route here answers 404 to anyone but an admin, so it doesn't show it exists.
 adminRoutes.use("*", async (c, next) => {
@@ -87,8 +101,12 @@ adminRoutes.post("/bugs/:id/status", async (c) => {
   const body = await readJsonObject(c);
   const status = stringField(body?.status, 20) as BugStatus;
   if (!(BUG_STATUSES as readonly string[]).includes(status)) return c.json({ error: "Unknown status." }, 400);
-  const before = await setBugStatus(c.req.param("id"), status);
+  // The user sees this note with the report: a reason is needed to turn one down.
+  const note = typeof body?.note === "string" ? body.note.trim().slice(0, MAX_ADMIN_NOTE_LENGTH) : "";
+  if ((status === "not-a-bug" || status === "duplicate") && !note) return c.json({ error: "Write a reason the user will see." }, 400);
+  const before = await setBugStatus(c.req.param("id"), status, note || undefined);
   if (!before) return c.json(notFound, 404);
+  if ((status === "not-a-bug" || status === "duplicate") && before.status !== status) await emailRejection(before.userEmail, status, note);
 
   let rewarded = false;
   if (status === "valid" && before.userId && ObjectId.isValid(before.userId)) {
