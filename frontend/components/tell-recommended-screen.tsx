@@ -386,7 +386,7 @@ function StopRow({ stop, last }: { stop: PauseStop; last: boolean }) {
       <span className="mt-[0.9rem] grid h-6 w-6 place-items-center" aria-hidden="true">
         <span className="h-3.5 w-3.5 rounded-full" style={{ background: chakra.color, boxShadow: `0 0 0 4px color-mix(in srgb, ${chakra.color} 22%, transparent)` }} />
       </span>
-      <Link href={`/chakras/${stop.chakraId}`} className="ds-tap block rounded-[var(--ds-radius-md)] py-2.5 pr-1">
+      <Link href={`/chakras/${stop.chakraId}?from=tell`} className="ds-tap block rounded-[var(--ds-radius-md)] py-2.5 pr-1">
         <span className="flex items-baseline justify-between gap-3">
           <span className="ds-h3">
             {CENTRE_NAME[stop.chakraId]} <span className="ds-num font-medium" style={{ color: "var(--ds-text-secondary)" }}>· {stop.hz} Hz</span>

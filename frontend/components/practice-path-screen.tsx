@@ -338,7 +338,7 @@ export function PracticePathScreen({ pathId }: { pathId: string }) {
               </p>
               {chakraId ? (
                 <Link
-                  href={`/chakras/${chakraId}`}
+                  href={`/chakras/${chakraId}?from=practice`}
                   className="ds-tap mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[0.8rem] font-medium"
                   style={{ background: tint }}
                 >

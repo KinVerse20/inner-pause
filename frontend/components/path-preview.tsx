@@ -146,7 +146,7 @@ export function PathBuild({
         </BuildRow>
         {centre ? (
           <BuildRow label="Why this centre">
-            <Link href={`/chakras/${centre.id}`} className="ds-tap inline-flex items-center gap-1.5 rounded-full">
+            <Link href={`/chakras/${centre.id}?from=practice`} className="ds-tap inline-flex items-center gap-1.5 rounded-full">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: centre.color }} aria-hidden="true" />
               <span>
                 {centre.name} · {path.frequencyHz} Hz. {centre.theme}

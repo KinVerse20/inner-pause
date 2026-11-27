@@ -331,6 +331,7 @@ async function flows(browser, theme) {
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await page.getByRole("button", { name: "Keep playing and go back" }).click();
     await page.locator(".mini-player").waitFor({ timeout: 5000 }).catch(() => {});
+    await settle(page);
     check(await page.locator(".mini-player").isVisible(), `${theme} mini player: not shown after minimising`);
     await checkScreen(page, `${theme} with mini player`);
     await page.getByRole("navigation").last().getByRole("link", { name: "Practice" }).click();
@@ -488,9 +489,8 @@ async function flows(browser, theme) {
     await checkScreen(page, `${theme} journal after the trial`);
     await page.getByRole("button", { name: "Not now" }).click();
     await expect(page, "Write in your journal", "journal gate closes");
-    await page.getByRole("tab", { name: "Patterns" }).click();
-    await settle(page);
-    await expect(page, "Ready to keep going?", "Patterns closed after the trial");
+    // Patterns and Growth are off for now: Journey has no tabs.
+    check((await page.getByRole("tab", { name: /Patterns|Growth/ }).count()) === 0, `${theme} Journey: Patterns or Growth still shown`);
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Start a Pause" }).click();
     await page.waitForURL(/pause\/player/);

@@ -21,6 +21,14 @@ import { createPauseRecord } from "@/lib/pause-storage";
 
 const backStyle = { background: "var(--ds-surface)", color: "var(--ds-text)", boxShadow: "var(--ds-elevation-1)" };
 
+type CentreOrigin = "pause" | "tell" | "practice";
+
+const BACK_LABEL: Record<CentreOrigin, string> = {
+  pause: "Back to your Pause",
+  tell: "Back to your Pause",
+  practice: "Back to your path",
+};
+
 function BackLink({ href, label }: { href: string; label: string }) {
   return (
     <Link href={href} aria-label={label} className="ds-icon-btn" style={backStyle} onClick={() => haptic("tap")}>
@@ -83,12 +91,15 @@ export function ChakraDetailScreen({ chakraId }: { chakraId: string }) {
   const entry = findChakra(chakraId);
   const [card, setCard] = useState<PublicCard | undefined>(undefined);
   const [starting, setStarting] = useState(false);
-  // Opened from "Why this Pause?" in the player: back goes back to the Pause.
-  const [fromPause, setFromPause] = useState(false);
+  // Opened from somewhere you'll want to return to (?from=): the player's
+  // "Why this Pause?", the "Your Pause" screen after Tell, or a Practice
+  // path. Back goes back there, not to the list of all seven.
+  const [from, setFrom] = useState<CentreOrigin | null>(null);
 
   useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("from");
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFromPause(new URLSearchParams(window.location.search).get("from") === "pause");
+    setFrom(value && value in BACK_LABEL ? (value as CentreOrigin) : null);
   }, []);
 
   useEffect(() => {
@@ -110,10 +121,10 @@ export function ChakraDetailScreen({ chakraId }: { chakraId: string }) {
   return (
     <PauseShell>
       <div className="ds-settle space-y-6 pb-4 pt-2">
-        {fromPause ? (
+        {from ? (
           <button type="button" onClick={() => router.back()} className="ds-tap inline-flex min-h-11 items-center gap-1.5 rounded-full pr-3 text-sm font-semibold" style={{ color: "var(--ds-accent)" }}>
             <IconChevronRight className="h-4 w-4" style={{ transform: "scaleX(-1)" }} />
-            Back to your Pause
+            {BACK_LABEL[from]}
           </button>
         ) : (
           <BackLink href="/chakras" label="All seven energy centres" />
@@ -148,13 +159,13 @@ export function ChakraDetailScreen({ chakraId }: { chakraId: string }) {
         <SoundLayers entry={entry} />
 
         {/* Not while a Pause is already playing (opened from it). */}
-        {card && !fromPause ? (
+        {card && !from ? (
           <button type="button" onClick={start} disabled={starting} className="ds-filled w-full">
             {starting ? "Starting your Pause" : `Start a ${card.label} Pause`}
           </button>
         ) : null}
 
-        <CentresSpine currentId={entry.id} fromPause={fromPause} />
+        <CentresSpine currentId={entry.id} from={from} />
 
         <p className="ds-caption px-1 leading-5">{CHAKRA_NOTE}</p>
       </div>
@@ -197,7 +208,7 @@ function SoundLayers({ entry }: { entry: ChakraGuideEntry }) {
 
 // The seven centres from crown to root, as a spine: where this one sits,
 // and a way to read about the others.
-function CentresSpine({ currentId, fromPause }: { currentId: string; fromPause: boolean }) {
+function CentresSpine({ currentId, from }: { currentId: string; from: CentreOrigin | null }) {
   return (
     <section aria-labelledby="spine-title" className="ds-card px-5 py-5">
       <h2 id="spine-title" className="ds-h3">All seven centres</h2>
@@ -208,8 +219,8 @@ function CentresSpine({ currentId, fromPause }: { currentId: string; fromPause: 
           return (
             <li key={item.id}>
               <Link
-                href={`/chakras/${item.id}${fromPause ? "?from=pause" : ""}`}
-                replace={fromPause}
+                href={`/chakras/${item.id}${from ? `?from=${from}` : ""}`}
+                replace={Boolean(from)}
                 aria-current={current ? "page" : undefined}
                 onClick={() => haptic("tap")}
                 className="ds-tap relative flex min-h-11 items-center gap-3 rounded-[var(--ds-radius-md)] px-2 py-1.5"
