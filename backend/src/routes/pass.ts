@@ -1,10 +1,11 @@
-import { PASS_PRICE_INR } from "@inner-pause/shared";
+import { PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_PAUSES, TRIAL_COUNTS_AFTER_SECONDS } from "@inner-pause/shared";
 import { Hono } from "hono";
 
 import { getVerifiedSession } from "../auth/session";
 import { invalidBody, readJsonObject, stringField } from "../http";
 import {
   completePassOrder,
+  countTrialPause,
   createPassOrder,
   isValidPaymentSignature,
   isValidWebhookSignature,
@@ -20,7 +21,10 @@ passRoutes.get("/", async (c) => {
   const verified = await getVerifiedSession(c);
   return c.json({
     priceInr: PASS_PRICE_INR,
-    lifetime: true,
+    listPriceInr: PASS_LIST_PRICE_INR,
+    durationDays: PASS_DURATION_DAYS,
+    trialPauses: TRIAL_PAUSES,
+    trialCountsAfterSeconds: TRIAL_COUNTS_AFTER_SECONDS,
     available: razorpayConfigured(),
     pass: verified ? passStateOf(verified.record) : null,
   });
@@ -30,7 +34,7 @@ passRoutes.post("/order", async (c) => {
   const verified = await getVerifiedSession(c);
   if (!verified) return c.json({ error: "Sign in to get the Pass, so it stays with your account." }, 401);
   if (!razorpayConfigured()) return c.json({ error: "Payments aren't set up yet. Please try again later." }, 503);
-  // It's for life: never take a second payment for it.
+  // An earlier lifetime Pass never needs renewing: never take a payment for it.
   if (passStateOf(verified.record).lifetime) return c.json({ error: "You already have the Pass for life." }, 409);
   try {
     const order = await createPassOrder(verified.record._id.toString());
@@ -43,6 +47,20 @@ passRoutes.post("/order", async (c) => {
     console.error("[pass] order failed:", error instanceof Error ? error.message : error);
     return c.json({ error: "Couldn't start the payment. Please try again." }, 502);
   }
+});
+
+// A Pause has played long enough to count against the trial (the app calls
+// this after TRIAL_COUNTS_AFTER_SECONDS, or when a shorter Pause ends).
+passRoutes.post("/trial", async (c) => {
+  const verified = await getVerifiedSession(c);
+  if (!verified) return c.json({ error: "Sign in to start your trial." }, 401);
+  const body = await readJsonObject(c);
+  if (!body) return invalidBody(c);
+  const pauseId = stringField(body.pauseId, 100);
+  if (!pauseId) return c.json({ error: "Which Pause is this?" }, 400);
+  const result = await countTrialPause(verified.record._id, pauseId);
+  if (!result) return c.json({ error: "Authentication required." }, 401);
+  return c.json(result, result.allowed ? 200 : 402);
 });
 
 // Called by the app after Razorpay Checkout succeeds.

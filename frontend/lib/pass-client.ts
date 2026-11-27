@@ -10,9 +10,12 @@ import { setServerPass } from "@/lib/entitlements";
 // server confirms it before the Pass is granted (backend/src/routes/pass.ts).
 
 export interface PassOffer {
+  /** What's charged (the launch offer while it runs). */
   priceInr: number;
-  /** Always true now: one payment, yours for life. */
-  lifetime: boolean;
+  /** The regular price, shown struck out while the offer is lower. */
+  listPriceInr: number;
+  durationDays: number;
+  trialPauses: number;
   /** False until Razorpay is configured on the server. */
   available: boolean;
   /** The signed-in account's Pass; null when signed out. */
@@ -91,7 +94,7 @@ export async function buyPass(): Promise<PassState> {
       amount: order.amount,
       currency: order.currency,
       name: "Inner Pause",
-      description: "Inner Pause Pass · for life",
+      description: "Inner Pause Pass · one year",
       order_id: order.orderId,
       prefill: order.prefill,
       theme: { color: "#1d1b4c" },

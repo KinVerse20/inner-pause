@@ -12,6 +12,11 @@ export function mailerConfigured() {
   return Boolean(process.env.SMTP_HOST?.trim() && process.env.MAIL_FROM?.trim());
 }
 
+/** Tests: stand in for SMTP (null puts the real one back). */
+export function __setTransportForTests(stand: Pick<Transporter, "sendMail"> | null) {
+  transporter = stand as Transporter | null;
+}
+
 function getTransporter() {
   if (transporter) return transporter;
   const port = Number(process.env.SMTP_PORT ?? 587);
@@ -27,6 +32,13 @@ function getTransporter() {
 
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char);
+
+/** A plain email (reminders, notices). `html` is optional; text is always sent. */
+export async function sendMail(message: { to: string; subject: string; text: string; html?: string; replyTo?: string }) {
+  await getTransporter().sendMail({ from: process.env.MAIL_FROM, ...message });
+}
+
+export { escapeHtml };
 
 export async function sendPasswordResetEmail(to: string, link: string) {
   const text = [

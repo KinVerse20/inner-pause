@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { OPERATOR_COUNTRY, OPERATOR_NAME, PASS_PRICE_INR } from "@inner-pause/shared";
+import { OPERATOR_COUNTRY, OPERATOR_NAME, PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_PAUSES } from "@inner-pause/shared";
 
 import { LegalPage, SupportEmail, type LegalSection } from "@/components/legal-page";
 
@@ -50,10 +50,19 @@ const sections: LegalSection[] = [
     body: (
       <ul>
         <li>
-          The Pass costs ₹{PASS_PRICE_INR}, inclusive of applicable taxes, and gives you lifetime access to the Pass features: for as
-          long as Inner Pause is offered, including Pass features we add later.
+          Every new account can try {TRIAL_PAUSES} Pauses free. After that, starting a Pause needs the Pass.
         </li>
-        <li>It&apos;s a one-time payment, not a subscription. It never renews or charges you again.</li>
+        <li>
+          The Pass costs ₹{PASS_PRICE_INR} for one year, inclusive of applicable taxes
+          {PASS_PRICE_INR < PASS_LIST_PRICE_INR ? <> (a launch offer; the regular price is ₹{PASS_LIST_PRICE_INR})</> : null}, and
+          gives you every Pause and Pass feature for {PASS_DURATION_DAYS} days from the day you pay.
+        </li>
+        <li>
+          It doesn&apos;t renew by itself or charge you again. We email you before it ends; buying another year while it&apos;s still
+          on adds the year to its end date.
+        </li>
+        <li>When the Pass ends, your journal and everything you&apos;ve saved stay on your account.</li>
+        <li>A Pass bought earlier for life stays for life.</li>
         <li>The Pass is linked to your account. Payments are processed by Razorpay.</li>
         <li>
           Refunds follow our{" "}

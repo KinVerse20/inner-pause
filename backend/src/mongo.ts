@@ -17,9 +17,14 @@ export interface UserDocument {
   passwordChangedAt?: Date;
   /** The Inner Pause Pass (pass-store.ts): when the current one ends. */
   passExpiresAt?: Date;
-  /** The lifetime Pass (pass-store.ts): never ends. */
+  /** The lifetime Pass (pass-store.ts): never ends. No longer sold; earlier ones are kept. */
   passLifetime?: boolean;
   passActivatedAt?: Date;
+  /** The trial (pass-store.ts): the Pauses it has counted, at most TRIAL_PAUSES. */
+  trialPauseIds?: string[];
+  /** The end date the "Pass ends soon" emails were sent for, and the last one sent (days before: 7, then 1). */
+  passReminderSentFor?: Date;
+  passReminderDays?: number;
 }
 
 export function getMongoUri() {

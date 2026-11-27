@@ -19,7 +19,7 @@ import {
 import { invalidBody, readJsonObject, stringField } from "../http";
 import { mailerConfigured, sendPasswordResetEmail } from "../mailer";
 import type { UserDocument } from "../mongo";
-import { detachOrdersFromUser, passStateOf } from "../pass-store";
+import { detachOrdersFromUser, passStateOf, type PassFields } from "../pass-store";
 import { deleteAllEntries } from "../journal-store";
 import { removeSubscriptionsForUser } from "../push-store";
 import { clearEvents, countRecent, recordEvent } from "../rate-limit";
@@ -35,7 +35,7 @@ const MAX_PASSWORD_LENGTH = 128;
 const passwordField = (value: unknown) => (typeof value === "string" ? value : "");
 
 // The Pass comes from the account record, so it follows the user anywhere.
-function withAccount<T extends { email: string }>(user: T, record: Pick<UserDocument, "passExpiresAt" | "passLifetime">) {
+function withAccount<T extends { email: string }>(user: T, record: PassFields) {
   return { ...user, pass: passStateOf(record) };
 }
 

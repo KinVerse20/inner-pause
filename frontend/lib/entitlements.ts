@@ -1,12 +1,11 @@
 "use client";
 
-import type { PassState as ServerPassState } from "@inner-pause/shared";
+import { TRIAL_PAUSES, type PassState as ServerPassState, type TrialState } from "@inner-pause/shared";
 
-// The free/paid boundary (docs/PRODUCT_FLOW.md §36): the Inner Pause Pass.
-// One product, one payment, kept for life (with every Pass feature added
-// later), no subscription. The Pass is
-// bought with Razorpay and held on the user's account on the server
-// (backend/src/pass-store.ts); this keeps the server's answer for the
+// The Inner Pause Pass (docs/COMMERCIAL_PLAN.md): one year of every Pause,
+// paid a year at a time; no free version, only a trial of TRIAL_PAUSES
+// Pauses. The Pass and the trial are held on the user's account on the
+// server (backend/src/pass-store.ts); this keeps the server's answer for the
 // signed-in account (setServerPass), refreshed on every app load.
 //
 // In development only, a local toggle (the DEV panels) can also activate a
@@ -31,18 +30,12 @@ function readActivatedAt(): number | null {
 }
 
 // When the account's Pass ends, as the server last reported it: never
-// (Infinity) for the lifetime Pass, a date for an earlier time-limited one.
+// (Infinity) for an earlier lifetime Pass, else its end date.
 function readServerExpiry(): number | null {
-  if (!isBrowser()) return null;
-  try {
-    const raw = window.localStorage.getItem(SERVER_PASS_KEY);
-    const stored = raw ? (JSON.parse(raw) as { lifetime?: boolean; expiresAt?: string | null }) : null;
-    if (stored?.lifetime) return Number.POSITIVE_INFINITY;
-    const ms = stored?.expiresAt ? Date.parse(stored.expiresAt) : NaN;
-    return Number.isFinite(ms) ? ms : null;
-  } catch {
-    return null;
-  }
+  const stored = readStoredPass();
+  if (stored?.lifetime) return Number.POSITIVE_INFINITY;
+  const ms = stored?.expiresAt ? Date.parse(stored.expiresAt) : NaN;
+  return Number.isFinite(ms) ? ms : null;
 }
 
 // The later of the account's Pass and (development only) the dev toggle,
@@ -61,7 +54,7 @@ export function getPassState(): PassState {
   return Date.now() < expiry ? "active" : "expired";
 }
 
-/** When a time-limited Pass ends; null for the lifetime Pass or none. */
+/** When the Pass ends; null for an earlier lifetime Pass or none. */
 export function getPassExpiresAt(): string | null {
   const expiry = latestExpiry();
   return expiry === null || !Number.isFinite(expiry) ? null : new Date(expiry).toISOString();
@@ -74,9 +67,38 @@ export function hasLifetimePass(): boolean {
 /** Records the server's Pass for the signed-in account (null when signed out). */
 export function setServerPass(pass: ServerPassState | null | undefined) {
   if (!isBrowser()) return;
-  if (pass?.lifetime || pass?.expiresAt) window.localStorage.setItem(SERVER_PASS_KEY, JSON.stringify({ lifetime: Boolean(pass.lifetime), expiresAt: pass.expiresAt }));
-  else window.localStorage.removeItem(SERVER_PASS_KEY);
+  if (pass) {
+    const stored: StoredPass = { lifetime: Boolean(pass.lifetime), expiresAt: pass.expiresAt, trial: pass.trial };
+    window.localStorage.setItem(SERVER_PASS_KEY, JSON.stringify(stored));
+  } else window.localStorage.removeItem(SERVER_PASS_KEY);
   window.dispatchEvent(new Event(EVENT_NAME));
+}
+
+interface StoredPass {
+  lifetime?: boolean;
+  expiresAt?: string | null;
+  trial?: TrialState;
+}
+
+function readStoredPass(): StoredPass | null {
+  if (!isBrowser()) return null;
+  try {
+    const raw = window.localStorage.getItem(SERVER_PASS_KEY);
+    return raw ? (JSON.parse(raw) as StoredPass) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The trial as the server last reported it; a fresh one when it hasn't yet. */
+export function getTrial(): TrialState {
+  const trial = readStoredPass()?.trial;
+  return trial && Array.isArray(trial.pauseIds) ? trial : { used: 0, limit: TRIAL_PAUSES, pauseIds: [] };
+}
+
+export function trialPausesLeft(): number {
+  const trial = getTrial();
+  return Math.max(0, trial.limit - trial.used);
 }
 
 // Never gates on anything but the computed state above — history/Journal/

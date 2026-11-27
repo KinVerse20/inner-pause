@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { PASS_PRICE_INR } from "@inner-pause/shared";
 
 import { LandscapeScene } from "@/components/landscape-scene";
 import {
@@ -20,7 +19,8 @@ import { PauseShell } from "@/components/pause-shell";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { SettingsRow } from "@/components/settings-row";
 import { getAccount, subscribeAccount, type LocalAccount } from "@/lib/account-store";
-import { getPassState, subscribeEntitlements, type PassState } from "@/lib/entitlements";
+import { subscribeEntitlements } from "@/lib/entitlements";
+import { getPassSummary, type PassSummary } from "@/lib/pass-summary";
 import { haptic } from "@/lib/haptics";
 import { listenedSeconds } from "@/lib/listening";
 import { listPauseRecords, subscribePauseRecords } from "@/lib/pause-storage";
@@ -40,13 +40,13 @@ function readStats() {
 // given yourself, the Pass, and every setting.
 export function YouHomeScreen() {
   const [account, setAccount] = useState<LocalAccount | null>(null);
-  const [passState, setPassState] = useState<PassState>("free");
+  const [pass, setPass] = useState<PassSummary | null>(null);
   const [stats, setStats] = useState({ pauses: 0, minutes: 0, checkins: 0 });
 
   useEffect(() => {
     const refresh = () => {
       setAccount(getAccount());
-      setPassState(getPassState());
+      setPass(getPassSummary());
       setStats(readStats());
     };
     refresh();
@@ -60,8 +60,6 @@ export function YouHomeScreen() {
     };
   }, []);
 
-  const hasPass = passState === "active";
-  const passStatusLabel = hasPass ? "For life" : passState === "expired" ? "Ended" : "Free";
   const displayName = account?.displayName?.trim() || "there";
   const initial = (account?.displayName?.trim().charAt(0) || "Y").toUpperCase();
 
@@ -128,11 +126,11 @@ export function YouHomeScreen() {
             <span className="min-w-0 flex-1">
               <span className="block text-[0.98rem] font-semibold">Inner Pause Pass</span>
               <span className="block text-[0.82rem] leading-5" style={{ color: "var(--ds-text-secondary)" }}>
-                {hasPass ? "Yours for life. Thank you." : `₹${PASS_PRICE_INR} once, yours for life`}
+                {pass?.line ?? ""}
               </span>
             </span>
             <span className="ds-label shrink-0 rounded-full px-2.5 py-1 uppercase" style={{ background: `color-mix(in srgb, ${GOLD} 22%, var(--ds-surface))`, color: `color-mix(in srgb, ${GOLD} 45%, var(--ds-text))` }}>
-              {passStatusLabel}
+              {pass?.label ?? ""}
             </span>
           </Link>
         </StaggerItem>

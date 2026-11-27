@@ -20,8 +20,8 @@ const sections: LegalSection[] = [
     heading: "Cancellation",
     body: (
       <p>
-        The Pass isn&apos;t a subscription, so there&apos;s nothing to cancel: you pay once, it never renews or charges you again,
-        and it stays on your account for as long as Inner Pause is offered.
+        The Pass isn&apos;t an automatic subscription, so there&apos;s nothing to cancel: you pay for one year at a time, and it never
+        renews or charges you again by itself. When the year ends, the Pass simply stops unless you buy another one.
       </p>
     ),
   },
@@ -69,7 +69,7 @@ export default function RefundPolicyPage() {
       current="/refund-policy"
       intro={
         <p>
-          This policy covers the Inner Pause Pass: a one-time payment of ₹{PASS_PRICE_INR} for lifetime access to the Pass features.
+          This policy covers the Inner Pause Pass: a payment of ₹{PASS_PRICE_INR} for one year of every Pause and Pass feature.
         </p>
       }
       sections={sections}

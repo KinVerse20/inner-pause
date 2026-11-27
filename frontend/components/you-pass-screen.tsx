@@ -66,7 +66,7 @@ export function YouPassScreen() {
     try {
       await buyPass();
       haptic("success");
-      setMessage({ tone: "success", text: "Thank you. The Pass is yours for life." });
+      setMessage({ tone: "success", text: "Thank you. Your Pass is on for the year." });
     } catch (error) {
       if (!(error instanceof PaymentCancelledError)) {
         setMessage({ tone: "error", text: error instanceof Error ? error.message : "Something went wrong. Please try again." });

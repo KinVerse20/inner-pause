@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 
 import { createApp } from "./app";
 import { getPort, loadBackendEnv } from "./env";
+import { startPassReminders } from "./pass-reminders";
 import { startReminderScheduler } from "./push-scheduler";
 import { startRenderWorker } from "./render-store";
 
@@ -15,5 +16,7 @@ serve({ fetch: app.fetch, port }, () => {
   // Renders card sounds in the background (backend/src/render-store.ts).
   // Sends Practice reminders by web push (backend/src/push-scheduler.ts).
   startReminderScheduler();
+  // Emails people 7 days and 1 day before their Pass ends (backend/src/pass-reminders.ts).
+  startPassReminders();
   startRenderWorker().catch((error) => console.error("[renders] worker failed to start:", error instanceof Error ? error.message : error));
 });
