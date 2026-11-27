@@ -24,7 +24,7 @@ const ROUTES = [
   "/journey", "/profile", "/profile/account", "/profile/calendar", "/profile/help", "/profile/notifications", "/profile/pass",
   "/profile/preferences", "/profile/privacy", "/about", "/chakras", "/chakras/heart", "/chakras/root", "/tell", "/tell?mode=speak",
   "/entry", "/offline", "/privacy-policy", "/terms", "/refund-policy", "/auth", "/auth/reset-password", "/pause/calm",
-  "/install", "/profile/report-bug", "/admin", "/guide",
+  "/install", "/profile/report-bug", "/admin", "/guide", "/welcome",
   // Empty, missing and not found.
   "/no-such-page", "/pause/player?session=missing", "/tell/recommended?entry=missing", "/chakras/not-a-centre",
 ];

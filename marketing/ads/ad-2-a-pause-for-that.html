@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Inner Pause ad 2: There's a Pause for that</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* Instagram ad, concept 2: warm and light, the real app in a phone, the
+     feelings people bring to it around it. #feed = 1080 x 1350 (4:5),
+     #story = 1080 x 1920 (9:16, clear of Instagram's top 250 px and
+     bottom 340 px). The phone shows phone-player.png, a real screen. */
+  :root { --w: 1080px; --h: 1350px; }
+  html.story { --h: 1920px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: var(--w); height: var(--h); overflow: hidden; font-family: Inter, system-ui, sans-serif; color: #1d1b4c; }
+  .ad {
+    position: relative; width: var(--w); height: var(--h); overflow: hidden;
+    background:
+      radial-gradient(70% 45% at 15% 0%, #f6d9c4 0%, transparent 70%),
+      radial-gradient(70% 50% at 100% 30%, #e6defe 0%, transparent 70%),
+      linear-gradient(180deg, #faf6f1 0%, #f3eefb 100%);
+    padding: 84px 80px 0;
+  }
+  html.story .ad { padding-top: 270px; }
+  .top { position: relative; text-align: center; }
+  .kicker { font-size: 28px; font-weight: 600; letter-spacing: .3em; color: #4338ca; text-indent: .3em; }
+  h1 { margin-top: 22px; font-size: 80px; line-height: 1.04; font-weight: 700; letter-spacing: -0.03em; }
+  h1 span { display: block; color: #4338ca; }
+  html.story h1 { font-size: 80px; }
+  .stage { position: absolute; left: 0; right: 0; top: 400px; height: 1000px; }
+  html.story .stage { top: 560px; height: 1360px; }
+  .phone {
+    position: absolute; left: 50%; top: 0; width: 470px; height: 1017px; transform: translateX(-50%) rotate(-3deg);
+    border-radius: 72px; padding: 16px; background: #14122f;
+    box-shadow: 0 50px 100px rgba(29,27,76,.32), 0 0 0 2px #2c2960 inset;
+  }
+  html.story .phone { width: 520px; height: 1125px; border-radius: 80px; }
+  .screen { width: 100%; height: 100%; border-radius: 58px; overflow: hidden; background: #1d1b4c; padding-top: 58px; }
+  html.story .screen { border-radius: 70px; padding-top: 70px; }
+  .phone img { width: 100%; display: block; }
+  .notch { position: absolute; left: 50%; top: 30px; width: 130px; height: 34px; transform: translateX(-50%); border-radius: 20px; background: #0b0a1c; }
+  .chip {
+    position: absolute; padding: 20px 30px; border-radius: 999px; background: #fff; font-size: 30px; font-weight: 600;
+    box-shadow: 0 18px 40px rgba(29,27,76,.14); display: inline-flex; align-items: center; gap: 14px; white-space: nowrap;
+  }
+  .chip i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .c1 { left: 40px; top: 90px; transform: rotate(-4deg); }
+  .c2 { right: 36px; top: 250px; transform: rotate(3deg); }
+  .c3 { left: 26px; top: 470px; transform: rotate(2deg); }
+  .c4 { right: 44px; top: 640px; transform: rotate(-3deg); }
+  html.story .c1 { top: 110px; } html.story .c2 { top: 300px; } html.story .c3 { top: 520px; } html.story .c4 { top: 690px; }
+  .bar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 250px; padding: 0 80px 40px;
+    background: linear-gradient(180deg, rgba(243,238,251,0) 0%, #f3eefb 38%);
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 30px;
+  }
+  /* Story: the bar reaches the bottom edge, the phone fading under it; its
+     content stays above Instagram's bottom 340 px. */
+  html.story .bar { bottom: 0; height: 700px; padding-bottom: 380px; background: linear-gradient(180deg, rgba(243,238,251,0) 0%, #f3eefb 34%); }
+  .cta { display: inline-flex; align-items: center; height: 104px; padding: 0 54px; border-radius: 999px; background: #4338ca; color: #fff; font-size: 36px; font-weight: 700; box-shadow: 0 20px 50px rgba(67,56,202,.32); white-space: nowrap; }
+  .price { font-size: 27px; line-height: 1.35; color: #4b4870; text-align: right; }
+  .price s { opacity: .7; }
+  .price b { color: #1d1b4c; }
+</style>
+<script>if (location.hash === "#story") document.documentElement.classList.add("story");</script>
+</head>
+<body>
+  <main class="ad">
+    <div class="top">
+      <p class="kicker">INNER PAUSE</p>
+      <h1>Overthinking at 2 am?<span>There&rsquo;s a Pause for that.</span></h1>
+    </div>
+    <div class="stage">
+      <div class="phone"><div class="screen"><img src="phone-player.png" alt="" /></div><span class="notch"></span></div>
+      <p class="chip c1"><i style="background:#6665bd"></i>Overthinking</p>
+      <p class="chip c2"><i style="background:#c45b5b"></i>Before an interview</p>
+      <p class="chip c3"><i style="background:#4eaa75"></i>Loneliness</p>
+      <p class="chip c4"><i style="background:#d4a128"></i>Overwhelm</p>
+    </div>
+    <div class="bar">
+      <p class="cta">Try 2 Pauses free</p>
+      <p class="price">Then <s>₹2,000</s><br /><b>₹1,000 a year</b></p>
+    </div>
+  </main>
+</body>
+</html>

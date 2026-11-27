@@ -15,6 +15,7 @@ const publicRoutes = [
   "/auth/reset-password",
   "/about",
   "/install",
+  "/welcome",
   "/offline",
   "/manifest.webmanifest",
   "/icon.png",

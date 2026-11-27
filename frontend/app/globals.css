@@ -2170,3 +2170,58 @@ html {
     animation: 180ms ease-out both vt-fade;
   }
 }
+
+/* /welcome (components/welcome-screen.tsx): soft lights drifting behind the
+   hero, the rings breathing, and the try-it breath circle. All still with
+   reduced motion. */
+.welcome-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.welcome-orb--a {
+  width: 18rem;
+  height: 18rem;
+  left: -6rem;
+  top: 2rem;
+  background: #6d5bd0;
+  animation: welcome-drift 16s ease-in-out infinite alternate;
+}
+.welcome-orb--b {
+  width: 16rem;
+  height: 16rem;
+  right: -5rem;
+  bottom: -4rem;
+  background: #e0a868;
+  opacity: 0.28;
+  animation: welcome-drift 20s ease-in-out infinite alternate-reverse;
+}
+@keyframes welcome-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(3rem, 2rem, 0) scale(1.15); }
+}
+.welcome-breathe {
+  width: 100%;
+  animation: welcome-breathe 10s ease-in-out infinite;
+}
+@keyframes welcome-breathe {
+  0%, 100% { transform: scale(0.9); }
+  40% { transform: scale(1.04); }
+}
+.welcome-breath-ring {
+  background: radial-gradient(circle, color-mix(in srgb, var(--ds-accent) 28%, transparent) 0%, color-mix(in srgb, var(--ds-accent) 10%, transparent) 60%, transparent 72%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ds-accent) 35%, transparent);
+  transition-property: transform;
+  transition-timing-function: ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-orb,
+  .welcome-breathe {
+    animation: none;
+  }
+  .welcome-breath-ring {
+    transition: none;
+  }
+}

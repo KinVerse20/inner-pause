@@ -8,6 +8,8 @@ Last updated: 2026-11-27. Read this first in a new session, then continue from "
 - Sound: on top Rain, Rainforest, Ocean, Wind, Deep ambient, Binaural; under More: Mindspace, Bilateral calm, Piano tuned, Frequency only. Forest, Piano, Gong, Bell, Rain tuned and Forest tuned are gone; ids that name them play their replacement (`RETIRED` in `lib/sound-library.ts`). Their files are still in `public/audio` but nothing plays them.
 - What the player says is what plays: a tuned recording only at exactly its frequency (otherwise Rain with the frequency beneath it); Deep ambient and Mindspace had a 174 Hz drone of their own, taken out of the files with a notch filter; Binaural is made live at the Pause's frequency (left ear) and 6 Hz above it (right). Frequency only and Binaural have Soft, Balanced and Clear.
 - Guide tab (`/guide`, `components/guide-screen.tsx`): how Inner Pause helps and how to use each part, with Try it links. The bar is Home · Moments · (Pause) · Practice · Guide · You; the columns are weighted so Pause stays centred.
+- `/welcome`: the Instagram landing page (`components/welcome-screen.tsx`), public, keeps the ad's utm_ tags into /install. Ads in `marketing/ads/` (2 concepts, feed and story sizes; `node marketing/ads/render.mjs`).
+- Report a bug shows the user each report's status and the admin's note; turning one down needs a reason.
 - Player: Skip frequency (to the next centre; on the last or only one it ends the Pause) and End session under Play; the thought card folds away instead of holding an empty gap. All DEV panels are gone.
 
 ## Built 2026-11-27: the commercial plan (docs/COMMERCIAL_PLAN.md C1 to C8, not C4)
