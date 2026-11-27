@@ -511,7 +511,10 @@
 .ds-nav-indicator {
   display: grid;
   height: 2rem;
-  width: 4rem;
+  /* Narrower on small phones, where six items share the bar. (Not min():
+     the CSS build simplifies min(4rem, 100% ...) to 4rem.) */
+  width: calc(100% - 0.25rem);
+  max-width: 4rem;
   place-items: center;
   border-radius: 1rem;
   transition: background-color 380ms var(--ds-ease), transform 160ms var(--ds-ease);

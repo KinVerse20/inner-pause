@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, ViewTransition, type ComponentType, type ReactNode } from "react";
 
-import { NavHomeIcon, NavMomentsIcon, NavPracticeIcon, NavYouIcon } from "@/components/nav-icons";
+import { NavGuideIcon, NavHomeIcon, NavMomentsIcon, NavPracticeIcon, NavYouIcon } from "@/components/nav-icons";
 import { MiniPlayer } from "@/components/mini-player";
 import { sessionIsActive, usePauseSession } from "@/components/pause-session";
 import { haptic } from "@/lib/haptics";
@@ -14,13 +14,15 @@ import { EXPAND, expandName, markPageTransition } from "@/lib/view-transition";
 
 type TabIcon = ComponentType<{ active: boolean; className?: string }>;
 
-// Moments has its own tab (letting out lives there). The last tab is You,
+// Moments has its own tab (letting out lives there); Guide explains the
+// app (components/guide-screen.tsx). The last tab is You,
 // where people expect it (Instagram, Headspace, Calm): your Journey diary,
 // with settings behind its gear (/profile).
 const destinations: Array<{ href: string; label: string; Icon: TabIcon }> = [
   { href: "/", label: "Home", Icon: NavHomeIcon },
   { href: "/moments", label: "Moments", Icon: NavMomentsIcon },
   { href: "/practice", label: "Practice", Icon: NavPracticeIcon },
+  { href: "/guide", label: "Guide", Icon: NavGuideIcon },
   { href: "/journey", label: "You", Icon: NavYouIcon },
 ];
 
@@ -79,7 +81,13 @@ function PauseBottomNav() {
   return (
     <nav className="ds-nav fixed inset-x-0 bottom-0 z-40" style={{ viewTransitionName: "ip-bottom-nav" }}>
       <MiniPlayer />
-      <div className="mx-auto grid max-w-[30rem] grid-cols-5 items-end px-1 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 md:max-w-[40rem]">
+      {/* Two tabs left of Pause, three right: the left ones take as much width
+          in all as the right ones (sized to their labels), so Pause stays in
+          the middle. */}
+      <div
+        className="mx-auto grid max-w-[30rem] items-end px-1 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 md:max-w-[40rem]"
+        style={{ gridTemplateColumns: "minmax(0,3fr) minmax(0,3fr) minmax(0,3.4fr) minmax(0,2.4fr) minmax(0,1.9fr) minmax(0,1.7fr)" }}
+      >
         {destinations.slice(0, 2).map((item) => (
           <NavDestination key={item.href} item={item} active={isActive(pathname, item.href)} />
         ))}
@@ -132,7 +140,7 @@ function NavDestination({ item, active }: { item: { href: string; label: string;
       onClick={() => {
         if (!active) haptic("tap");
       }}
-      className="ds-nav-item relative grid min-h-12 place-items-center gap-0.5 rounded-[var(--ds-radius-sm)] py-1 text-center text-[0.75rem]"
+      className="ds-nav-item relative grid min-h-12 w-full min-w-0 grid-cols-[minmax(0,1fr)] place-items-center gap-0.5 rounded-[var(--ds-radius-sm)] py-1 text-center text-[0.68rem] min-[370px]:text-[0.75rem]"
       style={{ color: active ? "var(--ds-accent)" : "var(--ds-text-muted)" }}
     >
       <span
@@ -141,7 +149,7 @@ function NavDestination({ item, active }: { item: { href: string; label: string;
       >
         <item.Icon active={active} className="h-[1.4rem] w-[1.4rem]" />
       </span>
-      <span className={active ? "font-semibold" : "font-medium"}>{item.label}</span>
+      <span className={`max-w-full whitespace-nowrap ${active ? "font-semibold" : "font-medium"}`}>{item.label}</span>
     </Link>
   );
 }

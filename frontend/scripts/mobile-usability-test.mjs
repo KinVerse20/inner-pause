@@ -24,7 +24,7 @@ const ROUTES = [
   "/journey", "/profile", "/profile/account", "/profile/calendar", "/profile/help", "/profile/notifications", "/profile/pass",
   "/profile/preferences", "/profile/privacy", "/about", "/chakras", "/chakras/heart", "/chakras/root", "/tell", "/tell?mode=speak",
   "/entry", "/offline", "/privacy-policy", "/terms", "/refund-policy", "/auth", "/auth/reset-password", "/pause/calm",
-  "/install", "/profile/report-bug", "/admin",
+  "/install", "/profile/report-bug", "/admin", "/guide",
   // Empty, missing and not found.
   "/no-such-page", "/pause/player?session=missing", "/tell/recommended?entry=missing", "/chakras/not-a-centre",
 ];
@@ -283,9 +283,11 @@ async function narrowAndWide(browser) {
   }
 }
 
-// The flows, end to end.
+// The flows, end to end (counted for the summary line).
+const FLOW_NAMES = new Set();
 async function flows(browser, theme) {
   const step = async (name, run, options = {}) => {
+    FLOW_NAMES.add(name);
     const { context, page } = await visitor(browser, { theme, ...options });
     try {
       await run(page);
@@ -502,6 +504,20 @@ async function flows(browser, theme) {
     await expect(page, "Launch offer", "Pass page offer");
   }, { pass: false });
 
+  await step("guide: on the bar, and every Try it link opens its place", async (page) => {
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.locator("nav").getByRole("link", { name: "Guide" }).click();
+    await page.waitForURL(/\/guide$/);
+    await settle(page);
+    await expect(page, "How to use it", "Guide page");
+    for (const [name, url] of [["Go to Home", /\/$/], ["Tell it now", /\/tell$/], ["Open Moments", /\/moments$/], ["See the paths", /\/practice$/], ["Open Journey", /\/journey$/], ["Read about the energy centres", /\/chakras$/], ["See the Pass", /\/profile\/pass$/]]) {
+      await page.goto(`${BASE}/guide`, { waitUntil: "networkidle" });
+      await page.getByRole("link", { name }).click();
+      await page.waitForURL(url, { timeout: 8000 }).catch(() => {});
+      check(url.test(new URL(page.url()).pathname), `${theme} Guide "${name}" went to ${page.url()}`);
+    }
+  });
+
   await step("empty journey", async (page) => {
     await page.goto(`${BASE}/journey`, { waitUntil: "networkidle" });
     await settle(page);
@@ -525,7 +541,7 @@ async function reducedMotion(browser) {
         })
         .map((animation) => `${animation.effect?.target?.className?.baseVal ?? animation.effect?.target?.className ?? "?"} (${animation.animationName ?? animation.transitionProperty})`),
     );
-  for (const route of ["/", "/moments", "/practice", "/practice/focus", "/journey"]) {
+  for (const route of ["/", "/moments", "/practice", "/practice/focus", "/guide", "/journey"]) {
     await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
     await settle(page, 1200);
     const found = await moving();
@@ -566,4 +582,4 @@ if (failures.length) {
   for (const failure of failures) console.log(`  ✖ ${failure}`);
   process.exit(1);
 }
-console.log(`All ${checks} checks passed (${seconds} s): ${ROUTES.length} screens and 8 flows, light and dark, at 390 × 844, 320 and 768 wide, and with reduced motion.`);
+console.log(`All ${checks} checks passed (${seconds} s): ${ROUTES.length} screens and ${FLOW_NAMES.size} flows, light and dark, at 390 × 844, 320 and 768 wide, and with reduced motion.`);

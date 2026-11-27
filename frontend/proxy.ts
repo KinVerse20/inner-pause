@@ -9,6 +9,7 @@ const publicRoutes = [
   "/profile",
   "/moments",
   "/tell",
+  "/guide",
   "/auth",
   "/auth/confirm",
   "/auth/reset-password",

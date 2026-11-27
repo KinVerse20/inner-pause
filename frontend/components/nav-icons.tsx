@@ -66,10 +66,21 @@ export function NavMomentsIcon({ active, className }: NavIconProps) {
   );
 }
 
+/** Guide: an open book. */
+export function NavGuideIcon({ active, className }: NavIconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M12 6.6c-1.8-1.4-4.3-2-7.5-1.8v13.4c3.2-.2 5.7.4 7.5 1.8 1.8-1.4 4.3-2 7.5-1.8V4.8c-3.2-.2-5.7.4-7.5 1.8Z" fill={active ? "currentColor" : "none"} />
+      <path d="M12 6.6V20" stroke={active ? "var(--ds-surface)" : "currentColor"} />
+    </Svg>
+  );
+}
+
 export const NAV_ICONS: Record<string, ComponentType<NavIconProps>> = {
   "/": NavHomeIcon,
   "/moments": NavMomentsIcon,
   "/practice": NavPracticeIcon,
+  "/guide": NavGuideIcon,
   "/journey": NavJourneyIcon,
   "/profile": NavYouIcon,
 };
