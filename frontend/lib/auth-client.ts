@@ -1,6 +1,7 @@
 import type { PassState } from "@inner-pause/shared";
 
 import { apiFetch } from "@/lib/api";
+import { readSource } from "@/lib/install-prompt";
 import { forgetJournalBackupOnThisDevice } from "@/lib/journal-sync";
 
 export interface AuthUser {
@@ -25,7 +26,8 @@ export async function signup(input: { email: string; password: string; fullName:
   const response = await apiFetch("/api/auth/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    // The ad that brought them, if they came through /install.
+    body: JSON.stringify({ ...input, source: readSource() ?? undefined }),
   });
   if (!response.ok) throw new Error(await readError(response));
   const payload = (await response.json()) as { user: AuthUser };

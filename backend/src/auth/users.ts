@@ -34,7 +34,7 @@ export async function findUserById(id: string) {
   return users.findOne({ _id: new ObjectId(id) });
 }
 
-export async function createUser(input: { email: string; passwordHash: string; fullName: string }) {
+export async function createUser(input: { email: string; passwordHash: string; fullName: string; signupSource?: Record<string, string> }) {
   const users = await usersCollection();
   const now = new Date();
   const doc: UserDocument = {
@@ -44,6 +44,7 @@ export async function createUser(input: { email: string; passwordHash: string; f
     phone: "",
     createdAt: now,
     updatedAt: now,
+    ...(input.signupSource ? { signupSource: input.signupSource } : {}),
   };
   const result = await users.insertOne(doc);
   return { id: result.insertedId.toString(), user: doc };

@@ -20,6 +20,8 @@ export interface UserDocument {
   /** The lifetime Pass (pass-store.ts): never ends. No longer sold; earlier ones are kept. */
   passLifetime?: boolean;
   passActivatedAt?: Date;
+  /** The ad that brought them (utm_* tags from /install), if any. */
+  signupSource?: Record<string, string>;
   /** The trial (pass-store.ts): the Pauses it has counted, at most TRIAL_PAUSES. */
   trialPauseIds?: string[];
   /** The end date the "Pass ends soon" emails were sent for, and the last one sent (days before: 7, then 1). */

@@ -48,6 +48,17 @@ const RESET_WINDOW_MS = 60 * 60 * 1000;
 
 const isDuplicateKeyError = (error: unknown) => typeof error === "object" && error !== null && (error as { code?: unknown }).code === 11000;
 
+// Where a sign-up came from (the ad's utm_* tags, kept by /install): only
+// short utm_ strings and when they landed, nothing else.
+function sourceField(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([key, item]) => (key.startsWith("utm_") || key === "landedAt") && key.length <= 40 && typeof item === "string")
+    .slice(0, 8)
+    .map(([key, item]) => [key, (item as string).slice(0, 100)]);
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
 authRoutes.post("/signup", async (c) => {
   const body = await readJsonObject(c);
   if (!body) return invalidBody(c);
@@ -72,7 +83,7 @@ authRoutes.post("/signup", async (c) => {
 
   let created: Awaited<ReturnType<typeof createUser>>;
   try {
-    created = await createUser({ email, passwordHash: await hashPassword(password), fullName });
+    created = await createUser({ email, passwordHash: await hashPassword(password), fullName, signupSource: sourceField(body.source) });
   } catch (error) {
     // Two sign-ups for the same email at once: the unique index catches it.
     if (isDuplicateKeyError(error)) return c.json({ error: "An account with this email already exists." }, 409);
