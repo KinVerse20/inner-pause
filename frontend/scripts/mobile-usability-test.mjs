@@ -309,10 +309,25 @@ async function flows(browser, theme) {
     await page.waitForTimeout(2500);
     await checkScreen(page, `${theme} player`);
     await shot(page, `${theme}-flow-player`);
+    check(await page.getByRole("button", { name: /Skip frequency/ }).isVisible(), `${theme} player: no Skip frequency`);
+    check(await page.getByRole("button", { name: "End session" }).isVisible(), `${theme} player: no End session`);
+    check((await page.getByText(/^DEV/).count()) === 0, `${theme} player: a DEV panel is showing`);
     await page.getByRole("button", { name: "Sound", exact: true }).click();
     await page.waitForTimeout(500);
     await checkScreen(page, `${theme} sound sheet`);
     await shot(page, `${theme}-flow-sound-sheet`);
+    // The six sounds on top; Binaural and Frequency only have Soft, Balanced and Clear, no Off.
+    const sheet = page.getByRole("dialog");
+    for (const name of ["Rain", "Rainforest", "Ocean", "Wind", "Deep ambient", "Binaural"]) {
+      check(await sheet.getByRole("radio", { name, exact: true }).isVisible(), `${theme} sound sheet: "${name}" not on top`);
+    }
+    for (const name of ["Forest", "Piano", "Gong"]) {
+      check((await sheet.getByRole("radio", { name, exact: true }).count()) === 0, `${theme} sound sheet: "${name}" still offered`);
+    }
+    await sheet.getByRole("radio", { name: "Binaural", exact: true }).click();
+    check((await sheet.getByRole("radio", { name: "Off", exact: true }).count()) === 0, `${theme} Binaural: Off offered`);
+    await checkScreen(page, `${theme} sound sheet Binaural`);
+    await sheet.getByRole("radio", { name: "Rain", exact: true }).click();
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await page.getByRole("button", { name: "Keep playing and go back" }).click();
     await page.waitForTimeout(800);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useEffect, useState, ViewTransition } from "react";
+import { startTransition, useState, ViewTransition } from "react";
 
 import { MomentEmblem } from "@/components/moment-emblem";
 import { OutcomeEmblem } from "@/components/outcome-emblem";
@@ -17,7 +17,6 @@ import {
   type BigMomentMode,
   type SituationOption,
 } from "@/lib/big-moment-engine";
-import { clearDevNowOffset, getDevNowOffsetMs, setDevNowOffsetMs } from "@/lib/dev-clock";
 import { haptic } from "@/lib/haptics";
 import { createMomentRecord } from "@/lib/moment-storage";
 import { createPauseRecord } from "@/lib/pause-storage";
@@ -54,13 +53,6 @@ export function MomentsScreen() {
   const [view, setView] = useState<View>({ kind: "modes" });
   const [showAll, setShowAll] = useState(false);
   const [startingKey, setStartingKey] = useState<string | null>(null);
-  // Read after mount, not in a lazy useState initializer — the initializer
-  // runs during SSR too (where localStorage doesn't exist).
-  const [devOffsetMs, setDevOffsetMs] = useState(0);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDevOffsetMs(getDevNowOffsetMs());
-  }, []);
 
   // A transition, so a mode card grows into the mode's header panel and
   // shrinks back on the way out (lib/view-transition.ts).
@@ -92,12 +84,6 @@ export function MomentsScreen() {
       });
     }
     router.push(`/pause/player?session=${record.id}`);
-  };
-
-  const applyDevOffset = (ms: number) => {
-    setDevNowOffsetMs(ms);
-    setDevOffsetMs(ms);
-    window.location.reload();
   };
 
   return (
@@ -314,38 +300,6 @@ export function MomentsScreen() {
         </div>
       ) : null}
 
-      {process.env.NODE_ENV === "development" ? (
-        <section
-          aria-label="Dev: Return to Me testing"
-          className="mt-6 space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs"
-          style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
-        >
-          <p className="font-semibold">DEV · Return to Me testing</p>
-          <p>Current clock offset: {devOffsetMs}ms</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => applyDevOffset(26 * 60 * 60 * 1000)}
-              className="ds-tap min-h-11 rounded-full border px-3 font-medium"
-              style={{ borderColor: "var(--ds-border)" }}
-            >
-              Fast-forward +26h (make eligible)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                clearDevNowOffset();
-                setDevOffsetMs(0);
-                window.location.reload();
-              }}
-              className="ds-tap min-h-11 rounded-full border px-3 font-medium"
-              style={{ borderColor: "var(--ds-border)" }}
-            >
-              Reset clock
-            </button>
-          </div>
-        </section>
-      ) : null}
     </PauseShell>
   );
 }

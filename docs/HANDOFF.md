@@ -2,6 +2,13 @@
 
 Last updated: 2026-11-27. Read this first in a new session, then continue from "Next up".
 
+## Built 2026-11-27 (later): the founder's issues list
+
+- Everything is behind the Pass except the 2-Pause trial, Journey Patterns and Growth too (`appAccess()` in `frontend/lib/trial.ts`). `/admin` opens any account to see and change it (logged in `admin_changes`).
+- Sound: on top Rain, Rainforest, Ocean, Wind, Deep ambient, Binaural; under More: Mindspace, Bilateral calm, Piano tuned, Frequency only. Forest, Piano, Gong, Bell, Rain tuned and Forest tuned are gone; ids that name them play their replacement (`RETIRED` in `lib/sound-library.ts`). Their files are still in `public/audio` but nothing plays them.
+- What the player says is what plays: a tuned recording only at exactly its frequency (otherwise Rain with the frequency beneath it); Deep ambient and Mindspace had a 174 Hz drone of their own, taken out of the files with a notch filter; Binaural is made live at the Pause's frequency (left ear) and 6 Hz above it (right). Frequency only and Binaural have Soft, Balanced and Clear.
+- Player: Skip frequency (to the next centre; on the last or only one it ends the Pause) and End session under Play; the thought card folds away instead of holding an empty gap. All DEV panels are gone.
+
 ## Built 2026-11-27: the commercial plan (docs/COMMERCIAL_PLAN.md C1 to C8, not C4)
 
 No free version any more: a Pause needs an account, then a trial of 2 Pauses (each counted on the server after 2 minutes listened, `lib/trial.ts`, `POST /api/pass/trial`), then the Pass: ₹1,000 a year shown as ~~₹2,000~~ (`shared/src/brand.ts`). Ends soon emails 7 days and 1 day before (`backend/src/pass-reminders.ts`). `/install` for the ads (Android prompt, iPhone Share steps, utm_ tags saved at sign up). Report a bug (`/profile/report-bug`) and `/admin` (ADMIN_EMAILS only): Valid gives a month once. Razorpay is tested against a stand-in (`backend/tests/payments.integration.test.mjs`); real test keys, then live keys, are the founder's step (docs/LAUNCH.md step 3). Local runs: the API needs `ADMIN_EMAILS=test@innerpause.local` to try /admin with the test listener.

@@ -1,6 +1,6 @@
 "use client";
 
-import { PASS_PRICE_INR } from "@inner-pause/shared";
+import { PASS_PRICE_INR, TRIAL_COUNTS_AFTER_SECONDS } from "@inner-pause/shared";
 
 import { getPassExpiresAt, getPassState, getTrial, hasLifetimePass } from "@/lib/entitlements";
 
@@ -50,7 +50,7 @@ export function getPassSummary(now = Date.now()): PassSummary {
     return { ...base, standing: "expired", label: "Ended", line: endsAt ? `Ended on ${formatPassDate(endsAt)} · renew for ${price}` : `Renew for ${price}` };
   }
   if (trialLeft > 0) {
-    return { ...base, standing: "trial", label: "Trial", line: `${trialLeft} of ${trial.limit} trial Pauses left · then ${price}` };
+    return { ...base, standing: "trial", label: "Trial", line: `${trialLeft} of ${trial.limit} trial Pauses left · each counts after ${TRIAL_COUNTS_AFTER_SECONDS / 60} minutes` };
   }
   return { ...base, standing: "trial-used", label: "Trial used", line: `Keep going with the Pass · ${price}` };
 }

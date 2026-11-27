@@ -10,7 +10,6 @@ import { YouHeader } from "@/components/you-avatar";
 import { JournalComposer, JourneySummary, MomentOpened, StoryTimeline, buildStory } from "@/components/journey-story";
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
-import { hasActivePass, setDevHasPass } from "@/lib/entitlements";
 import { useAppAccess } from "@/lib/trial";
 import { PassGateCard } from "@/components/pass-gate-card";
 import { computeGrowthStatements, type GrowthStatement } from "@/lib/growth-model";
@@ -53,7 +52,6 @@ export function JourneyScreen() {
   const [journalEntries, setJournalEntries] = useState<TellEntry[]>([]);
   const [patterns, setPatterns] = useState<PatternRecord[]>([]);
   const [growthStatements, setGrowthStatements] = useState<GrowthStatement[]>([]);
-  const [pass, setPass] = useState(false);
   // Patterns and Growth sit behind the Pass (open during the trial), and
   // when open they look across the whole story.
   const access = useAppAccess();
@@ -74,7 +72,6 @@ export function JourneyScreen() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPass(hasActivePass());
     refresh();
   }, []);
 
@@ -130,11 +127,6 @@ export function JourneyScreen() {
     refresh();
   };
 
-  const togglePass = () => {
-    const next = !pass;
-    setDevHasPass(next);
-    setPass(next);
-  };
 
   return (
     <PauseShell>
@@ -213,23 +205,6 @@ export function JourneyScreen() {
           <JournalEntryDetailOverlay entry={selectedEntry} fromCard={entryOrigin === "list"} onClose={closeEntry} onDelete={deleteEntry} />
         ) : null}
 
-        {process.env.NODE_ENV === "development" ? (
-          <section
-            aria-label="Dev: Journey testing"
-            className="space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs"
-            style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
-          >
-            <p className="font-semibold">DEV · Journey testing</p>
-            <button
-              type="button"
-              onClick={togglePass}
-              className="ds-tap min-h-11 rounded-full border px-3 font-medium"
-              style={{ borderColor: "var(--ds-border)" }}
-            >
-              {pass ? "Pass: ON (tap to turn off)" : "Pass: OFF (tap to turn on)"}
-            </button>
-          </section>
-        ) : null}
         </StaggerItem>
       </Stagger>
     </PauseShell>

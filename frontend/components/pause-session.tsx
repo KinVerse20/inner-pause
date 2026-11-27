@@ -11,7 +11,7 @@ import { getPauseRecord, recordListening, type PauseRecord } from "@/lib/pause-s
 import { settlePracticeDays } from "@/lib/programme-storage";
 import { getPreferences, updatePreferences } from "@/lib/preferences-store";
 import { isWebmUrl, markAacUnplayable, playableRenderUrl, webmUrl } from "@/lib/render-format";
-import { findBuiltInSound, soundUrlFor, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
+import { generatedGain, playableSound, soundUrlFor, undertoneGain, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 import type { ToneSetting } from "@/components/sound-sheet";
 import { parseFrequencyHz, useToneLayer } from "@/lib/use-tone-layer";
 import { useTunedSound } from "@/lib/use-tuned-sound";
@@ -70,12 +70,11 @@ export interface PauseSession {
   /** A Pause with several centres: its stops, and the one playing. Null for a single Pause. */
   stops: PauseStop[] | null;
   stopIndex: number;
-  /** The frequency the Pause is tuned to now (its current stop's), and the one actually sounding (dev tester). */
+  /** The frequency the Pause is tuned to now (its current stop's), and the one sounding (null with the frequency off). */
   pauseHz: number | null;
   targetHz: number | null;
   hasSoundFile: boolean;
   renderedFile: boolean;
-  devTuningOff: boolean;
   /** The last page you were on outside the player: where minimising takes you. */
   backTo: string;
   /** Load a Pause record into the session (no-op if it's already the one), its clock at `resumeAt`. */
@@ -88,12 +87,12 @@ export interface PauseSession {
   chooseTone: (tone: ToneSetting) => void;
   /** End now and go to the check-in. */
   endEarly: () => void;
+  /** Move to the next centre now; on the last (or only) one, end the Pause. */
+  skipFrequency: () => void;
   /** The check-in is done: the session closes when the player is left. */
   finish: () => void;
   /** The player screen is going away: keep the Pause running, or let it go if it never started. */
   release: () => void;
-  setDevToneHz: (hz: number | null) => void;
-  toggleDevTuning: () => void;
 }
 
 const SessionContext = createContext<PauseSession | null>(null);
@@ -126,10 +125,6 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   const closingFadeStartedRef = useRef(false);
   const closingTimerRef = useRef<number | undefined>(undefined);
 
-  // Dev-only frequency tester overrides.
-  const [devToneHz, setDevToneHz] = useState<number | null>(null);
-  const [devTuningOff, setDevTuningOff] = useState(false);
-
   const pathname = usePathname();
   const [backTo, setBackTo] = useState("/");
   useEffect(() => {
@@ -142,23 +137,26 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   // frequency (the server's rendering once ready, the original tuned live
   // until then). No sound, or Ambient sound off: a soft tone on its own.
   const builtIn = Boolean(record?.builtInSoundId);
-  const builtInSound = builtIn ? findBuiltInSound(builtInSoundId ?? record?.builtInSoundId) : undefined;
   // Several centres: the one playing now gives the frequency.
   const stops = record?.blocks && record.blocks.length > 1 ? record.blocks : null;
   const stopIndex = stops ? (stopAt(stops, elapsed)?.index ?? 0) : 0;
   const pauseHz = stops ? stops[stopIndex].hz : record ? parseFrequencyHz(record.frequencyLabel) : null;
+  // What plays is always at this Pause's frequency: a tuned recording with
+  // no file at exactly that frequency plays Rain instead (lib/sound-library.ts).
+  const builtInSound = builtIn ? playableSound(builtInSoundId ?? record?.builtInSoundId, pauseHz, Boolean(stops)) : undefined;
+  // Frequency only and Binaural are the frequency itself, made here: they
+  // sound whatever Tone says, at Soft, Balanced or Clear.
+  const generated = builtInSound?.generated ?? null;
   const originalUrl = ambientOn ? (builtIn ? soundUrlFor(builtInSound, pauseHz) : (record?.ambientSoundUrl ?? null)) : null;
   // A tuned recording already carries the frequency: no undertone on top.
   const premixed = Boolean(builtInSound?.tunedFile);
-  const targetHz = devToneHz ?? (frequencyOn ? pauseHz : null);
+  const targetHz = frequencyOn || generated ? pauseHz : null;
   // Rendered files come as AAC and Opus (lib/render-format.ts). If one
   // can't play, fall back: AAC, then Opus, then the original tuned live.
   const [aacFailed, setAacFailed] = useState(false);
   const [renderFailed, setRenderFailed] = useState(false);
   const rendering =
-    devToneHz !== null || renderFailed || !ambientOn
-      ? null
-      : ((frequencyOn && !devTuningOff ? record?.ambientTunedUrl : record?.ambientPlainUrl) ?? null);
+    renderFailed || !ambientOn ? null : ((frequencyOn ? record?.ambientTunedUrl : record?.ambientPlainUrl) ?? null);
   const renderedUrl = rendering ? (aacFailed ? webmUrl(rendering) : playableRenderUrl(rendering)) : null;
   const soundUrl = renderedUrl ?? originalUrl;
 
@@ -168,8 +166,9 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   useToneLayer(
     builtIn ? (premixed && originalUrl ? null : targetHz) : originalUrl ? null : targetHz,
     audible && phase === "playing",
-    builtIn && originalUrl ? undertoneGain(undertone) : undefined,
+    generated ? generatedGain(undertone) : builtIn && originalUrl ? undertoneGain(undertone) : undefined,
     stops ? STOP_CROSSFADE_SECONDS : 0,
+    generated === "binaural",
   );
 
   // Moving to the next centre: a soft haptic (the player says where).
@@ -181,7 +180,7 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   }, [stopIndex, stops, phase]);
   const tunedSound = useTunedSound(audioRef, {
     enabled: Boolean(originalUrl) && !renderedUrl,
-    frequencyHz: renderedUrl || devTuningOff || builtIn ? null : targetHz,
+    frequencyHz: renderedUrl || builtIn ? null : targetHz,
     // A rendered file already carries the card's volume and level.
     volume: renderedUrl ? 1 : builtIn ? 0.8 : (record?.ambientVolume ?? 1),
     muted,
@@ -224,8 +223,6 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     setFinished(false);
     setAacFailed(false);
     setRenderFailed(false);
-    setDevToneHz(null);
-    setDevTuningOff(false);
   }, []);
 
   const load = useCallback(
@@ -367,6 +364,19 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     window.clearTimeout(closingTimerRef.current);
     setPhase("checkin");
   }, []);
+
+  // Skip frequency: straight to the next centre's start (the clock jumps,
+  // time listened doesn't); the last or only centre ends the Pause.
+  const skipFrequency = useCallback(() => {
+    if (!stops || stopIndex >= stops.length - 1) {
+      endEarly();
+      return;
+    }
+    haptic("tap");
+    const next = stops.slice(0, stopIndex + 1).reduce((sum, stop) => sum + stop.seconds, 0);
+    setElapsed(next);
+    live.current = { ...live.current, elapsed: next };
+  }, [stops, stopIndex, endEarly]);
 
   // Natural completion: a brief quiet closing beat before the check-in.
   // Wherever you are in the app, the sound has already faded by now.
@@ -511,7 +521,7 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     setAmbientOn(true);
     updatePreferences({ defaultSound: id, soundAmbientEnabled: true });
     const audio = audioRef.current;
-    const nextUrl = soundUrlFor(findBuiltInSound(id), pauseHz);
+    const nextUrl = soundUrlFor(playableSound(id, pauseHz, Boolean(stops)), pauseHz);
     // Also while the sound plays ahead of the Pause: you choose by ear.
     if (!audio || (phase !== "playing" && audio.paused)) return;
     switchingRef.current = true;
@@ -543,6 +553,14 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   // setting with You → Preferences → Frequency.
   const chooseTone = (tone: ToneSetting) => {
     haptic("tap");
+    // Frequency only and Binaural: just how loud, leaving the undertone
+    // setting for the other sounds as it was.
+    if (generated) {
+      if (tone === "off") return;
+      setUndertone(tone);
+      updatePreferences({ undertone: tone });
+      return;
+    }
     if (tone === "off") {
       setFrequencyOn(false);
       updatePreferences({ soundToneLayerEnabled: false });
@@ -622,14 +640,14 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     frequencyOn,
     undertone,
     builtIn,
-    builtInSoundId,
+    // The sound actually playing (a retired or unavailable choice resolved).
+    builtInSoundId: builtInSound?.id ?? builtInSoundId,
     stops,
     stopIndex,
     pauseHz,
     targetHz,
     hasSoundFile: Boolean(originalUrl),
     renderedFile: Boolean(renderedUrl),
-    devTuningOff,
     backTo,
     load,
     begin,
@@ -639,10 +657,9 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     chooseSound,
     chooseTone,
     endEarly,
+    skipFrequency,
     finish,
     release,
-    setDevToneHz,
-    toggleDevTuning: () => setDevTuningOff((current) => !current),
   };
 
   return (

@@ -3,7 +3,7 @@
 import { useEffect, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { PASS_LIST_PRICE_INR, PASS_PRICE_INR, stopAt, TRIAL_PAUSES } from "@inner-pause/shared";
+import { PASS_LIST_PRICE_INR, PASS_PRICE_INR, stopAt, TRIAL_COUNTS_AFTER_SECONDS, TRIAL_PAUSES } from "@inner-pause/shared";
 
 import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
@@ -310,7 +310,7 @@ ${text}` : text });
             </div>
             {trialNumber ? (
               <p className="mt-4 text-xs font-medium" style={{ color: "var(--ds-on-navy-muted)" }}>
-                Trial Pause {trialNumber} of {TRIAL_PAUSES}
+                Trial Pause {trialNumber} of {TRIAL_PAUSES} · counts once it has played {TRIAL_COUNTS_AFTER_SECONDS / 60} minutes
               </p>
             ) : null}
             {record.requiresArrive ? (
@@ -331,7 +331,7 @@ ${text}` : text });
                 style={{ color: "var(--ds-on-navy-muted)" }}
               >
                 <IconSliders className="h-3.5 w-3.5" />
-                {builtInSound.label} · {frequencyOn ? `${UNDERTONE_LEVELS.find((level) => level.id === undertone)?.label ?? "Balanced"} tone` : "no tone"}
+                {builtInSound.label} · {builtInSound.generated ? (UNDERTONE_LEVELS.find((level) => level.id === undertone)?.label ?? "Balanced") : frequencyOn ? `${UNDERTONE_LEVELS.find((level) => level.id === undertone)?.label ?? "Balanced"} tone` : "no tone"}
                 <span className="font-semibold" style={{ color: "#C4B5FD" }}>
                   Change
                 </span>
@@ -422,6 +422,14 @@ ${text}` : text });
             )}
           </div>
 
+          {/* The old player's two controls, under Play: on to the next centre, or end here. */}
+          <div className="-mt-1 flex items-center justify-center gap-2">
+            <PillButton onClick={session.skipFrequency} label={stops && session.stopIndex < stops.length - 1 ? `Skip to ${CENTRE_NAME[stops[session.stopIndex + 1].chakraId]}` : "Skip frequency, end this Pause"}>
+              Skip frequency
+            </PillButton>
+            <PillButton onClick={session.endEarly}>End session</PillButton>
+          </div>
+
           {builtInSound ? (
             <p className="ds-caption -mt-2" style={{ color: "var(--ds-on-navy-muted)" }}>
               {builtInSound.label}
@@ -431,7 +439,10 @@ ${text}` : text });
 
           {offerLetOut ? <LetItOutOffer onOpen={openLetOut} /> : null}
 
-          <ThoughtCard journey={journey} elapsed={elapsed} playing={playing} />
+          {/* No gap of its own: the thought card folds away between thoughts. */}
+          <div className="-mt-5 flex w-full justify-center">
+            <ThoughtCard journey={journey} elapsed={elapsed} playing={playing} />
+          </div>
 
           <WhyThisPausePanel
             input={{
@@ -444,17 +455,6 @@ ${text}` : text });
             readMore
           />
 
-          {process.env.NODE_ENV === "development" ? (
-            <DevFrequencyTester
-              pauseHz={session.pauseHz}
-              currentHz={session.targetHz}
-              tuningSound={session.hasSoundFile}
-              rendered={session.renderedFile}
-              onChange={session.setDevToneHz}
-              tuningOff={session.devTuningOff}
-              onToggleTuning={session.toggleDevTuning}
-            />
-          ) : null}
         </div>
       ) : null}
 
@@ -581,6 +581,8 @@ ${text}` : text });
         <SoundSheet
           currentId={session.builtInSoundId ?? record.builtInSoundId!}
           tone={frequencyOn ? undertone : "off"}
+          level={undertone}
+          frequencyHz={session.pauseHz}
           frequencyLabel={stop ? `${stop.hz} Hz` : (record.frequencyLabel ?? null)}
           muted={muted}
           onChoose={session.chooseSound}
@@ -592,95 +594,6 @@ ${text}` : text });
       ) : null}
 
     </PlayerFrame>
-  );
-}
-
-// Traditional solfeggio-style values plus 432 Hz — the frequencies most
-// often asked about, for quick comparison by ear.
-const DEV_FREQUENCY_PRESETS = [174, 285, 396, 417, 432, 528, 639, 741, 852, 963];
-
-// Dev-only, same convention as the dashed DEV panels in moments-screen.tsx
-// and journey-screen.tsx: never rendered in production builds.
-function DevFrequencyTester({
-  pauseHz,
-  currentHz,
-  tuningSound,
-  rendered,
-  onChange,
-  tuningOff,
-  onToggleTuning,
-}: {
-  pauseHz: number | null;
-  currentHz: number | null;
-  /** True when the frequency tunes the selected sound; false when it plays as a tone. */
-  tuningSound: boolean;
-  /** True when playing the server's rendered file; false when tuning live. */
-  rendered: boolean;
-  onChange: (hz: number | null) => void;
-  tuningOff: boolean;
-  onToggleTuning: () => void;
-}) {
-  const shownHz = currentHz ?? pauseHz ?? 528;
-  return (
-    <section
-      aria-label="Dev: frequency tester"
-      className="w-full max-w-[20rem] space-y-2.5 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-left text-xs"
-      style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}
-    >
-      <p className="font-semibold">
-        DEV · Frequency tester · <span className="tabular-nums">{Math.round(shownHz)} Hz</span>
-        {currentHz === null ? " (off in Preferences)" : !tuningSound ? " · tone (no sound)" : tuningOff ? " · tuning off" : " · tuning the sound"}
-        {tuningSound ? (rendered ? " · rendered file" : " · live") : ""}
-      </p>
-      <input
-        type="range"
-        min={100}
-        max={1000}
-        step={1}
-        value={shownHz}
-        onChange={(event) => onChange(Number(event.target.value))}
-        aria-label="Frequency in hertz"
-        className="w-full"
-      />
-      <div className="flex flex-wrap gap-1.5">
-        {DEV_FREQUENCY_PRESETS.map((hz) => (
-          <button
-            key={hz}
-            type="button"
-            onClick={() => onChange(hz)}
-            aria-pressed={Math.round(shownHz) === hz}
-            className="ds-tap min-h-8 rounded-full border px-2.5 font-medium tabular-nums"
-            style={{
-              borderColor: Math.round(shownHz) === hz ? "var(--ds-accent)" : "var(--ds-border)",
-              color: Math.round(shownHz) === hz ? "var(--ds-accent)" : undefined,
-            }}
-          >
-            {hz}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          type="button"
-          onClick={() => onChange(null)}
-          className="ds-tap min-h-8 rounded-full border px-2.5 font-medium"
-          style={{ borderColor: "var(--ds-border)" }}
-        >
-          Reset to this Pause{pauseHz ? ` (${pauseHz} Hz)` : ""}
-        </button>
-        {tuningSound ? (
-          <button
-            type="button"
-            onClick={onToggleTuning}
-            aria-pressed={tuningOff}
-            className="ds-tap min-h-8 rounded-full border px-2.5 font-medium"
-            style={{ borderColor: "var(--ds-border)" }}
-          >
-            {tuningOff ? "Hearing the original" : "Hearing it tuned"}
-          </button>
-        ) : null}
-      </div>
-    </section>
   );
 }
 
@@ -777,6 +690,20 @@ function TrialGate({ need, sessionId, onBack, onPass }: { need: Exclude<PauseAcc
         </button>
       </div>
     </div>
+  );
+}
+
+function PillButton({ children, onClick, label }: { children: ReactNode; onClick: () => void; label?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="ds-tap min-h-11 rounded-full px-4 text-[0.85rem] font-semibold"
+      style={{ background: "rgba(248,250,252,0.1)", color: "var(--ds-on-navy)", border: "1px solid rgba(248,250,252,0.12)" }}
+    >
+      {children}
+    </button>
   );
 }
 

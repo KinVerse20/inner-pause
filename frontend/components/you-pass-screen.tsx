@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_PAUSES } from "@inner-pause/shared";
+import { PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_COUNTS_AFTER_SECONDS, TRIAL_PAUSES } from "@inner-pause/shared";
 
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { IconCheck } from "@/components/pause-icons";
 import { PauseShell } from "@/components/pause-shell";
 import { YouScreenHeader } from "@/components/settings-row";
 import { getAccount, subscribeAccount, type LocalAccount } from "@/lib/account-store";
-import { activateDevPass, clearPass, subscribeEntitlements } from "@/lib/entitlements";
+import { subscribeEntitlements } from "@/lib/entitlements";
 import { haptic } from "@/lib/haptics";
 import { PaymentCancelledError, buyPass, getPassOffer, type PassOffer } from "@/lib/pass-client";
 import { formatPassDate, getPassSummary, rupees, type PassSummary } from "@/lib/pass-summary";
@@ -132,7 +132,7 @@ export function YouPassScreen() {
                   : standing === "expired"
                     ? `Your Pass ${summary?.endsAt ? `ended on ${formatPassDate(summary.endsAt)}` : "has ended"}. Nothing was deleted: your whole story is still here.`
                     : standing === "trial"
-                      ? `You have ${summary?.trialLeft} of ${TRIAL_PAUSES} trial Pauses left.`
+                      ? `You have ${summary?.trialLeft} of ${TRIAL_PAUSES} trial Pauses left. A Pause counts once it has played ${TRIAL_COUNTS_AFTER_SECONDS / 60} minutes; a shorter listen doesn't use one up.`
                       : `You've used your ${TRIAL_PAUSES} trial Pauses.`}
               </p>
             </>
@@ -200,19 +200,6 @@ export function YouPassScreen() {
           </p>
         </section>
 
-        {process.env.NODE_ENV === "development" ? (
-          <section aria-label="Dev: Pass testing" className="space-y-2 rounded-[var(--ds-radius-sm)] border border-dashed px-3 py-3 text-xs" style={{ borderColor: "var(--ds-border)", color: "var(--ds-text-muted)" }}>
-            <p className="font-semibold">DEV · Pass testing (works in development only)</p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => activateDevPass()} className="ds-tap min-h-11 rounded-full border px-3 font-medium" style={{ borderColor: "var(--ds-border)" }}>
-                Activate Pass
-              </button>
-              <button type="button" onClick={() => clearPass()} className="ds-tap min-h-11 rounded-full border px-3 font-medium" style={{ borderColor: "var(--ds-border)" }}>
-                Reset dev Pass
-              </button>
-            </div>
-          </section>
-        ) : null}
       </div>
     </PauseShell>
   );

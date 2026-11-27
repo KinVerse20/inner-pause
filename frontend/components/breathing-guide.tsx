@@ -82,20 +82,25 @@ export function ThoughtCard({ journey, elapsed, playing }: { journey: JourneySeg
     if (segment.step.kind === "reminder") text = segment.step.text;
   }
 
+  // Folds away between thoughts, so it never leaves an empty gap under the
+  // controls; opening and closing glide (grid rows 0fr to 1fr).
   return (
-    <figure
+    <div
       aria-hidden={!showing}
-      className="flex min-h-[4.75rem] w-full max-w-[20rem] items-center gap-3 rounded-[var(--ds-radius-lg)] px-4 py-3 text-left transition-opacity duration-1000 ease-out motion-reduce:transition-none"
-      style={{
-        opacity: showing ? 1 : 0,
-        background: "rgba(196,181,253,0.08)",
-        boxShadow: "inset 0 0 0 1px rgba(196,181,253,0.16)",
-      }}
+      className="grid w-full max-w-[20rem] transition-[grid-template-rows,opacity] duration-700 ease-out motion-reduce:transition-none"
+      style={{ gridTemplateRows: showing ? "1fr" : "0fr", opacity: showing ? 1 : 0 }}
     >
-      <IconFeather className="h-4 w-4 shrink-0" style={{ color: "#C4B5FD" }} />
-      <blockquote className="text-[0.95rem] italic leading-6" style={{ color: "#DDD6FE" }}>
-        &ldquo;{text}&rdquo;
-      </blockquote>
-    </figure>
+      <div className="overflow-hidden">
+        <figure
+          className="mt-5 flex items-center gap-3 rounded-[var(--ds-radius-lg)] px-4 py-3 text-left"
+          style={{ background: "rgba(196,181,253,0.08)", boxShadow: "inset 0 0 0 1px rgba(196,181,253,0.16)" }}
+        >
+          <IconFeather className="h-4 w-4 shrink-0" style={{ color: "#C4B5FD" }} />
+          <blockquote className="text-[0.95rem] italic leading-6" style={{ color: "#DDD6FE" }}>
+            &ldquo;{text}&rdquo;
+          </blockquote>
+        </figure>
+      </div>
+    </div>
   );
 }
