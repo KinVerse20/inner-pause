@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { stopAt, type PauseStop } from "@inner-pause/shared";
 
 import { haptic } from "@/lib/haptics";
+import { countTrialPause, isUncountedTrialPause, trialCountsAfter } from "@/lib/trial";
 import { getPauseRecord, recordListening, type PauseRecord } from "@/lib/pause-storage";
 import { settlePracticeDays } from "@/lib/programme-storage";
 import { getPreferences, updatePreferences } from "@/lib/preferences-store";
@@ -371,6 +372,9 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
   // Wherever you are in the app, the sound has already faded by now.
   const beginClosing = useCallback(() => {
     audioRef.current?.pause();
+    // A Pause shorter than 2 minutes counts against the trial when it ends.
+    const ended = live.current.record;
+    if (ended) void countTrialPause(ended.id);
     haptic("moment");
     setPhase("closing");
     closingTimerRef.current = window.setTimeout(() => setPhase("checkin"), CLOSING_BEAT_MS);
@@ -386,6 +390,11 @@ export function PauseSessionProvider({ children }: { children: ReactNode }) {
     if (!current || seconds <= 0) return;
     recordListening(current.id, seconds, live.current.elapsed);
     if (current.pauseType === "practice") settlePracticeDays();
+    // The trial counts a Pause once it has played 2 minutes (lib/trial.ts).
+    if (isUncountedTrialPause(current.id)) {
+      const listened = getPauseRecord(current.id)?.listenedSeconds ?? 0;
+      if (listened >= trialCountsAfter(current.durationSeconds) - 1) void countTrialPause(current.id);
+    }
   }, []);
   useEffect(() => {
     window.addEventListener("pagehide", saveListening);

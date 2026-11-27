@@ -3,7 +3,7 @@
 import { useEffect, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { stopAt } from "@inner-pause/shared";
+import { PASS_LIST_PRICE_INR, PASS_PRICE_INR, stopAt, TRIAL_PAUSES } from "@inner-pause/shared";
 
 import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
@@ -22,6 +22,9 @@ import { resumeAt } from "@/lib/listening";
 import { completePauseRecord, getPauseRecord, getPreviousCompletedPauseRecord, type PauseFeedback } from "@/lib/pause-storage";
 import { findBuiltInSound, UNDERTONE_LEVELS } from "@/lib/sound-library";
 import { buildJourney } from "@/lib/breath-journey";
+import { rupees } from "@/lib/pass-summary";
+import { getTrial } from "@/lib/entitlements";
+import { isUncountedTrialPause, pauseAccess, type PauseAccess } from "@/lib/trial";
 import { expandName, markPageTransition } from "@/lib/view-transition";
 
 // How long a change of centre is named in the player.
@@ -56,16 +59,29 @@ export function PausePlayerScreen() {
   const [soundSheetOpen, setSoundSheetOpen] = useState(false);
   const [moment, setMoment] = useState<MomentRecord | null>(null);
 
+  // No free version (docs/COMMERCIAL_PLAN.md C2): a Pause needs an account,
+  // then the Pass or a trial Pause left. The one already running is never stopped.
+  const [locked, setLocked] = useState<Exclude<PauseAccess, "ok"> | null>(null);
+  const runningId = session.record?.id;
+  // "Trial Pause 1 of 2" before it starts, while the trial is still to count it.
+  const [trialNumber, setTrialNumber] = useState<number | null>(null);
+
   // One-time read from localStorage on mount or id change.
   useEffect(() => {
     const found = sessionId ? getPauseRecord(sessionId) : undefined;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMissing(!found);
     if (!found) return;
+    const access = runningId === found.id ? "ok" : pauseAccess(found.id);
+    setLocked(access === "ok" ? null : access);
+    if (access !== "ok") return;
+    setTrialNumber(isUncountedTrialPause(found.id) ? Math.min(getTrial().used + 1, TRIAL_PAUSES) : null);
     load(found.id, resume ? { resumeAt: resumeAt(found) } : undefined);
     // The Moment this Pause belongs to, if any (for letting it out first).
     setMoment(listMomentRecords().find((item) => item.linkedPauseRecordId === found.id) ?? null);
     setNotBetterStreak(getPreviousCompletedPauseRecord(found.id)?.feedback === "not-better");
+    // runningId is read once per Pause opened, not followed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, resume, load]);
 
   // Leaving the player keeps a started Pause playing; one that never
@@ -195,6 +211,14 @@ ${text}` : text });
     );
   }
 
+  if (locked) {
+    return (
+      <PlayerFrame from={from}>
+        <TrialGate need={locked} sessionId={sessionId ?? ""} onBack={() => leaveTo(session.backTo)} onPass={() => leaveTo("/profile/pass")} />
+      </PlayerFrame>
+    );
+  }
+
   if (!record) {
     return (
       <PlayerFrame from={from}>
@@ -284,6 +308,11 @@ ${text}` : text });
                 </p>
               ))}
             </div>
+            {trialNumber ? (
+              <p className="mt-4 text-xs font-medium" style={{ color: "var(--ds-on-navy-muted)" }}>
+                Trial Pause {trialNumber} of {TRIAL_PAUSES}
+              </p>
+            ) : null}
             {record.requiresArrive ? (
               <NavyButton onClick={session.begin} className="mt-8 px-8">
                 I&rsquo;m ready
@@ -692,6 +721,62 @@ function NavyButton({ children, onClick, className = "" }: { children: ReactNode
     >
       {children}
     </button>
+  );
+}
+
+// Before a Pause can start: sign in (the trial belongs to an account), or,
+// with the trial used, the Pass. Calm, one clear way on, and a way back.
+function TrialGate({ need, sessionId, onBack, onPass }: { need: Exclude<PauseAccess, "ok">; sessionId: string; onBack: () => void; onPass: () => void }) {
+  const router = useRouter();
+  const signIn = () => {
+    haptic("tap");
+    markPageTransition("hold");
+    router.push(`/auth?redirectTo=${encodeURIComponent(`/pause/player?session=${sessionId}`)}`);
+  };
+  return (
+    <div className="grid flex-1 place-items-center text-center">
+      <div className="grid max-w-[19rem] justify-items-center">
+        <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(44vw,11rem)] opacity-80" />
+        {need === "sign-in" ? (
+          <>
+            <h1 className="mt-8 text-xl font-semibold">Your first {TRIAL_PAUSES} Pauses are on us</h1>
+            <p className="mt-2 text-sm leading-6" style={{ color: "var(--ds-on-navy-muted)" }}>
+              Sign in or create an account to begin. Your trial and everything you save stay with it.
+            </p>
+            <NavyButton onClick={signIn} className="mt-8 px-8">
+              Sign in to begin
+            </NavyButton>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-8 text-xl font-semibold">Ready to keep going?</h1>
+            <p className="mt-2 text-sm leading-6" style={{ color: "var(--ds-on-navy-muted)" }}>
+              You&rsquo;ve used your {TRIAL_PAUSES} trial Pauses. The Inner Pause Pass opens every Pause for a year.
+            </p>
+            <p className="mt-4 text-base">
+              {PASS_PRICE_INR < PASS_LIST_PRICE_INR ? (
+                <s className="mr-2" style={{ color: "var(--ds-on-navy-muted)" }}>
+                  {rupees(PASS_LIST_PRICE_INR)}
+                </s>
+              ) : null}
+              <span className="font-semibold">{rupees(PASS_PRICE_INR)}</span> a year
+            </p>
+            <NavyButton
+              onClick={() => {
+                haptic("tap");
+                onPass();
+              }}
+              className="mt-6 px-8"
+            >
+              See the Pass
+            </NavyButton>
+          </>
+        )}
+        <button type="button" onClick={onBack} className="ds-tap mt-3 min-h-11 px-4 text-sm font-medium underline underline-offset-4" style={{ color: "var(--ds-on-navy-muted)" }}>
+          Not now
+        </button>
+      </div>
+    </div>
   );
 }
 
