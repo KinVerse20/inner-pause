@@ -1,4 +1,4 @@
-import { PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_PAUSES, TRIAL_COUNTS_AFTER_SECONDS } from "@inner-pause/shared";
+import { PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_PAUSES } from "@inner-pause/shared";
 import { Hono } from "hono";
 
 import { getVerifiedSession } from "../auth/session";
@@ -24,7 +24,6 @@ passRoutes.get("/", async (c) => {
     listPriceInr: PASS_LIST_PRICE_INR,
     durationDays: PASS_DURATION_DAYS,
     trialPauses: TRIAL_PAUSES,
-    trialCountsAfterSeconds: TRIAL_COUNTS_AFTER_SECONDS,
     available: razorpayConfigured(),
     pass: verified ? passStateOf(verified.record) : null,
   });
@@ -49,8 +48,9 @@ passRoutes.post("/order", async (c) => {
   }
 });
 
-// A Pause has played long enough to count against the trial (the app calls
-// this after TRIAL_COUNTS_AFTER_SECONDS, or when a shorter Pause ends).
+// Starting a trial Pause: the app calls this when the listener confirms
+// "this uses 1 of your 2 trial Pauses", before anything plays. The same
+// Pause again (resumed or replayed) isn't counted twice.
 passRoutes.post("/trial", async (c) => {
   const verified = await getVerifiedSession(c);
   if (!verified) return c.json({ error: "Sign in to start your trial." }, 401);

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_COUNTS_AFTER_SECONDS, TRIAL_PAUSES } from "@inner-pause/shared";
+import { PASS_DURATION_DAYS, PASS_LIST_PRICE_INR, PASS_PRICE_INR, TRIAL_PAUSES } from "@inner-pause/shared";
 
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { IconCheck } from "@/components/pause-icons";
@@ -132,7 +132,7 @@ export function YouPassScreen() {
                   : standing === "expired"
                     ? `Your Pass ${summary?.endsAt ? `ended on ${formatPassDate(summary.endsAt)}` : "has ended"}. Nothing was deleted: your whole story is still here.`
                     : standing === "trial"
-                      ? `You have ${summary?.trialLeft} of ${TRIAL_PAUSES} trial Pauses left. A Pause counts once it has played ${TRIAL_COUNTS_AFTER_SECONDS / 60} minutes; a shorter listen doesn't use one up.`
+                      ? `You have ${summary?.trialLeft} of ${TRIAL_PAUSES} trial Pauses left. Each Pause you start uses one, however long you listen.`
                       : `You've used your ${TRIAL_PAUSES} trial Pauses.`}
               </p>
             </>

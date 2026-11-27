@@ -44,7 +44,8 @@ Never taken away, as before: Journal, Highlights, history and saved Pauses stay 
 ### C2. Trial: 2 Pause sessions, then the Pass (decided)
 - Login is **not** required today (`frontend/proxy.ts` lets every route through; the app works signed out). So a Pause now needs an account: pressing play signed out asks you to sign in or create one, and the trial belongs to the account. Browsing stays open without one.
 - Count on the **server**, on the user document (`trialPausesUsed`), so clearing the browser or reinstalling can't reset it.
-- **What counts (founder, 26 Nov):** any Pause (Right Now, Ground, Moments, Practice) counts once it has played for **2 minutes** of listened time (the counter from BUILD_PLAN item 6). A Pause stopped before 2 minutes doesn't use up the trial. A Pause shorter than 2 minutes counts when it finishes.
+- **What counts (founder, 27 Nov, replacing 26 Nov):** each Pause you start counts, however long you listen. Before a trial Pause starts the player asks "Trial Pause 1 of 2 · Start this Pause?"; it counts on the server when you press Start. The same Pause resumed or replayed isn't counted again.
+- ~~**What counts (founder, 26 Nov):** any Pause (Right Now, Ground, Moments, Practice) counts once it has played for **2 minutes** of listened time (the counter from BUILD_PLAN item 6). A Pause stopped before 2 minutes doesn't use up the trial. A Pause shorter than 2 minutes counts when it finishes.~~
 - Without an active Pass and after 2 Pauses: browsing, Journal and history stay open; pressing play on any Pause opens the Pass page (C3) instead. Never cut off a Pause that is already playing.
 - Show the count plainly before it runs out, for example "1 of 2 trial Pauses left".
 - **Everything is behind the Pass except the trial (founder, 27 Nov).** Journey Patterns and Growth too (they then look across the whole story). Every Pause, Practice session and sound plays through the player, which holds the gate. Outside the player, the same rule (`appAccess()` in `frontend/lib/trial.ts`): Tell closes once the trial is used (signed out may still type; the Pause asks them to sign in), writing in the journal needs sign in and then the trial or the Pass, and the Return to Me check in stays hidden. Browsing and reading what you saved stay open.
@@ -111,6 +112,6 @@ A spreadsheet of monthly cost at 100, 1,000 and 10,000 users, assuming heavy use
 
 ## Answered by the founder, 26 Nov
 - **C3:** ₹2,000 struck out, ₹1,000 as the offer.
-- **C2:** a Pause counts after 2 minutes listened.
+- **C2:** a Pause counts when you confirm starting it (27 Nov; was after 2 minutes).
 - **C4:** on hold. When it comes back: MSG91/Twilio with DLT, or Firebase phone auth?
 - **C9:** left for later. When it comes back: what is "maximum usage" per user per day, and how many users to plan for?

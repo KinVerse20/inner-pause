@@ -601,7 +601,7 @@ Do not use confusing technical language. Explain simply: what we remember, what 
 ## 36. Monetization
 
 > **Changed 2026-11-26 by the founder** (docs/COMMERCIAL_PLAN.md). This replaces the free account and the lifetime Pass described below, which are kept folded below for history:
-> - **No free version.** A new account gets a **trial of 2 Pauses** (any kind: Right Now, Ground, Moments, Practice). A Pause counts once it has played **2 minutes** (or ended, if shorter). After that, starting a Pause needs the Pass. A Pause already playing is never cut off.
+> - **No free version.** A new account gets a **trial of 2 Pauses** (any kind: Right Now, Ground, Moments, Practice). A Pause counts when you confirm starting it ("Trial Pause 1 of 2 · Start this Pause?"), however long you then listen. After that, starting a Pause needs the Pass. A Pause already playing is never cut off.
 > - Starting a Pause needs an account (browsing doesn't), so the trial belongs to the account, counted on the server.
 > - **Inner Pause Pass: ₹1,000 for one year**, shown as ~~₹2,000~~ ₹1,000, a launch offer (₹2,000 is the real list price). Nothing renews by itself; email 7 days and 1 day before the end. Buying again while it's on adds a year to the end date.
 > - Earlier lifetime Passes stay for life. The Journal, Highlights and everything saved stay readable after the trial or the Pass ends: only starting something new (a Pause, Tell, a journal entry, a Return to Me check in) is locked, and Journey Patterns and Growth.

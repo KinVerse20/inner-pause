@@ -330,7 +330,7 @@ async function flows(browser, theme) {
     await sheet.getByRole("radio", { name: "Rain", exact: true }).click();
     await page.getByRole("button", { name: "Done", exact: true }).click();
     await page.getByRole("button", { name: "Keep playing and go back" }).click();
-    await page.waitForTimeout(800);
+    await page.locator(".mini-player").waitFor({ timeout: 5000 }).catch(() => {});
     check(await page.locator(".mini-player").isVisible(), `${theme} mini player: not shown after minimising`);
     await checkScreen(page, `${theme} with mini player`);
     await page.getByRole("navigation").last().getByRole("link", { name: "Practice" }).click();
@@ -436,6 +436,28 @@ async function flows(browser, theme) {
     await checkScreen(page, `${theme} Journey stamp sheet`);
     await shot(page, `${theme}-flow-journey-stamp`);
   });
+
+  await step("trial: confirm before a trial Pause starts", async (page) => {
+    await signedInAs(page, { status: "none", lifetime: false, expiresAt: null, trial: { used: 1, limit: 2, pauseIds: ["a"] } });
+    let counted = 0;
+    await page.route("**/api/pass/trial", (route) => {
+      counted += 1;
+      return route.fulfill({ json: { allowed: true, pass: { status: "none", lifetime: false, expiresAt: null, trial: { used: 2, limit: 2, pauseIds: ["a", "b"] } } } });
+    });
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start a Pause" }).click();
+    await page.waitForURL(/pause\/player/);
+    await page.getByText("Trial Pause 2 of 2").first().waitFor({ timeout: 8000 }).catch(() => {});
+    await expect(page, "Trial Pause 2 of 2", "trial confirm");
+    await expect(page, "however long you listen", "trial confirm says it counts at once");
+    check(counted === 0, `${theme} trial: counted before Start`);
+    await checkScreen(page, `${theme} trial confirm`);
+    await page.getByRole("button", { name: "Start trial Pause" }).click();
+    await page.getByRole("button", { name: /^(Pause|Play)$/ }).first().waitFor({ timeout: 10000 }).catch(() => {});
+    check(counted === 1, `${theme} trial: Start counted ${counted} times, not once`);
+    check(await page.getByRole("button", { name: "End session" }).isVisible(), `${theme} trial: the Pause didn't start`);
+    await page.unroute("**/api/pass/trial");
+  }, { pass: false });
 
   await step("trial gate: a Pause needs an account, then the Pass", async (page) => {
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });

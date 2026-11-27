@@ -3,7 +3,7 @@
 import { useEffect, useState, ViewTransition, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { PASS_LIST_PRICE_INR, PASS_PRICE_INR, stopAt, TRIAL_COUNTS_AFTER_SECONDS, TRIAL_PAUSES } from "@inner-pause/shared";
+import { PASS_LIST_PRICE_INR, PASS_PRICE_INR, stopAt, TRIAL_PAUSES } from "@inner-pause/shared";
 
 import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
@@ -24,7 +24,7 @@ import { findBuiltInSound, UNDERTONE_LEVELS } from "@/lib/sound-library";
 import { buildJourney } from "@/lib/breath-journey";
 import { rupees } from "@/lib/pass-summary";
 import { getTrial } from "@/lib/entitlements";
-import { isUncountedTrialPause, pauseAccess, type PauseAccess } from "@/lib/trial";
+import { isUncountedTrialPause, pauseAccess, startTrialPause, type PauseAccess } from "@/lib/trial";
 import { expandName, markPageTransition } from "@/lib/view-transition";
 
 // How long a change of centre is named in the player.
@@ -63,8 +63,9 @@ export function PausePlayerScreen() {
   // then the Pass or a trial Pause left. The one already running is never stopped.
   const [locked, setLocked] = useState<Exclude<PauseAccess, "ok"> | null>(null);
   const runningId = session.record?.id;
-  // "Trial Pause 1 of 2" before it starts, while the trial is still to count it.
-  const [trialNumber, setTrialNumber] = useState<number | null>(null);
+  // A trial Pause asks first: "this uses trial Pause 1 of 2". It loads (and
+  // counts, on the server) only once the listener says Start.
+  const [confirmTrial, setConfirmTrial] = useState<{ id: string; number: number } | null>(null);
 
   // One-time read from localStorage on mount or id change.
   useEffect(() => {
@@ -75,7 +76,11 @@ export function PausePlayerScreen() {
     const access = runningId === found.id ? "ok" : pauseAccess(found.id);
     setLocked(access === "ok" ? null : access);
     if (access !== "ok") return;
-    setTrialNumber(isUncountedTrialPause(found.id) ? Math.min(getTrial().used + 1, TRIAL_PAUSES) : null);
+    if (runningId !== found.id && isUncountedTrialPause(found.id)) {
+      setConfirmTrial({ id: found.id, number: Math.min(getTrial().used + 1, TRIAL_PAUSES) });
+      return;
+    }
+    setConfirmTrial(null);
     load(found.id, resume ? { resumeAt: resumeAt(found) } : undefined);
     // The Moment this Pause belongs to, if any (for letting it out first).
     setMoment(listMomentRecords().find((item) => item.linkedPauseRecordId === found.id) ?? null);
@@ -211,6 +216,29 @@ ${text}` : text });
     );
   }
 
+  if (confirmTrial) {
+    return (
+      <PlayerFrame from={from}>
+        <TrialConfirm
+          number={confirmTrial.number}
+          onStart={async () => {
+            const result = await startTrialPause(confirmTrial.id);
+            if (result === "offline") return false;
+            if (result === "used-up") setLocked("pass");
+            else if (result === "sign-in") setLocked("sign-in");
+            else {
+              const found = getPauseRecord(confirmTrial.id);
+              if (found) load(found.id, resume ? { resumeAt: resumeAt(found) } : undefined);
+            }
+            setConfirmTrial(null);
+            return true;
+          }}
+          onBack={() => leaveTo(session.backTo)}
+        />
+      </PlayerFrame>
+    );
+  }
+
   if (locked) {
     return (
       <PlayerFrame from={from}>
@@ -308,11 +336,6 @@ ${text}` : text });
                 </p>
               ))}
             </div>
-            {trialNumber ? (
-              <p className="mt-4 text-xs font-medium" style={{ color: "var(--ds-on-navy-muted)" }}>
-                Trial Pause {trialNumber} of {TRIAL_PAUSES} · counts once it has played {TRIAL_COUNTS_AFTER_SECONDS / 60} minutes
-              </p>
-            ) : null}
             {record.requiresArrive ? (
               <NavyButton onClick={session.begin} className="mt-8 px-8">
                 I&rsquo;m ready
@@ -634,6 +657,54 @@ function NavyButton({ children, onClick, className = "" }: { children: ReactNode
     >
       {children}
     </button>
+  );
+}
+
+// Before a trial Pause starts: say plainly that it uses one of the two, and
+// let them choose. Counted on the server when they press Start.
+function TrialConfirm({ number, onStart, onBack }: { number: number; onStart: () => Promise<boolean>; onBack: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const last = number >= TRIAL_PAUSES;
+  return (
+    <div className="grid flex-1 place-items-center text-center">
+      <div className="grid max-w-[19rem] justify-items-center">
+        <HarmonyFormVisual playing={false} dark className="ds-breathe w-[min(44vw,11rem)] opacity-80" />
+        <p className="mt-8 text-xs font-semibold uppercase tracking-[0.12em]" style={{ color: "#C4B5FD" }}>
+          Trial Pause {number} of {TRIAL_PAUSES}
+        </p>
+        <h1 className="mt-2 text-xl font-semibold">Start this Pause?</h1>
+        <p className="mt-2 text-sm leading-6" style={{ color: "var(--ds-on-navy-muted)" }}>
+          This uses 1 of your {TRIAL_PAUSES} trial Pauses as soon as it starts, however long you listen.
+          {last ? " It\u2019s your last one; after it, the Inner Pause Pass opens everything." : ""}
+        </p>
+        {offline ? (
+          <p role="status" className="mt-3 text-xs leading-5" style={{ color: "#F2B8B0" }}>
+            We couldn&rsquo;t reach Inner Pause. Check your connection and try again.
+          </p>
+        ) : null}
+        <NavyButton
+          onClick={() => {
+            if (busy) return;
+            haptic("tap");
+            setBusy(true);
+            setOffline(false);
+            void onStart().then((started) => {
+              if (!started) {
+                setOffline(true);
+                setBusy(false);
+              }
+            });
+          }}
+          className="mt-8 px-8"
+        >
+          {busy ? "Starting" : "Start trial Pause"}
+        </NavyButton>
+        <button type="button" onClick={onBack} className="ds-tap mt-3 min-h-11 px-4 text-sm font-medium underline underline-offset-4" style={{ color: "var(--ds-on-navy-muted)" }}>
+          Not now
+        </button>
+      </div>
+    </div>
   );
 }
 

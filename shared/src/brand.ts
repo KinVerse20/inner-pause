@@ -21,10 +21,12 @@ export const PASS_LIST_PRICE_INR = 2000;
 export const PASS_PRICE_INR = 1000;
 export const PASS_DURATION_DAYS = 365;
 
-/** There's no free version: a new account gets this many Pauses to try, then the Pass. */
+/**
+ * There's no free version: a new account gets this many Pauses to try, then
+ * the Pass. A trial Pause counts when you confirm starting it, however long
+ * you then listen (founder, 27 Nov).
+ */
 export const TRIAL_PAUSES = 2;
-/** A Pause counts against the trial once it has played this long (or ended, if shorter). */
-export const TRIAL_COUNTS_AFTER_SECONDS = 120;
 
 export type PassStatus = "none" | "active" | "expired";
 

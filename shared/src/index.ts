@@ -71,7 +71,6 @@ export {
   PASS_LIST_PRICE_INR,
   PASS_PRICE_INR,
   SUPPORT_EMAIL,
-  TRIAL_COUNTS_AFTER_SECONDS,
   TRIAL_PAUSES,
   type PassState,
   type PassStatus,
