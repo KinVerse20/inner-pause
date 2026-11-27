@@ -213,6 +213,12 @@ test("admin opens an account and changes it, and each change is logged", { skip 
     assert.equal((await app.request(`/api/admin/users/${user.id}`, { headers: { Cookie: user.cookie } })).status, 404);
     assert.equal((await patch(user.cookie, { fullName: "Me" })).status, 404);
 
+    // An admin has everything without buying, and is never charged.
+    const founderPass = (await (await app.request("/api/auth/me", { headers: { Cookie: founder.cookie } })).json()).user.pass;
+    assert.equal(founderPass.status, "active");
+    assert.equal(founderPass.lifetime, true);
+    assert.equal((await app.request("/api/pass/order", { method: "POST", headers: { Cookie: founder.cookie } })).status, 409);
+
     const opened = await (await app.request(`/api/admin/users/${user.id}`, { headers: { Cookie: founder.cookie } })).json();
     assert.equal(opened.user.email, "meera@example.com");
 

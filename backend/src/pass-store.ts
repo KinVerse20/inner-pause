@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { adminEmails } from "./admin/admins";
 import { PASS_DURATION_DAYS, PASS_PRICE_INR, TRIAL_PAUSES, type PassState } from "@inner-pause/shared";
 import { ObjectId, type Collection } from "mongodb";
 
@@ -26,7 +27,7 @@ export const razorpayKeyId = () => process.env.RAZORPAY_KEY_ID?.trim() ?? "";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type PassFields = Pick<UserDocument, "passExpiresAt" | "passLifetime" | "trialPauseIds">;
+export type PassFields = Pick<UserDocument, "passExpiresAt" | "passLifetime" | "trialPauseIds"> & { email?: string };
 
 /** The trial (C2): which Pauses it has counted, and how many it allows. */
 export function trialOf(user: PassFields) {
@@ -36,6 +37,8 @@ export function trialOf(user: PassFields) {
 
 export function passStateOf(user: PassFields): PassState {
   const trial = trialOf(user);
+  // The founder's accounts (ADMIN_EMAILS) have everything, without buying.
+  if (user.email && adminEmails().includes(user.email.toLowerCase())) return { status: "active", lifetime: true, expiresAt: null, trial };
   if (user.passLifetime) return { status: "active", lifetime: true, expiresAt: null, trial };
   if (!user.passExpiresAt) return { status: "none", lifetime: false, expiresAt: null, trial };
   return {

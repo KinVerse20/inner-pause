@@ -62,7 +62,8 @@ available yet and to email the support address.
 6. Set `ADMIN_EMAILS` to the founder's account email (comma separated for
    more than one), so /admin works and bug reports arrive by email. The
    account itself is an ordinary sign up with that email; restart the API
-   after changing the list.
+   after changing the list. Admin accounts have everything without buying
+   (they read as a Pass for life) and are never charged.
 
 The prices are in `shared/src/brand.ts`: `PASS_PRICE_INR` (charged, ₹1,000
 during the launch offer) and `PASS_LIST_PRICE_INR` (₹2,000, shown struck out).

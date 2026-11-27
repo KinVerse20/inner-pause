@@ -4,7 +4,7 @@ Last updated: 2026-11-27. Read this first in a new session, then continue from "
 
 ## Built 2026-11-27 (later): the founder's issues list
 
-- Everything is behind the Pass except the 2-Pause trial, Journey Patterns and Growth too (`appAccess()` in `frontend/lib/trial.ts`). `/admin` opens any account to see and change it (logged in `admin_changes`).
+- Everything is behind the Pass except the 2-Pause trial (`appAccess()` in `frontend/lib/trial.ts`). Patterns and Growth are switched off for now (code kept in `lib/pattern-*.ts`, `lib/growth-model.ts`). Admins (ADMIN_EMAILS) read as a Pass for life. `/admin` opens any account to see and change it (logged in `admin_changes`).
 - Sound: on top Rain, Rainforest, Ocean, Wind, Deep ambient, Binaural; under More: Mindspace, Bilateral calm, Piano tuned, Frequency only. Forest, Piano, Gong, Bell, Rain tuned and Forest tuned are gone; ids that name them play their replacement (`RETIRED` in `lib/sound-library.ts`). Their files are still in `public/audio` but nothing plays them.
 - What the player says is what plays: a tuned recording only at exactly its frequency (otherwise Rain with the frequency beneath it); Deep ambient and Mindspace had a 174 Hz drone of their own, taken out of the files with a notch filter; Binaural is made live at the Pause's frequency (left ear) and 6 Hz above it (right). Frequency only and Binaural have Soft, Balanced and Clear.
 - Player: Skip frequency (to the next centre; on the last or only one it ends the Pause) and End session under Play; the thought card folds away instead of holding an empty gap. All DEV panels are gone.
