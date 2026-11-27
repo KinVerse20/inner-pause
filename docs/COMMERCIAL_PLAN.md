@@ -1,5 +1,7 @@
 # Commercial plan: yearly Pass, trial, install page, bug rewards, 2026-11-26
 
+**Status 2026-11-27: C1, C2, C3, C5, C6, C7 built** (one commit each on `feature/our-ui-unification`). **C8** is ready in code and tested against a stand-in Razorpay; going live needs the founder's Razorpay test keys, then live keys (checklist: docs/LAUNCH.md step 3). C4 and C9 on hold.
+
 For whoever builds next. Branch: `feature/our-ui-unification`, after Phase 6 of `docs/BUILD_PLAN.md`.
 The same rules as BUILD_PLAN "Before you start" apply: one commit per item, checks before each commit, click through at 390×844 in light and dark, show the founder screenshots.
 
