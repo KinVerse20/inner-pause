@@ -39,14 +39,28 @@ available yet and to email the support address.
    the Terms (`/terms`), Privacy Policy (`/privacy-policy`), Refund and
    cancellation policy (`/refund-policy`) and contact details (You → Help)
    are in the app for this.
-2. Start with Test Mode keys (`rzp_test_…`): set `RAZORPAY_KEY_ID` and
-   `RAZORPAY_KEY_SECRET`, buy a Pass with a test card or UPI ID, and check it
-   unlocks Practice.
-3. Dashboard → Webhooks → Add: URL `https://<your-domain>/api/pass/webhook`,
-   events `payment.captured` and `order.paid`, and a secret, which goes in
-   `RAZORPAY_WEBHOOK_SECRET`. This grants the Pass even if someone closes the
-   app straight after paying.
-4. Switch to Live Mode keys when ready.
+2. Start with Test Mode keys (`rzp_test_…`) in `/opt/innerpause/.env`:
+   `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. Restart the API.
+3. Dashboard (Test Mode) → Webhooks → Add: URL
+   `https://<your-domain>/api/pass/webhook`, events `payment.captured` and
+   `order.paid`, and a secret, which goes in `RAZORPAY_WEBHOOK_SECRET`. This
+   grants the Pass even if someone closes the app straight after paying.
+4. **Test checklist**, on a phone, with a new account:
+   - Play 2 Pauses past 2 minutes each; the third shows "Ready to keep going?".
+   - You → Inner Pause Pass shows ~~₹2,000~~ ₹1,000. Pay with Razorpay's
+     test UPI ID `success@razorpay` (or a test card). The page says "Your
+     Pass is on until …" a year from today, and Pauses play again.
+   - Dashboard → Payments shows ₹1,000 captured; Webhooks shows the event
+     delivered with 200.
+   - Pay again with `failure@razorpay`: "Payment failed", nothing changes.
+   - Close the payment window without paying: nothing changes, no message.
+5. Switch to Live Mode: generate live keys (`rzp_live_…`) and add the same
+   webhook again in Live Mode (it has its own secret). Put all three in
+   `.env`, restart the API, and make one real ₹1,000 payment with your own
+   account. Refund it from the Dashboard if you like (the Pass stays on that
+   account).
+6. Set `ADMIN_EMAILS` to the founder's account email, so /admin works and
+   bug reports arrive by email.
 
 The prices are in `shared/src/brand.ts`: `PASS_PRICE_INR` (charged, ₹1,000
 during the launch offer) and `PASS_LIST_PRICE_INR` (₹2,000, shown struck out).
