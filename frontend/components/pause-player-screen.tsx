@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { PASS_LIST_PRICE_INR, PASS_PRICE_INR, stopAt, TRIAL_PAUSES } from "@inner-pause/shared";
 
-import { BreathingGuide, breathVisual, ThoughtCard } from "@/components/breathing-guide";
+import { BreathCountdown, BreathingGuide, breathVisual, countVisual, ThoughtCard, useBreathCount } from "@/components/breathing-guide";
+import { getPreferences, updatePreferences } from "@/lib/preferences-store";
 import { HarmonyFormVisual } from "@/components/harmony-form-visual";
 import { LetItOutOffer, LetItOutPanel, type LetOutMode } from "@/components/let-it-out";
 import { useVoiceTranscription } from "@/lib/use-voice-transcription";
@@ -57,6 +58,19 @@ export function PausePlayerScreen() {
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [soundSheetOpen, setSoundSheetOpen] = useState(false);
+  // The breathing exercise: on stays on for the next Pause (Preferences).
+  const [breathingExercise, setBreathingExercise] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBreathingExercise(Boolean(getPreferences().breathingExercise));
+  }, []);
+  const toggleBreathingExercise = () => {
+    haptic("tap");
+    const next = !breathingExercise;
+    setBreathingExercise(next);
+    updatePreferences({ breathingExercise: next });
+  };
+  const breathCount = useBreathCount(breathingExercise && session.phase === "playing" && session.playing);
   const [moment, setMoment] = useState<MomentRecord | null>(null);
 
   // No free version (docs/COMMERCIAL_PLAN.md C2): a Pause needs an account,
@@ -266,7 +280,7 @@ ${text}` : text });
     record.durationSeconds,
     record.playbackCues.slice(0, -1).map((cue) => cue.lines[0]).filter(Boolean),
   );
-  const breath = breathVisual(journey, elapsed, phase === "playing" && playing);
+  const breath = breathCount ? countVisual(breathCount) : breathVisual(journey, elapsed, phase === "playing" && playing);
   // A Pause for feelings names the centre playing now and who it's for.
   const stops = session.stops;
   const stop = stops ? stops[session.stopIndex] : record.blocks?.[0];
@@ -380,7 +394,7 @@ ${text}` : text });
             </div>
           </div>
 
-          <BreathingGuide journey={journey} elapsed={elapsed} playing={playing} />
+          {breathCount ? <BreathCountdown count={breathCount} /> : <BreathingGuide journey={journey} elapsed={elapsed} playing={playing} />}
 
           <p className="ds-caption ds-num" style={{ color: "var(--ds-on-navy-muted)" }}>
             {formatTime(elapsed)} · {formatTime(Math.max(0, record.durationSeconds - elapsed))} left
@@ -452,6 +466,11 @@ ${text}` : text });
             </PillButton>
             <PillButton onClick={session.endEarly}>End session</PillButton>
           </div>
+          <div className="-mt-2 flex justify-center">
+            <PillButton onClick={toggleBreathingExercise} pressed={breathingExercise}>
+              {breathingExercise ? "Back to the guide" : "Breathing exercise · 4 in, 6 out"}
+            </PillButton>
+          </div>
 
           {builtInSound ? (
             <p className="ds-caption -mt-2" style={{ color: "var(--ds-on-navy-muted)" }}>
@@ -464,7 +483,7 @@ ${text}` : text });
 
           {/* No gap of its own: the thought card folds away between thoughts. */}
           <div className="-mt-5 flex w-full justify-center">
-            <ThoughtCard journey={journey} elapsed={elapsed} playing={playing} />
+            <ThoughtCard journey={journey} elapsed={elapsed} playing={playing && !breathCount} />
           </div>
 
           <WhyThisPausePanel
@@ -764,14 +783,19 @@ function TrialGate({ need, sessionId, onBack, onPass }: { need: Exclude<PauseAcc
   );
 }
 
-function PillButton({ children, onClick, label }: { children: ReactNode; onClick: () => void; label?: string }) {
+function PillButton({ children, onClick, label, pressed }: { children: ReactNode; onClick: () => void; label?: string; pressed?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
+      aria-pressed={pressed}
       className="ds-tap min-h-11 rounded-full px-4 text-[0.85rem] font-semibold"
-      style={{ background: "rgba(248,250,252,0.1)", color: "var(--ds-on-navy)", border: "1px solid rgba(248,250,252,0.12)" }}
+      style={
+        pressed
+          ? { background: "#C4B5FD", color: "#1D1B4C", border: "1px solid #C4B5FD" }
+          : { background: "rgba(248,250,252,0.1)", color: "var(--ds-on-navy)", border: "1px solid rgba(248,250,252,0.12)" }
+      }
     >
       {children}
     </button>

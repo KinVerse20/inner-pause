@@ -44,6 +44,8 @@ export interface PreferencesState {
   offlineEnabled: boolean;
   /** Missing until chosen: then it follows the device's language. */
   speechLanguage?: SpeechLanguage;
+  /** The player's breathing exercise (4 in, 6 out) was on last time: a Pause starts with it. */
+  breathingExercise?: boolean;
 }
 
 /** The language Speak listens for: the one you chose, or Hindi if the device is set to it. */

@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { IconFeather } from "@/components/pause-icons";
+import { BREATH_IN_SECONDS, BREATH_OUT_SECONDS, breathCountAt, type BreathCount } from "@/lib/breath-count";
 import { STAGES, journeyAt, type JourneySegment } from "@/lib/breath-journey";
 
 // The Pause's guide (lib/breath-journey.ts): one voice, one line at a
@@ -17,6 +20,56 @@ export function breathVisual(journey: JourneySegment[], elapsed: number, playing
   const { step } = journeyAt(journey, elapsed);
   if (!playing || (step.kind !== "in" && step.kind !== "out")) return { className: "harmony-breath--rest", seconds: 2.5 };
   return { className: step.kind === "in" ? "harmony-breath--in" : "", seconds: step.seconds };
+}
+
+// The breathing exercise (a button under Play): instead of the guide's
+// lines, a plain count, 4 seconds in and 6 out, round after round. It runs
+// on its own clock while the Pause plays, and starts again from "Breathe in"
+// whenever it's turned on or the Pause resumes.
+/** The count right now, or null when the exercise isn't running. */
+export function useBreathCount(running: boolean): BreathCount | null {
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    if (!running) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setStartedAt(null);
+      return;
+    }
+    const start = Date.now();
+    setStartedAt(start);
+    setNow(start);
+    const timer = window.setInterval(() => setNow(Date.now()), 200);
+    return () => window.clearInterval(timer);
+  }, [running]);
+
+  if (!running || startedAt === null) return null;
+  return breathCountAt(Math.max(0, now - startedAt) / 1000);
+}
+
+/** The Harmony Form during the exercise: grows over the in breath, settles over the out. */
+export function countVisual(count: BreathCount) {
+  return count.phase === "in" ? { className: "harmony-breath--in", seconds: BREATH_IN_SECONDS } : { className: "", seconds: BREATH_OUT_SECONDS };
+}
+
+/** In place of the guide's lines while the exercise runs. */
+export function BreathCountdown({ count }: { count: BreathCount }) {
+  return (
+    <section aria-label="Breathing exercise, 4 seconds in and 6 out" className="grid w-full max-w-[20rem] justify-items-center gap-1 text-center">
+      <p className="ds-label uppercase tracking-[0.14em]" style={{ color: "var(--ds-on-navy-muted)" }}>
+        Breathing exercise · breath {count.breath}
+      </p>
+      <div className="grid min-h-[4.5rem] place-items-center" aria-hidden="true">
+        <p className="text-[1.3rem] font-semibold tracking-[-0.01em]" style={{ color: "var(--ds-on-navy)" }}>
+          {count.phase === "in" ? "Breathe in" : "Breathe out"}
+        </p>
+        <p className="ds-num text-[2rem] font-semibold leading-none" style={{ color: "#C4B5FD" }}>
+          {count.count}
+        </p>
+      </div>
+    </section>
+  );
 }
 
 export function BreathingGuide({ journey, elapsed, playing }: { journey: JourneySegment[]; elapsed: number; playing: boolean }) {

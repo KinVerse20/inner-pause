@@ -314,6 +314,15 @@ async function flows(browser, theme) {
     check(await page.getByRole("button", { name: /Skip frequency/ }).isVisible(), `${theme} player: no Skip frequency`);
     check(await page.getByRole("button", { name: "End session" }).isVisible(), `${theme} player: no End session`);
     check((await page.getByText(/^DEV/).count()) === 0, `${theme} player: a DEV panel is showing`);
+    // The breathing exercise: a 4 in, 6 out count in place of the guide, and back.
+    await page.getByRole("button", { name: /Breathing exercise/ }).click();
+    await page.waitForTimeout(600);
+    await expect(page, "Breathe in", "breathing exercise");
+    await checkScreen(page, `${theme} breathing exercise`);
+    await page.waitForTimeout(4200);
+    await expect(page, "Breathe out", "breathing exercise out breath");
+    await page.getByRole("button", { name: "Back to the guide" }).click();
+    check((await page.getByText("Breathing exercise · breath", { exact: false }).count()) === 0, `${theme} breathing exercise: still counting after Back to the guide`);
     await page.getByRole("button", { name: "Sound", exact: true }).click();
     await page.waitForTimeout(500);
     await checkScreen(page, `${theme} sound sheet`);
@@ -328,6 +337,7 @@ async function flows(browser, theme) {
     }
     await sheet.getByRole("radio", { name: "Binaural", exact: true }).click();
     check((await sheet.getByRole("radio", { name: "Off", exact: true }).count()) === 0, `${theme} Binaural: Off offered`);
+    await page.waitForTimeout(1200);
     await checkScreen(page, `${theme} sound sheet Binaural`);
     await sheet.getByRole("radio", { name: "Rain", exact: true }).click();
     await page.getByRole("button", { name: "Done", exact: true }).click();
