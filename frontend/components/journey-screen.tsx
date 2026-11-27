@@ -11,6 +11,8 @@ import { JournalComposer, JourneySummary, MomentOpened, StoryTimeline, buildStor
 import { Stagger, StaggerItem } from "@/components/reveal";
 import { haptic } from "@/lib/haptics";
 import { hasActivePass, setDevHasPass } from "@/lib/entitlements";
+import { useAppAccess } from "@/lib/trial";
+import { PassGateCard } from "@/components/pass-gate-card";
 import { computeGrowthStatements, type GrowthStatement } from "@/lib/growth-model";
 import { getLinkedJournalEntries, listHighlights, type Highlight } from "@/lib/journey-highlights";
 import { listMomentRecords } from "@/lib/moment-storage";
@@ -52,6 +54,10 @@ export function JourneyScreen() {
   const [patterns, setPatterns] = useState<PatternRecord[]>([]);
   const [growthStatements, setGrowthStatements] = useState<GrowthStatement[]>([]);
   const [pass, setPass] = useState(false);
+  // Patterns and Growth sit behind the Pass (open during the trial), and
+  // when open they look across the whole story.
+  const access = useAppAccess();
+  const insightsOpen = access === "ok";
 
   const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<TellEntry | null>(null);
@@ -73,8 +79,8 @@ export function JourneyScreen() {
   }, []);
 
   useEffect(() => {
-    if (tab !== "patterns") return;
-    const scope = hasActivePass() ? "pass" : "free";
+    if (tab !== "patterns" || !insightsOpen) return;
+    const scope = "pass";
     // You -> Data & Privacy's "used for deeper pattern analysis" control
     // (docs/PRODUCT_FLOW.md §35): declining only stops *new* generation —
     // already-generated patterns stay visible and correctable, same as any
@@ -87,13 +93,13 @@ export function JourneyScreen() {
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPatterns(listPatterns());
-  }, [tab]);
+  }, [tab, insightsOpen]);
 
   useEffect(() => {
-    if (tab !== "growth") return;
+    if (tab !== "growth" || !insightsOpen) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGrowthStatements(computeGrowthStatements(hasActivePass() ? "pass" : "free"));
-  }, [tab]);
+    setGrowthStatements(computeGrowthStatements("pass"));
+  }, [tab, insightsOpen]);
 
   const story = buildStory(journalEntries, highlights, pauses);
 
@@ -184,7 +190,11 @@ export function JourneyScreen() {
             )
           ) : null}
 
-          {tab === "patterns" ? (
+          {(tab === "patterns" || tab === "growth") && access && access !== "ok" ? (
+            <PassGateCard need={access} redirectTo="/journey" what={tab === "patterns" ? "see your patterns" : "see how you're growing"} />
+          ) : null}
+
+          {tab === "patterns" && insightsOpen ? (
             <PatternsList
               patterns={patterns}
               expandedId={expandedPatternId}
@@ -194,11 +204,10 @@ export function JourneyScreen() {
                 setPatternStatus(id, status);
                 refresh();
               }}
-              pass={pass}
             />
           ) : null}
 
-          {tab === "growth" ? <GrowthList statements={growthStatements} pass={pass} /> : null}
+          {tab === "growth" && insightsOpen ? <GrowthList statements={growthStatements} /> : null}
 
         {selectedEntry ? (
           <JournalEntryDetailOverlay entry={selectedEntry} fromCard={entryOrigin === "list"} onClose={closeEntry} onDelete={deleteEntry} />
@@ -333,13 +342,11 @@ function PatternsList({
   expandedId,
   onToggleExpand,
   onRespond,
-  pass,
 }: {
   patterns: PatternRecord[];
   expandedId: string | null;
   onToggleExpand: (id: string) => void;
   onRespond: (id: string, status: "relevant" | "not-relevant") => void;
-  pass: boolean;
 }) {
   const router = useRouter();
   const visible = patterns.filter((p) => p.status !== "not-relevant");
@@ -404,12 +411,11 @@ function PatternsList({
           );
         })
       )}
-      {!pass ? <PassNote text="With Inner Pause Pass, patterns look across your whole story, not just recent weeks." /> : null}
     </div>
   );
 }
 
-function GrowthList({ statements, pass }: { statements: GrowthStatement[]; pass: boolean }) {
+function GrowthList({ statements }: { statements: GrowthStatement[] }) {
   return (
     <div className="space-y-3">
       {statements.length === 0 ? (
@@ -424,7 +430,6 @@ function GrowthList({ statements, pass }: { statements: GrowthStatement[]; pass:
           </article>
         ))
       )}
-      {!pass ? <PassNote text="With Inner Pause Pass, you can see then and now side by side across your full history." /> : null}
     </div>
   );
 }
@@ -450,13 +455,5 @@ function EmptyNote({ title, body }: { title: string; body: string }) {
         {body}
       </p>
     </div>
-  );
-}
-
-function PassNote({ text }: { text: string }) {
-  return (
-    <p className="rounded-[var(--ds-radius-md)] px-4 py-3 text-[0.85rem] leading-6" style={{ background: "var(--ds-accent-soft)", color: "var(--ds-text-secondary)" }}>
-      {text}
-    </p>
   );
 }
