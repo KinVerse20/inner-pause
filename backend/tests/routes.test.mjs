@@ -72,7 +72,10 @@ test("the ends soon emails are due 7 days and 1 day before", async () => {
   assert.equal(reminderDue(inDays(-1), now), null);
 });
 
-test("trial and bug reports refuse without a session", async () => {
+test("trial, bug reports and admin refuse without a session", async () => {
   assert.equal((await app.request("/api/pass/trial", { method: "POST" })).status, 401);
   assert.equal((await app.request("/api/bugs", { method: "POST" })).status, 401);
+  // Admin hides itself: 404, not 401.
+  assert.equal((await app.request("/api/admin/me")).status, 404);
+  assert.equal((await app.request("/api/admin/bugs")).status, 404);
 });

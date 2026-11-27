@@ -8,6 +8,7 @@ import { authRoutes } from "./routes/auth";
 import { contentRoutes } from "./routes/content";
 import { journalRoutes } from "./routes/journal";
 import { bugRoutes } from "./routes/bugs";
+import { adminRoutes } from "./routes/admin";
 import { passRoutes } from "./routes/pass";
 import { practiceRoutes } from "./routes/practice";
 import { profileRoutes } from "./routes/profile";
@@ -50,6 +51,7 @@ export function createApp() {
   app.route("/api/practice", practiceRoutes);
   app.route("/api/journal", journalRoutes);
   app.route("/api/bugs", bugRoutes);
+  app.route("/api/admin", adminRoutes);
 
   return app;
 }

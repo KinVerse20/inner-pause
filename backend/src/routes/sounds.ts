@@ -8,7 +8,7 @@ export const soundRoutes = new Hono();
 
 // Streams a stored file, honouring Range requests so audio can seek/loop
 // without re-downloading.
-async function streamFile(c: Context, key: string, mimeType: string, cacheControl = "public, max-age=3600") {
+export async function streamFile(c: Context, key: string, mimeType: string, cacheControl = "public, max-age=3600") {
   const store = fileStore();
   const size = await store.size(key);
   if (size === null) return c.json({ error: "File is missing." }, 404);
