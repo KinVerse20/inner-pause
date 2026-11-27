@@ -25,6 +25,12 @@ const BREATH_DEPTH = 0.25;
 const VOICE_DETUNE_HZ = 0.4;
 const SUB_OCTAVE_LEVEL = 0.35;
 
+// Binaural: the frequency in the left ear and BINAURAL_BEAT_HZ above it in
+// the right, so the two meet as a slow 6 Hz beat (headphones only). The
+// left ear hears exactly the Pause's frequency.
+const BINAURAL_BEAT_HZ = 6;
+const BINAURAL_SUB_LEVEL = 0.2;
+
 // Frequency changes glide rather than jump, so a new pitch never clicks.
 const GLIDE_SECONDS = 0.6;
 const FILTER_RATIO = 2.5;
@@ -61,7 +67,7 @@ interface ToneGraph {
 
 type AudioContextConstructor = new () => AudioContext;
 
-function buildGraph(): ToneGraph | null {
+function buildGraph(binaural: boolean): ToneGraph | null {
   const audioWindow = window as Window & { webkitAudioContext?: AudioContextConstructor };
   const Ctor: AudioContextConstructor | undefined = window.AudioContext ?? audioWindow.webkitAudioContext;
   if (!Ctor) return null;
@@ -89,16 +95,24 @@ function buildGraph(): ToneGraph | null {
     const filter = ctx.createBiquadFilter();
     filter.type = "lowpass";
     filter.connect(gain);
-    const addVoice = (ratio: number, offsetHz: number, voiceLevel: number): ToneVoice => {
+    const addVoice = (ratio: number, offsetHz: number, voiceLevel: number, pan = 0): ToneVoice => {
       const osc = ctx.createOscillator();
       osc.type = "sine";
       const voiceGain = ctx.createGain();
       voiceGain.gain.value = voiceLevel;
-      osc.connect(voiceGain).connect(filter);
+      osc.connect(voiceGain);
+      if (pan !== 0 && typeof ctx.createStereoPanner === "function") {
+        const panner = ctx.createStereoPanner();
+        panner.pan.value = pan;
+        voiceGain.connect(panner).connect(filter);
+      } else voiceGain.connect(filter);
       osc.start();
       return { osc, ratio, offsetHz };
     };
-    return { gain, filter, voices: [addVoice(1, 0, 0.5), addVoice(1, VOICE_DETUNE_HZ, 0.5), addVoice(0.5, 0, SUB_OCTAVE_LEVEL)] };
+    const voices = binaural
+      ? [addVoice(1, 0, 0.5, -1), addVoice(1, BINAURAL_BEAT_HZ, 0.5, 1), addVoice(0.5, 0, BINAURAL_SUB_LEVEL)]
+      : [addVoice(1, 0, 0.5), addVoice(1, VOICE_DETUNE_HZ, 0.5), addVoice(0.5, 0, SUB_OCTAVE_LEVEL)];
+    return { gain, filter, voices };
   };
 
   return { ctx, master, banks: [buildBank(1), buildBank(0)], active: 0, fresh: true };
@@ -140,28 +154,29 @@ function applyFrequency(graph: ToneGraph, frequencyHz: number, crossfadeSeconds:
 /**
  * Plays a soft tone at `frequencyHz` while `audible` is true, fading in and
  * out rather than cutting, and gliding when the frequency changes. Pass
- * `null` to disable the layer entirely.
+ * `null` to disable the layer entirely. `binaural` splits it between the
+ * ears (see BINAURAL_BEAT_HZ).
  */
-export function useToneLayer(frequencyHz: number | null, audible: boolean, level: number = PEAK_GAIN, crossfadeSeconds = 0) {
+export function useToneLayer(frequencyHz: number | null, audible: boolean, level: number = PEAK_GAIN, crossfadeSeconds = 0, binaural = false) {
   const graphRef = useRef<ToneGraph | null>(null);
   const enabled = frequencyHz !== null;
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
-    const graph = buildGraph();
+    const graph = buildGraph(binaural);
     graphRef.current = graph;
     return () => {
       graphRef.current = null;
       void graph?.ctx.close();
     };
-  }, [enabled]);
+  }, [enabled, binaural]);
 
   useEffect(() => {
     const graph = graphRef.current;
     if (graph && frequencyHz !== null) applyFrequency(graph, frequencyHz, crossfadeSeconds);
     // A new crossfade length alone doesn't retune.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, frequencyHz]);
+  }, [enabled, binaural, frequencyHz]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -176,5 +191,5 @@ export function useToneLayer(frequencyHz: number | null, audible: boolean, level
     } else {
       master.gain.linearRampToValueAtTime(0, now + FADE_OUT_SECONDS);
     }
-  }, [audible, enabled, level]);
+  }, [audible, enabled, binaural, level]);
 }

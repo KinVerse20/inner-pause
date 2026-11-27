@@ -3,17 +3,19 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { IconCheck, IconChevronDown, IconVolumeOff, IconVolumeOn } from "@/components/pause-icons";
-import { BUILT_IN_SOUNDS, UNDERTONE_LEVELS, findBuiltInSound, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
+import { BUILT_IN_SOUNDS, UNDERTONE_LEVELS, findBuiltInSound, soundFits, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 
 // The player's Sound sheet. Two plain questions, nothing to learn:
-//   What you hear: six everyday sounds as tiles, the rest under More.
-//   Tone: how present this Pause's frequency is, Off to Clear.
+//   What you hear: six sounds as tiles, the rest under More.
+//   Tone: how present this Pause's frequency is, Off to Clear. For the
+//   sounds that are the frequency itself (Frequency only, Binaural): how
+//   loud, Soft to Clear.
 // Every tap changes what's playing right away, so you choose by ear.
 // A bottom sheet on the player's navy (dismiss: outside, Done, Escape).
 
 export type ToneSetting = "off" | UndertoneLevel;
 
-const MAIN: BuiltInSoundId[] = ["rain", "forest", "waves", "wind", "piano", "gong"];
+const MAIN: BuiltInSoundId[] = ["rain", "rainforest", "waves", "wind", "deep-ambient", "binaural-focus"];
 const SHORT_NAME: Partial<Record<BuiltInSoundId, string>> = { waves: "Ocean", wind: "Wind" };
 
 const TONE_STOPS: Array<{ id: ToneSetting; label: string; bars: number }> = [
@@ -24,6 +26,8 @@ const TONE_STOPS: Array<{ id: ToneSetting; label: string; bars: number }> = [
 export function SoundSheet({
   currentId,
   tone,
+  level,
+  frequencyHz,
   frequencyLabel,
   muted,
   onChoose,
@@ -34,6 +38,10 @@ export function SoundSheet({
 }: {
   currentId: BuiltInSoundId;
   tone: ToneSetting;
+  /** Soft, Balanced or Clear: kept even with the tone off. */
+  level: UndertoneLevel;
+  /** This Pause's frequency now: a tuned recording shows only when one exists at exactly it. */
+  frequencyHz: number | null;
   frequencyLabel: string | null;
   muted: boolean;
   onChoose: (id: BuiltInSoundId) => void;
@@ -49,7 +57,12 @@ export function SoundSheet({
   // Opens on More when the current sound lives there.
   const [moreOpen, setMoreOpen] = useState(!MAIN.includes(currentId));
   const premixed = Boolean(current?.tunedFile);
-  const toneUnused = premixed || currentId === "frequency-only";
+  const generated = Boolean(current?.generated);
+  const fits = (id: BuiltInSoundId) => {
+    const sound = findBuiltInSound(id);
+    return Boolean(sound) && soundFits(sound!, frequencyHz, severalFrequencies);
+  };
+  const main = MAIN.filter(fits);
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -64,7 +77,10 @@ export function SoundSheet({
     };
   }, [onClose]);
 
-  const more = BUILT_IN_SOUNDS.filter((sound) => !MAIN.includes(sound.id) && !(severalFrequencies && sound.tunedFile));
+  const more = BUILT_IN_SOUNDS.filter((sound) => !MAIN.includes(sound.id) && fits(sound.id));
+  // Frequency only and Binaural are the frequency: no Off, just how loud.
+  const stops = generated ? TONE_STOPS.filter((stop) => stop.id !== "off") : TONE_STOPS;
+  const selectedStop: ToneSetting = generated ? level : tone;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="presentation">
@@ -104,7 +120,7 @@ export function SoundSheet({
           What you hear
         </p>
         <div role="radiogroup" aria-labelledby="hear-label" className="mt-2 grid grid-cols-3 gap-2">
-          {MAIN.map((id) => {
+          {main.map((id) => {
             const sound = findBuiltInSound(id);
             if (!sound) return null;
             const selected = id === currentId;
@@ -179,15 +195,20 @@ export function SoundSheet({
               </span>
             ) : null}
           </div>
-          {toneUnused ? (
+          {premixed ? (
             <p className="mt-2 text-[0.85rem] leading-5" style={{ color: "var(--ds-on-navy-muted)" }}>
-              {premixed ? "This recording already carries the tone." : "You're hearing the tone on its own."}
+              This recording already carries the tone.
             </p>
           ) : (
             <>
-              <div role="radiogroup" aria-labelledby="tone-label" className="mt-2 grid grid-cols-4 gap-1 rounded-[var(--ds-radius-md)] p-1" style={{ background: "rgba(248,250,252,0.06)" }}>
-                {TONE_STOPS.map((stop) => {
-                  const selected = stop.id === tone;
+              <div
+                role="radiogroup"
+                aria-labelledby="tone-label"
+                className={`mt-2 grid ${stops.length === 3 ? "grid-cols-3" : "grid-cols-4"} gap-1 rounded-[var(--ds-radius-md)] p-1`}
+                style={{ background: "rgba(248,250,252,0.06)" }}
+              >
+                {stops.map((stop) => {
+                  const selected = stop.id === selectedStop;
                   return (
                     <button
                       key={stop.id}
@@ -205,7 +226,13 @@ export function SoundSheet({
                 })}
               </div>
               <p className="ds-caption mt-2" style={{ color: "var(--ds-on-navy-muted)" }}>
-                {tone === "off" ? "Just the sound you chose." : "A quiet hum beneath the sound."}
+                {generated
+                  ? currentId === "binaural-focus"
+                    ? "The frequency in your left ear, a few hertz above it in your right. Use headphones."
+                    : "The frequency on its own."
+                  : tone === "off"
+                    ? "Just the sound you chose."
+                    : "A quiet hum beneath the sound."}
               </p>
             </>
           )}
@@ -252,7 +279,7 @@ function SoundGlyph({ id }: { id: BuiltInSoundId }) {
           <path d="M8.5 17.5 7.8 19.3M12.3 17.5l-.7 1.8M16 17.5l-.7 1.8" />
         </Glyph>
       );
-    case "forest":
+    case "rainforest":
       return (
         <Glyph>
           <path d="M12 3.5 6.5 11h3L6 16h12l-3.5-5h3L12 3.5Z" />
@@ -274,20 +301,20 @@ function SoundGlyph({ id }: { id: BuiltInSoundId }) {
           <path d="M3.5 17h6" />
         </Glyph>
       );
-    case "piano":
+    case "deep-ambient":
       return (
         <Glyph>
-          <rect x="3.5" y="5" width="17" height="14" rx="2" />
-          <path d="M9 5v9M15 5v9M7.5 14V19M12 14v5M16.5 14v5" />
+          <circle cx="12" cy="12" r="2.2" />
+          <path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4" />
+          <path d="M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14" />
         </Glyph>
       );
-    case "gong":
+    case "binaural-focus":
       return (
         <Glyph>
-          <circle cx="12" cy="12.5" r="6" />
-          <circle cx="12" cy="12.5" r="2" />
-          <path d="M5 4.5h14" />
-          <path d="M8 4.5v2.2M16 4.5v2.2" />
+          <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+          <rect x="3.5" y="14" width="4" height="6" rx="1.5" />
+          <rect x="16.5" y="14" width="4" height="6" rx="1.5" />
         </Glyph>
       );
     default:

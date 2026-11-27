@@ -4,7 +4,7 @@ import { chakraMap } from "@/data/chakras";
 import { getCard, getCardSound } from "@/lib/content-store";
 import type { PauseCategoryId } from "@/lib/pause-categories";
 import { getPreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, soundUrlFor, type BuiltInSound, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
+import { findBuiltInSound, playableSound, soundUrlFor, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 import {
   GENERIC_GUIDANCE_LINES,
   buildGroundPlaybackCues,
@@ -108,17 +108,9 @@ function builtInSoundFields(): Pick<PauseDefinition, "builtInSoundId" | "ambient
 
 // Several centres play the library sound with the frequency beneath it as
 // an undertone that moves from centre to centre. The tuned recordings carry
-// one frequency in the file, so a tuned choice becomes its plain recording.
-const PLAIN_FOR_TUNED: Record<NonNullable<BuiltInSound["tunedFile"]>, BuiltInSoundId> = {
-  rain: "rain",
-  forest: "forest",
-  piano: "piano",
-  ambient: "rain",
-};
-
+// one frequency in the file, so a tuned choice plays Rain instead.
 function plainSoundFields(): Pick<PauseDefinition, "builtInSoundId" | "ambientSoundUrl"> {
-  const chosen = findBuiltInSound(getPreferences().defaultSound) ?? findBuiltInSound("rain")!;
-  const sound = chosen.tunedFile ? findBuiltInSound(PLAIN_FOR_TUNED[chosen.tunedFile])! : chosen;
+  const sound = playableSound(getPreferences().defaultSound, null, true);
   return { builtInSoundId: sound.id, ambientSoundUrl: soundUrlFor(sound, null) ?? undefined };
 }
 

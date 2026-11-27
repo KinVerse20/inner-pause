@@ -22,7 +22,7 @@ import { createMomentRecord } from "@/lib/moment-storage";
 import { pauseCategoryMap, type PauseCategoryId } from "@/lib/pause-categories";
 import { composeFeelingsPause, composeRightNowPause, feelingsPauseSound, RIGHT_NOW_DURATION_SECONDS } from "@/lib/pause-engine";
 import { getPreferences, updatePreferences } from "@/lib/preferences-store";
-import { findBuiltInSound, UNDERTONE_LEVELS, type BuiltInSoundId } from "@/lib/sound-library";
+import { findBuiltInSound, UNDERTONE_LEVELS, type BuiltInSoundId, type UndertoneLevel } from "@/lib/sound-library";
 import { createPauseRecord } from "@/lib/pause-storage";
 import { computeInitialReturnToMeState } from "@/lib/return-to-me";
 import { getTellEntry, linkTellEntryToMoment, linkTellEntryToPause, type TellEntry } from "@/lib/tell-storage";
@@ -281,6 +281,7 @@ function YourPause({ entry, feelings }: { entry: TellEntry; feelings: string[] }
   const stops = planFeelingStops(feelings, RIGHT_NOW_DURATION_SECONDS);
   const [soundId, setSoundId] = useState<BuiltInSoundId>("rain");
   const [tone, setTone] = useState<ToneSetting>("balanced");
+  const [level, setLevel] = useState<UndertoneLevel>("balanced");
   const [soundOpen, setSoundOpen] = useState(false);
 
   // Preferences live in localStorage, read after mount.
@@ -289,6 +290,7 @@ function YourPause({ entry, feelings }: { entry: TellEntry; feelings: string[] }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSoundId(feelingsPauseSound(stops.length));
     setTone(preferences.soundToneLayerEnabled ? preferences.undertone : "off");
+    setLevel(preferences.undertone);
   }, [stops.length]);
 
   const begin = () => {
@@ -303,7 +305,8 @@ function YourPause({ entry, feelings }: { entry: TellEntry; feelings: string[] }
   };
 
   const sound = findBuiltInSound(soundId);
-  const toneLabel = tone === "off" ? "no tone" : `${UNDERTONE_LEVELS.find((level) => level.id === tone)?.label ?? "Balanced"} tone`;
+  const levelLabel = (id: UndertoneLevel) => UNDERTONE_LEVELS.find((item) => item.id === id)?.label ?? "Balanced";
+  const toneLabel = sound?.generated ? levelLabel(level) : tone === "off" ? "no tone" : `${levelLabel(tone)} tone`;
 
   return (
     <section className="ds-card space-y-5 px-5 pb-5 pt-6" aria-labelledby="your-pause-title">
@@ -343,6 +346,8 @@ function YourPause({ entry, feelings }: { entry: TellEntry; feelings: string[] }
         <SoundSheet
           currentId={soundId}
           tone={tone}
+          level={level}
+          frequencyHz={stops.length === 1 ? stops[0].hz : null}
           frequencyLabel={stops.length === 1 ? `${stops[0].hz} Hz` : null}
           muted={false}
           severalFrequencies={stops.length > 1}
@@ -353,6 +358,12 @@ function YourPause({ entry, feelings }: { entry: TellEntry; feelings: string[] }
           }}
           onTone={(next) => {
             haptic("tap");
+            if (next !== "off") setLevel(next);
+            // Frequency only and Binaural: only how loud, the undertone setting stays.
+            if (sound?.generated) {
+              if (next !== "off") updatePreferences({ undertone: next });
+              return;
+            }
             setTone(next);
             updatePreferences(next === "off" ? { soundToneLayerEnabled: false } : { soundToneLayerEnabled: true, undertone: next });
           }}
